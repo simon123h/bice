@@ -3,7 +3,7 @@ import numpy as np
 
 class TimeStepper():
 
-    def __init__(self, dt):
+    def __init__(self, dt=1e-2):
         self.dt = dt
 
     # perform a timestep on a problem
@@ -22,9 +22,9 @@ class RungeKutta4(TimeStepper):
     # perform timestep
     def step(self, problem):
         k1 = problem.rhs(problem.u)
-        problem.time += self.dt/2
+        problem.time += self.dt/2.
         k2 = problem.rhs(problem.u + self.dt / 2 * k1)
         k3 = problem.rhs(problem.u + self.dt / 2 * k2)
-        problem.time += self.dt/2
+        problem.time += self.dt/2.
         k4 = problem.rhs(problem.u + self.dt * k3)
         problem.u += self.dt / 6. * (k1 + 2 * k2 + 2 * k3 + k4)
