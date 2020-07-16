@@ -1,0 +1,13 @@
+# Ideas
+- Newton solver
+- Eigensolver
+- interface for linear systems
+- ODEs & Pseudospektral & FEM
+- time stepper
+- arclength & natural continuation
+- Jacobians by FD
+- stepsize control
+- bifurcation detection
+- implement default norms
+- branch switching
+- mesh adaption
