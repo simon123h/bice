@@ -34,11 +34,30 @@ class SwiftHohenberg(Problem):
         self.v = 0.41
         self.g = 1
         # space and fourier space
-        self.x = np.linspace(0, L, N)
+        self.x = np.linspace(-L/2, L/2, N)
         self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
         # initialize unknowns
-        self.u = np.cos(self.x) + np.random.rand(N) * 0.02
+        self.u = 1 * np.cos(2 * np.pi * self.x / 10) * np.exp(-0.005 * self.x**2)
+
 
     def rhs(self, u):
         u_k = np.fft.rfft(u)
         return np.fft.irfft((self.r - (self.kc**2 - self.k**2)**2) * u_k) + self.v * u**2 - self.g * u**3
+
+
+# Pseudospectral implementation of the 1-dimensional Advection Equation
+class Advection(Problem):
+
+    def __init__(self, N, L):
+        super().__init__()
+        # velocity parameter
+        self.u = 1
+        # space and fourier space
+        self.x = np.linspace(0, L, N)
+        self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
+        # initialize unknowns
+        self.u = np.cos(self.x)
+
+    def rhs(self, u):
+        u_k = np.fft.rfft(u)
+        return np.fft.irfft(1j * u * self.k * u_k)
