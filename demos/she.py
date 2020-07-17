@@ -48,23 +48,28 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = SwiftHohenberg(512, 240)
+problem = SwiftHohenberg(N=512, L=240)
 
 # time-stepping and plot
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(2,1)
 plotevery = 500
 n = 0
 while True:
+    # plot
     if n % plotevery == 0:
-        ax.plot(problem.x, problem.u)
-        # u_k = np.fft.rfft(problem.u)
-        # ax.plot(problem.k, np.abs(u_k))
+        ax[0].plot(problem.x, problem.u)
+        u_k = np.fft.rfft(problem.u)
+        ax[1].plot(problem.k, np.abs(u_k))
         fig.savefig("out/img/{:05d}.svg".format(n//plotevery))
-        ax.clear()
+        ax[0].clear()
+        ax[1].clear()
         print("Step #{:05d}".format(n//plotevery))
         print("dt:   {:}".format(problem.time_stepper.dt))
     n += 1
+    # perform timestep
     problem.time_step()
+    # perform dealiasing
     problem.dealias()
+    # catch divergent solutions
     if np.max(problem.u) > 1e12:
         break
