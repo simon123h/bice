@@ -1,10 +1,12 @@
 #!/usr/bin/python3
-from src.problem import Problem
 import numpy as np
-
 import matplotlib
-matplotlib.use("GTK3Agg")
+matplotlib.use("GTK3Agg")  # noqa
 import matplotlib.pyplot as plt
+import sys
+sys.path.append("..")  # noqa, needed for relative import of package
+from bice import Problem
+
 
 # The Lotka-Volterra equations (predator prey model)
 class LotkaVolterra(Problem):
@@ -25,15 +27,15 @@ class LotkaVolterra(Problem):
             (self.d * x - self.c) * y
         ])
 
+# create problem
 problem = LotkaVolterra()
 
-dat = []
-
+# time-stepping
+data = []
 for n in range(10000):
-    dat.append(problem.u.copy())
+    data.append(problem.u.copy())
     problem.time_step()
 
-dat = np.array(dat).T
-plt.plot(dat[0], dat[1])
+data = np.array(data).T
+plt.plot(data[0], data[1])
 plt.show()
-

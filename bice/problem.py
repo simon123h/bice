@@ -1,4 +1,4 @@
-from .time_stepper import Euler, RungeKutta4
+from .time_steppers import RungeKutta4
 from .linear_solver import NewtonSolver
 import numpy as np
 
