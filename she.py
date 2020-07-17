@@ -29,7 +29,7 @@ class SwiftHohenberg(Problem):
         u_k = np.fft.rfft(u)
         return np.fft.irfft((self.r - (self.kc**2 - self.k**2)**2) * u_k) + self.v * u**2 - self.g * u**3
 
-    def dealias(self, fraction=1./3.):
+    def dealias(self, fraction=1./2.):
         u_k = np.fft.rfft(self.u)
         N = len(u_k)
         u_k[-int(N*fraction):] = 0
