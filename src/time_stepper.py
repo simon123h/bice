@@ -113,4 +113,4 @@ class RungeKuttaFehlberg45(TimeStepper):
         # calculate next step size
         if eps != 0:
             self.dt = self.dt * \
-                min(max(0.84 * (self.error_tolerance / eps)**0.25, 0.5), 2)
+                min(max(1 * (self.error_tolerance / eps)**0.25, 0.5), 2)
