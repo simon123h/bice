@@ -2,27 +2,52 @@ import numpy as np
 
 
 class TimeStepper():
+    """
+    Abstract base class for all time-steppers.
+    Specifies attributes and methods that all time-steppers should have.
+    """
 
+    # is the time-stepping scheme explicit (or implicit?)
+    is_explicit = True
+
+    # constructor
     def __init__(self, dt=1e-2):
         self.dt = dt
 
     # perform a timestep on a problem
     def step(self, problem):
-        raise NotImplementedError
-
-# Explicit Euler scheme
+        raise NotImplementedError(
+            "'TimeStepper' is an abstract base class - do not use for actual time-stepping!")
 
 
 class Euler(TimeStepper):
+    """
+    Explicit Euler scheme
+    """
+
     # perform timestep
     def step(self, problem):
         problem.u += self.dt * problem.rhs(problem.u)
         problem.time += self.dt
 
-# Classical Runge-Kutta-4 scheme
+
+class ImplicitEuler(TimeStepper):
+    """
+    Implicit Euler scheme
+    """
+    is_explicit = False
+
+    # perform timestep
+    def step(self, problem):
+        problem.u += self.dt * problem.rhs(problem.u)
+        problem.time += self.dt
 
 
 class RungeKutta4(TimeStepper):
+    """
+    Classical Runge-Kutta-4 scheme
+    """
+
     # perform timestep
     def step(self, problem):
         k1 = problem.rhs(problem.u)
@@ -34,8 +59,13 @@ class RungeKutta4(TimeStepper):
         problem.u += self.dt / 6. * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
-# Runge-Kutta-Fehlberg-4-5 scheme with adaptive stepsize
+# Runge-Kutta-Fehlberg-4-5 scheme with adaptive step size
 class RungeKuttaFehlberg45(TimeStepper):
+    """
+    Runge-Kutta-Fehlberg(45) scheme with adaptive step size.
+    Local truncation error is estimated by comparison of
+    RK4 and RK5 schemes and determines the optimal step size.
+    """
 
     # Coefficients related to the independent variable of the evaluations
     a2 = 2.500000000000000e-01  # 1/4
@@ -81,7 +111,7 @@ class RungeKuttaFehlberg45(TimeStepper):
         # Local truncation error tolerance
         self.error_tolerance = 1e-3
 
-    # perform timestep and adapt stepsize
+    # perform timestep and adapt step size
     def step(self, problem):
         # Store evaluation values
         t = problem.time
@@ -110,7 +140,8 @@ class RungeKuttaFehlberg45(TimeStepper):
             problem.time = t + self.dt
             problem.u += self.c1 * k1 + self.c3 * k3 + self.c4 * k4 + self.c5 * k5
 
-        # calculate next step size
+        # Calculate next step size
+        # NOTE: we may adjust the safety factor
         if eps != 0:
             self.dt = self.dt * \
                 min(max(1 * (self.error_tolerance / eps)**0.25, 0.5), 2)

@@ -13,10 +13,12 @@ class LotkaVolterra(Problem):
 
     def __init__(self):
         super().__init__()
+        # parameters
         self.a = 1
         self.b = 1
         self.c = 1
         self.d = 1
+        # initial condition
         self.u = np.array([1., 0.7])
 
     def rhs(self, u):
