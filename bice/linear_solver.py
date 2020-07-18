@@ -8,5 +8,5 @@ class LinearSolver():
     
 class NewtonSolver(LinearSolver):
     def solve(self, problem):
-        scipy.optimize.newton(problem.rhs, problem.u)
+        return scipy.optimize.newton(problem.rhs, problem.u)
         
