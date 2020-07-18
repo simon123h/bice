@@ -34,7 +34,8 @@ class SwiftHohenberg(Problem):
 
     def rhs(self, u):
         u_k = np.fft.rfft(u)
-        return np.fft.irfft((self.r - (self.kc**2 - self.k**2)**2) * u_k) + self.v * u**2 - self.g * u**3
+        dudt = self.time_stepper.get_dudt(self)
+        return np.fft.irfft((self.r - (self.kc**2 - self.k**2)**2) * u_k) + self.v * u**2 - self.g * u**3 - dudt
 
     def dealias(self, fraction=1./2.):
         u_k = np.fft.rfft(self.u)

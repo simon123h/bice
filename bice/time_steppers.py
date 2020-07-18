@@ -14,10 +14,41 @@ class TimeStepper():
     def __init__(self, dt=1e-2):
         self.dt = dt
 
+    # calculate the time derivative of the unknowns for a given problem
+    def get_dudt(self, problem, u):
+        raise NotImplementedError(
+            "Method 'get_dudt' not implemented for this time-stepper!")
+
     # perform a timestep on a problem
     def step(self, problem):
-        raise NotImplementedError(
-            "'TimeStepper' is an abstract base class - do not use for actual time-stepping!")
+        if self.is_explicit:
+            raise NotImplementedError(
+                "'TimeStepper' is an abstract base class - do not use for actual time-stepping!")
+        else:
+            raise NotImplementedError("Explicit time-stepping not implemented for implicit time-stepper!")
+
+
+class SteadyTimeStepper():
+    """
+    This time-stepper does nothing!
+    It will set all time-derivatives in an equation to zero.
+    """
+
+    # this is an implicit time-stepper
+    is_explicit = False
+
+    # constructor
+    def __init__(self):
+        self.dt = 0
+
+    # calculate the time derivative of the unknowns for a given problem
+    def get_dudt(self, problem, u):
+        # steady case: dudt = 0
+        return np.zeros(problem.u.size)
+
+    # perform a timestep on a problem
+    def step(self, problem):
+        return False
 
 
 class Euler(TimeStepper):
@@ -29,6 +60,7 @@ class Euler(TimeStepper):
     def step(self, problem):
         problem.u += self.dt * problem.rhs(problem.u)
         problem.time += self.dt
+        return True
 
 
 class ImplicitEuler(TimeStepper):
@@ -37,10 +69,14 @@ class ImplicitEuler(TimeStepper):
     """
     is_explicit = False
 
-    # perform timestep
-    def step(self, problem):
-        problem.u += self.dt * problem.rhs(problem.u)
-        problem.time += self.dt
+    # calculate the time derivative of the unknowns for a given problem
+    def get_dudt(self, problem, u):
+        # t = problem.time
+        # problem.time = t + self.dt
+        # dudt = problem.rhs(problem.u)
+        # problem.time = t
+        return (u - problem.u) / self.dt
+        # return dudt
 
 
 class RungeKutta4(TimeStepper):
@@ -57,6 +93,7 @@ class RungeKutta4(TimeStepper):
         problem.time += self.dt/2.
         k4 = problem.rhs(problem.u + self.dt * k3)
         problem.u += self.dt / 6. * (k1 + 2 * k2 + 2 * k3 + k4)
+        return True
 
 
 # Runge-Kutta-Fehlberg-4-5 scheme with adaptive step size
@@ -139,9 +176,14 @@ class RungeKuttaFehlberg45(TimeStepper):
         if eps <= self.error_tolerance:
             problem.time = t + self.dt
             problem.u += self.c1 * k1 + self.c3 * k3 + self.c4 * k4 + self.c5 * k5
+            step_accepted = True
+        else:
+            step_accepted = False
 
         # Calculate next step size
         # NOTE: we may adjust the safety factor
         if eps != 0:
             self.dt = self.dt * \
                 min(max(1 * (self.error_tolerance / eps)**0.25, 0.5), 2)
+
+        return step_accepted

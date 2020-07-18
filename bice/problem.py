@@ -1,6 +1,7 @@
 from .time_steppers import RungeKutta4
 from .linear_solver import NewtonSolver
 import numpy as np
+import scipy.optimize
 
 
 class Problem():
@@ -23,6 +24,12 @@ class Problem():
         self.time_stepper = RungeKutta4(dt=1e-2)
         # The linear solver for, well, solving linear systems
         self.linear_solver = NewtonSolver()
+        # The (time-)history of the unknowns
+        # TODO: history should not be a list: inefficient
+        # TODO: history should not become infinitely long
+        self.history_u = []
+        # The history of the time values
+        self.history_t = []
 
     # The dimension of the linear system
     @property
@@ -47,9 +54,34 @@ class Problem():
     # Integrate in time with the assigned time-stepper
     def time_step(self):
         if self.time_stepper.is_explicit:
-            self.time_stepper.step(self)
+            # save current values
+            t = self.time
+            u = self.u
+            # perform timestep according to current scheme
+            step_accepted = self.time_stepper.step(self)
+            if step_accepted:
+                # update history with old values
+                self.history_t.append(t)
+                self.history_u.append(u)
         else:
-            raise NotImplementedError("Implicit time-steppers are not yet supported!")
+            t = self.time
+            u = self.u
+            # TODO: should this maybe happen in the time-stepper.step(...) method?
+            # TODO: the following is an assembly process, adjust once we generalized rhs assembly
+            def f(u):
+                return self.rhs(u) - self.time_stepper.get_dudt(self, u)
+            solution = scipy.optimize.newton(f, self.u)
+            # TODO: solving should happen in the linear solver class:
+            # self.u = self.linear_solver.solve(self)
+            # TODO: detect if Newton solver failed and reject step
+            step_accepted = True
+            if step_accepted:
+                self.time += self.time_stepper.dt
+                self.u = solution
+                # update history with old values
+                self.history_t.append(t)
+                self.history_u.append(u)
+
 
     # Solve the equation rhs(u) = 0 for u with the assigned linear solver
     def solve(self):
