@@ -1,8 +1,6 @@
 from .time_steppers import RungeKutta4
 from .linear_solver import NewtonSolver
 import numpy as np
-import scipy.optimize
-
 
 class Problem():
     """
@@ -53,34 +51,8 @@ class Problem():
 
     # Integrate in time with the assigned time-stepper
     def time_step(self):
-        if self.time_stepper.is_explicit:
-            # save current values
-            t = self.time
-            u = self.u
-            # perform timestep according to current scheme
-            step_accepted = self.time_stepper.step(self)
-            if step_accepted:
-                # update history with old values
-                self.history_t.append(t)
-                self.history_u.append(u)
-        else:
-            t = self.time
-            u = self.u
-            # TODO: should this maybe happen in the time-stepper.step(...) method?
-            # TODO: the following is an assembly process, adjust once we generalized rhs assembly
-            def f(u):
-                return self.rhs(u) - self.time_stepper.get_dudt(self, u)
-            solution = scipy.optimize.newton(f, self.u)
-            # TODO: solving should happen in the linear solver class:
-            # self.u = self.linear_solver.solve(self)
-            # TODO: detect if Newton solver failed and reject step
-            step_accepted = True
-            if step_accepted:
-                self.time += self.time_stepper.dt
-                self.u = solution
-                # update history with old values
-                self.history_t.append(t)
-                self.history_u.append(u)
+        # perform timestep according to current scheme
+        self.time_stepper.step(self)
 
 
     # Solve the equation rhs(u) = 0 for u with the assigned linear solver

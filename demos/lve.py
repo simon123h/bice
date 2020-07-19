@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.append("..")  # noqa, needed for relative import of package
 from bice import Problem
-from bice.time_steppers import Euler, ImplicitEuler
+from bice.time_steppers import Euler, ImplicitEuler, RungeKutta4
 
 
 # The Lotka-Volterra equations (predator prey model)
@@ -22,8 +22,9 @@ class LotkaVolterra(Problem):
         # initial condition
         self.u = np.array([1., 0.7])
         # time stepper
-        self.time_stepper = Euler()
+        # self.time_stepper = Euler()
         # self.time_stepper = ImplicitEuler()
+        self.time_stepper = RungeKutta4()
 
     def rhs(self, u):
         x = u[0]

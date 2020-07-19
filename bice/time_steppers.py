@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.optimize
 
 
 class TimeStepper():
@@ -14,41 +15,15 @@ class TimeStepper():
     def __init__(self, dt=1e-2):
         self.dt = dt
 
-    # calculate the time derivative of the unknowns for a given problem
-    def get_dudt(self, problem, u):
+    # # calculate the time derivative of the unknowns for a given problem
+    # def get_dudt(self, problem, u):
+    #     raise NotImplementedError(
+    #         "Method 'get_dudt' not implemented for this time-stepper!")
+
+    # perform a timestep on a problem
+    def step(self, problem):
         raise NotImplementedError(
-            "Method 'get_dudt' not implemented for this time-stepper!")
-
-    # perform a timestep on a problem
-    def step(self, problem):
-        if self.is_explicit:
-            raise NotImplementedError(
-                "'TimeStepper' is an abstract base class - do not use for actual time-stepping!")
-        else:
-            raise NotImplementedError("Explicit time-stepping not implemented for implicit time-stepper!")
-
-
-class SteadyTimeStepper():
-    """
-    This time-stepper does nothing!
-    It will set all time-derivatives in an equation to zero.
-    """
-
-    # this is an implicit time-stepper
-    is_explicit = False
-
-    # constructor
-    def __init__(self):
-        self.dt = 0
-
-    # calculate the time derivative of the unknowns for a given problem
-    def get_dudt(self, problem, u):
-        # steady case: dudt = 0
-        return np.zeros(problem.u.size)
-
-    # perform a timestep on a problem
-    def step(self, problem):
-        return False
+            "'TimeStepper' is an abstract base class - do not use for actual time-stepping!")
 
 
 class Euler(TimeStepper):
@@ -69,14 +44,17 @@ class ImplicitEuler(TimeStepper):
     """
     is_explicit = False
 
-    # calculate the time derivative of the unknowns for a given problem
-    def get_dudt(self, problem, u):
-        # t = problem.time
-        # problem.time = t + self.dt
-        # dudt = problem.rhs(problem.u)
-        # problem.time = t
-        return (u - problem.u) / self.dt
-        # return dudt
+    def step(self, problem):
+        # advance in time
+        problem.time += self.dt
+        # assemble the system
+        # TODO: should this assembly process be generalized in some way?
+        def f(u):
+            return problem.rhs(u) - (u - problem.u) / self.dt
+        # solve it with a Newton solver
+        # TODO: detect if Newton solver failed and reject step
+        problem.u = scipy.optimize.newton(f, problem.u)
+        return True
 
 
 class RungeKutta4(TimeStepper):
@@ -147,6 +125,10 @@ class RungeKuttaFehlberg45(TimeStepper):
         super().__init__(dt)
         # Local truncation error tolerance
         self.error_tolerance = 1e-3
+        # Maximum number of iterations when steps are rejected
+        self.max_rejections = 30
+        # counter for the number of rejections in current step
+        self.rejection_count = 0
 
     # perform timestep and adapt step size
     def step(self, problem):
@@ -172,18 +154,25 @@ class RungeKuttaFehlberg45(TimeStepper):
         eps = np.linalg.norm(self.r1 * k1 + self.r3 * k3 + self.r4 *
                              k4 + self.r5 * k5 + self.r6 * k6) / self.dt
 
-        # If it is less than the tolerance, the step is accepted and RK4 value is stored
-        if eps <= self.error_tolerance:
-            problem.time = t + self.dt
-            problem.u += self.c1 * k1 + self.c3 * k3 + self.c4 * k4 + self.c5 * k5
-            step_accepted = True
-        else:
-            step_accepted = False
-
         # Calculate next step size
-        # NOTE: we may adjust the safety factor
+        # NOTE: we may adjust the safety factor here
+        dt_old = self.dt
         if eps != 0:
             self.dt = self.dt * \
                 min(max(1 * (self.error_tolerance / eps)**0.25, 0.5), 2)
 
-        return step_accepted
+        # If it is less than the tolerance, the step is accepted and RK4 value is stored
+        if eps <= self.error_tolerance:
+            # update problem variables
+            problem.time = t + dt_old
+            problem.u += self.c1 * k1 + self.c3 * k3 + self.c4 * k4 + self.c5 * k5
+            # reset rejection count
+            self.rejection_count = 0
+        elif self.rejection_count < self.max_rejections:
+            # if step rejected: repeat step with the adjusted step size
+            self.rejection_count += 1
+            self.step(problem)
+        else:
+            # if we rejected too many steps already: abort with Exception
+            raise Exception(
+                "Runge-Kutta-Fehlberg time-stepper exceeded maximum number of rejected steps:", recursion_count)
