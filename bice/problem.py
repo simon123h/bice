@@ -1,5 +1,5 @@
 from .time_steppers import RungeKutta4
-from .linear_solver import NewtonSolver
+from .continuation_steppers import NaturalContinuation, PseudoArclengthContinuation
 import numpy as np
 
 class Problem():
@@ -21,13 +21,7 @@ class Problem():
         # The time-stepper for integration in time
         self.time_stepper = RungeKutta4(dt=1e-2)
         # The linear solver for, well, solving linear systems
-        self.linear_solver = NewtonSolver()
-        # The (time-)history of the unknowns
-        # TODO: history should not be a list: inefficient
-        # TODO: history should not become infinitely long
-        self.history_u = []
-        # The history of the time values
-        self.history_t = []
+        self.continuation_stepper = NaturalContinuation()
 
     # The dimension of the linear system
     @property
@@ -56,5 +50,7 @@ class Problem():
 
 
     # Solve the equation rhs(u) = 0 for u with the assigned linear solver
-    def solve(self):
-        self.linear_solver.solve(self)
+    # Perform a parameter continuation step, w.r.t the parameter defined by
+    # self.continuation_stepper.get_parameter/set_parameter
+    def continuation_step(self):
+        self.continuation_stepper.step(self)
