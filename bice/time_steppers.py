@@ -35,7 +35,6 @@ class Euler(TimeStepper):
     def step(self, problem):
         problem.u += self.dt * problem.rhs(problem.u)
         problem.time += self.dt
-        return True
 
 
 class ImplicitEuler(TimeStepper):
@@ -54,7 +53,6 @@ class ImplicitEuler(TimeStepper):
         # solve it with a Newton solver
         # TODO: detect if Newton solver failed and reject step
         problem.u = scipy.optimize.newton(f, problem.u)
-        return True
 
 
 class RungeKutta4(TimeStepper):
@@ -71,7 +69,6 @@ class RungeKutta4(TimeStepper):
         problem.time += self.dt/2.
         k4 = problem.rhs(problem.u + self.dt * k3)
         problem.u += self.dt / 6. * (k1 + 2 * k2 + 2 * k3 + k4)
-        return True
 
 
 # Runge-Kutta-Fehlberg-4-5 scheme with adaptive step size
