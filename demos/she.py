@@ -7,6 +7,7 @@ import sys
 sys.path.append("..")  # noqa, needed for relative import of package
 from bice import Problem
 from bice.time_steppers import RungeKuttaFehlberg45
+from bice.continuation_steppers import NaturalContinuation, PseudoArclengthContinuation
 
 # Pseudospectral implementation of the 1-dimensional Swift-Hohenberg Equation
 # equation, a nonlinear PDE
@@ -26,8 +27,7 @@ class SwiftHohenberg(Problem):
         self.x = np.linspace(-L/2, L/2, N)
         self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
         # initialize unknowns
-        self.u = 1 * np.cos(2 * np.pi * self.x / 10) * \
-            np.exp(-0.005 * self.x**2)
+        self.u = np.cos(2 * np.pi * self.x / 10) * np.exp(-0.005 * self.x**2)
         # initialize time stepper
         self.time_stepper = RungeKuttaFehlberg45(dt=1e-3)
         self.time_stepper.error_tolerance = 1e-1
@@ -42,6 +42,16 @@ class SwiftHohenberg(Problem):
         u_k[-int(N*fraction):] = 0
         self.u = np.fft.irfft(u_k)
 
+    # for continuation
+    def get_parameter(self):
+        return self.r
+
+    def set_parameter(self, v):
+        self.r = v
+
+    def L2norm(self):
+        return np.linalg.norm(self.u)
+
 
 # create output folder
 shutil.rmtree("out", ignore_errors=True)
@@ -51,10 +61,10 @@ os.makedirs("out/img", exist_ok=True)
 problem = SwiftHohenberg(N=512, L=240)
 
 # time-stepping and plot
-fig, ax = plt.subplots(2,1)
-plotevery = 500
+fig, ax = plt.subplots(2, 1)
+plotevery = 1000
 n = 0
-while True:
+while problem.time < 1000:
     # plot
     if n % plotevery == 0:
         ax[0].plot(problem.x, problem.u)
@@ -65,6 +75,7 @@ while True:
         ax[1].clear()
         print("Step #{:05d}".format(n//plotevery))
         print("dt:   {:}".format(problem.time_stepper.dt))
+        print("time: {:}".format(problem.time))
     n += 1
     # perform timestep
     problem.time_step()
@@ -73,3 +84,30 @@ while True:
     # catch divergent solutions
     if np.max(problem.u) > 1e12:
         break
+
+problem.continuation_stepper = PseudoArclengthContinuation()
+
+
+norms = []
+rs = []
+
+plt.cla()
+n = 0
+
+print("Starting continuation")
+
+n = n // plotevery + 1
+while problem.r < 1:
+    norms.append(problem.L2norm())
+    rs.append(problem.get_parameter())
+    ax[0].plot(problem.x, problem.u)
+    ax[1].plot(rs, norms)
+    fig.savefig("out/img/{:05d}.svg".format(n))
+    n += 1
+    ax[0].clear()
+    ax[1].clear()
+    print("r:", problem.r)
+    print("norm:", problem.L2norm())
+    print("step #:", n)
+    problem.continuation_step()
+    n += 1
