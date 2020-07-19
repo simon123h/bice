@@ -1,5 +1,5 @@
 from .time_steppers import RungeKutta4
-from .continuation_steppers import NaturalContinuation, PseudoArclengthContinuation
+from .continuation_steppers import NaturalContinuation
 import numpy as np
 
 class Problem():
@@ -13,26 +13,28 @@ class Problem():
     """
 
     # Constructor: initialize basic ar
-    def __init__(self, dimension=0):
-        # The vector of unknowns
-        self.u = np.zeros(dimension)
+    def __init__(self):
+        # the list of governing equations in this problem
+        self.eq = []
+        # The vector of unknowns (NumPy array)
+        self.u = None
         # Time variable
         self.time = 0
         # The time-stepper for integration in time
         self.time_stepper = RungeKutta4(dt=1e-2)
-        # The linear solver for, well, solving linear systems
+        # The continuation stepper for parameter continuation
         self.continuation_stepper = NaturalContinuation()
 
-    # The dimension of the linear system
+    # The dimension of the system
     @property
     def dim(self):
         return self.u.size
 
-    # Calculate the right-hand side of the linear system 0 = rhs(u)
+    # Calculate the right-hand side of the system 0 = rhs(u)
     def rhs(self, u):
         raise NotImplementedError("No right-hand side (rhs) implemented for this problem!")
 
-    # Calculate the Jacobian of the linear system J = d rhs(u) / du for the unknowns u.
+    # Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u.
     # 'eps' is the step size used for the central FD scheme
     def jacobian(self, u, eps=1e-10):
         # default implementation: calculate Jacobian with finite differences
