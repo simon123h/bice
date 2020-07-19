@@ -9,7 +9,7 @@ class ContinuationStepper:
     """
 
     # constructor
-    def __init__(self, ds=1e-2):
+    def __init__(self, ds=1e-3):
         self.ds = ds
 
     # perform a continuation step on a problem
@@ -48,7 +48,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
     Pseudo-arclength parameter continuation stepper
     """
 
-    def __init__(self, ds):
+    def __init__(self, ds=1e-3):
         super().__init__(ds)
         # rescale the parameter constraint, for numerical stability
         # may be decreased for, e.g., very sharp folds

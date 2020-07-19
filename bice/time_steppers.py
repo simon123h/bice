@@ -2,7 +2,7 @@ import numpy as np
 import scipy.optimize
 
 
-class TimeStepper():
+class TimeStepper:
     """
     Abstract base class for all time-steppers.
     Specifies attributes and methods that all time-steppers should have.
