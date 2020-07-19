@@ -30,7 +30,8 @@ class SwiftHohenberg(Problem):
         self.u = np.cos(2 * np.pi * self.x / 10) * np.exp(-0.005 * self.x**2)
         # initialize time stepper
         self.time_stepper = RungeKuttaFehlberg45(dt=1e-3)
-        self.time_stepper.error_tolerance = 1e-1
+        self.time_stepper.error_tolerance = 1e-7
+        self.time_stepper.dt = 1e-3
 
     def rhs(self, u):
         u_k = np.fft.rfft(u)
@@ -64,7 +65,8 @@ problem = SwiftHohenberg(N=512, L=240)
 fig, ax = plt.subplots(2, 1)
 plotevery = 1000
 n = 0
-while problem.time < 1000:
+dudtnorm = 1
+while dudtnorm > 1e-5:
     # plot
     if n % plotevery == 0:
         ax[0].plot(problem.x, problem.u)
@@ -73,9 +75,11 @@ while problem.time < 1000:
         fig.savefig("out/img/{:05d}.svg".format(n//plotevery))
         ax[0].clear()
         ax[1].clear()
+        dudtnorm = np.linalg.norm(problem.rhs(problem.u))
         print("Step #{:05d}".format(n//plotevery))
         print("dt:   {:}".format(problem.time_stepper.dt))
         print("time: {:}".format(problem.time))
+        print("dudt: {:}".format(dudtnorm))
     n += 1
     # perform timestep
     problem.time_step()
@@ -85,24 +89,24 @@ while problem.time < 1000:
     if np.max(problem.u) > 1e12:
         break
 
-problem.continuation_stepper = PseudoArclengthContinuation()
+# problem.continuation_stepper = PseudoArclengthContinuation()
+problem.continuation_stepper.ds = 1e-4
 
 
 norms = []
 rs = []
 
 plt.cla()
-n = 0
 
 print("Starting continuation")
 
-n = n // plotevery + 1
-while problem.r < 1:
+n = 0
+while n < 5:
     norms.append(problem.L2norm())
     rs.append(problem.get_parameter())
     ax[0].plot(problem.x, problem.u)
     ax[1].plot(rs, norms)
-    fig.savefig("out/img/{:05d}.svg".format(n))
+    fig.savefig("out/img/c{:05d}.svg".format(n))
     n += 1
     ax[0].clear()
     ax[1].clear()
@@ -110,4 +114,6 @@ while problem.r < 1:
     print("norm:", problem.L2norm())
     print("step #:", n)
     problem.continuation_step()
+    # perform dealiasing
+    problem.dealias()
     n += 1
