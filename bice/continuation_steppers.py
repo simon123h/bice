@@ -17,15 +17,12 @@ class ContinuationStepper:
         raise NotImplementedError(
             "'ContinuationStepper' is an abstract base class - do not use for actual parameter continuation!")
 
-    # getter for the continuation parameter (override in order to set parameter)
-    def get_parameter(self):
-        raise NotImplementedError(
-            "Overwrite this method with a getter for the principal continuation parameter!")
-    # setter for the continuation parameter (override in order to set parameter)
-
-    def set_parameter(self, val):
-        raise NotImplementedError(
-            "Overwrite this method with a setter for the principal continuation parameter!")
+    # reset the continuation-stepper parameters & storage to default, e.g.,
+    # when starting off a new solution point, switching branches or
+    # switching the principal continuation parameter
+    # NOTE: is there a better name for this?
+    def factory_reset(self):
+        pass
 
 
 class NaturalContinuation(ContinuationStepper):
@@ -36,8 +33,8 @@ class NaturalContinuation(ContinuationStepper):
     # perform continuation step
     def step(self, problem):
         # update the parameter value
-        p = problem.get_parameter()
-        problem.set_parameter(p + self.ds)
+        p = problem.get_continuation_parameter()
+        problem.set_continuation_parameter(p + self.ds)
         # solve it with a Newton solver
         # TODO: detect if Newton solver failed and reject step
         problem.u = scipy.optimize.newton_krylov(problem.rhs, problem.u)
@@ -60,9 +57,9 @@ class PseudoArclengthContinuation(ContinuationStepper):
         self.ndesired_newton_steps = 3
         # the actual number of newton iterations taken in the last continuation step
         self.nnewton_iter_taken = None
-        # ds 'penalty' factor when less nthan desired_newton_steps are performed
+        # ds decreases by this factor when less than desired_newton_steps are performed
         self.ds_decrease_factor = 0.5
-        # ds 'penalty' factor when more nthan desired_newton_steps are performed
+        # ds increases by this factor when more than desired_newton_steps are performed
         self.ds_increase_factor = 1.1
         # maximum step size
         self.ds_max = 1e0
@@ -77,9 +74,8 @@ class PseudoArclengthContinuation(ContinuationStepper):
         self.tangent = None
 
     # perform continuation step
-
     def step(self, problem):
-        p = problem.get_parameter()
+        p = problem.get_continuation_parameter()
         u = problem.u
         N = u.size
         # save old variables
@@ -89,19 +85,19 @@ class PseudoArclengthContinuation(ContinuationStepper):
             # simply get tangent from difference between last steps
             # TODO: is it a good idea or should we be able to switch this off?
             # NOTE: I tried making sure that the calculated tangent and the approximate tangent
-            # (self.tangent) are pointing in the same direction (tangent*self.tangent > 0),
-            # but that did just randomly flip the continuation direction :-/
+            #       (self.tangent) are pointing in the same direction (tangent*self.tangent > 0),
+            #       but that did just randomly flip the continuation direction :-/
             tangent = self.tangent
         else:
             # calculate tangent from extended Jacobian in (u, parameter)-space
             jac = problem.jacobian(u)
             # last column of extended jacobian: d(rhs)/d(parameter), calculate it with FD
-            problem.set_parameter(p - self.fd_epsilon)
+            problem.set_continuation_parameter(p - self.fd_epsilon)
             rhs_1 = problem.rhs(u)
-            problem.set_parameter(p + self.fd_epsilon)
+            problem.set_continuation_parameter(p + self.fd_epsilon)
             rhs_2 = problem.rhs(u)
             drhs_dp = (rhs_2 - rhs_1) / (2. * self.fd_epsilon)
-            problem.set_parameter(p)
+            problem.set_continuation_parameter(p)
             jac = np.concatenate((jac, drhs_dp.reshape((N, 1))), axis=1)
             zero = np.zeros(N+1)
             zero[N] = 1  # for solvability
@@ -117,24 +113,23 @@ class PseudoArclengthContinuation(ContinuationStepper):
         count = 0
         while not converged and count < self.max_newton_iterations:
             # build extended jacobian in (vars, parameter)-space
-            problem.set_parameter(p)
-            rhs = problem.rhs(u)
+            problem.set_continuation_parameter(p)
             jac = problem.jacobian(u)
             # last column of extended jacobian: d(rhs)/d(parameter) - calculate with FD
-            problem.set_parameter(p - self.fd_epsilon)
+            problem.set_continuation_parameter(p - self.fd_epsilon)
             rhs_1 = problem.rhs(u)
-            problem.set_parameter(p + self.fd_epsilon)
+            problem.set_continuation_parameter(p + self.fd_epsilon)
             rhs_2 = problem.rhs(u)
-            problem.set_parameter(p)
+            problem.set_continuation_parameter(p)
             drhs_dp = (rhs_2 - rhs_1) / (2. * self.fd_epsilon)
             jac_ext = np.concatenate((jac, drhs_dp.reshape((N, 1))), axis=1)
             # last row of extended jacobian: tangent vector
             jac_ext = np.concatenate(
                 (jac_ext, tangent.reshape((1, N+1))), axis=0)
-            # extended rhs: model's rhs + arclength condition
-            rhs_ext = (u - u_old).dot(tangent[:N]) + (p - p_old) * \
+            # extended rhs: model's rhs & arclength condition
+            arclength_condition = (u - u_old).dot(tangent[:N]) + (p - p_old) * \
                 tangent[N] * self.parameter_arc_length_proportion - self.ds
-            rhs_ext = np.append(rhs, rhs_ext)
+            rhs_ext = np.append(problem.rhs(u), arclength_condition)
             # solving (jac_ext) * du_ext = rhs_ext for du_ext will now give the new solution
             du_ext = np.linalg.solve(jac_ext, rhs_ext)
             u = u - du_ext[:N]
@@ -147,21 +142,23 @@ class PseudoArclengthContinuation(ContinuationStepper):
         self.nnewton_iter_taken = count
 
         if converged:
-            # system converged to new solution
-            # assign the new values
+            # system converged to new solution, assign the new values
             problem.u = u
-            problem.set_parameter(p)
+            problem.set_continuation_parameter(p)
             # approximate tangent for the following step
-            self.tangent = np.append(u - u_old, p-p_old)
+            self.tangent = np.append(u - u_old, p - p_old)
             self.tangent /= np.linalg.norm(self.tangent)
         else:
-            # we didn't converge :-(
-            # reset to old values
+            # we didn't converge, reset to old values :-/
             problem.u = u_old
-            problem.set_parameter(p_old)
-            # TODO: not converged, throw error
+            problem.set_continuation_parameter(p_old)
+            # and throw error
+            # TODO: we could also try again with a smaller step size, unless ds is already minimal
+            raise np.linalg.LinAlgError(
+                "Newton solver did not converge after", count, "iterations!")
 
         # adapt step size
+        # TODO: @max, is there a better way to do step size control?
         if self.adapt_stepsize:
             if count > self.ndesired_newton_steps and abs(self.ds) > self.ds_min:
                 # decrease step size
@@ -170,9 +167,15 @@ class PseudoArclengthContinuation(ContinuationStepper):
                     abs(self.ds)*self.ds_decrease_factor, self.ds_min)*sign
                 # redo continuation step
                 # self.u = u_old
-                # problem.set_parameter(p_old)
+                # problem.set_continuation_parameter(p_old)
                 # self.step(problem)
             elif count < self.ndesired_newton_steps:
                 sign = -1 if self.ds < 0 else 1
                 self.ds = min(
                     abs(self.ds)*self.ds_increase_factor, self.ds_max)*sign
+
+    # reset the continuation-stepper parameters & storage to default, e.g.,
+    # when starting off a new solution point, switching branches or
+    # switching the principal continuation parameter
+    def factory_reset(self):
+        self.tangent = None
