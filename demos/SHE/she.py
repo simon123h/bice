@@ -131,8 +131,14 @@ while problem.r < 1:
         ax[0, 1].set_xlabel("parameter r")
         ax[0, 1].set_ylabel("L2-norm")
         ax[0, 1].legend()
-        eigvals, eigvecs = problem.solve_eigenproblem(k=10)
-        ax[1, 1].plot(np.real(eigvals), marker="o", linestyle="None")
+        eigvals, eigvecs = problem.solve_eigenproblem()
+        ev_re = np.real(eigvals[:20])
+        ev_re_n = np.ma.masked_where(ev_re <= 1e-6, ev_re)
+        ev_re_p = np.ma.masked_where(ev_re > 1e-6, ev_re)
+        ax[1, 1].plot(ev_re_n, "o", color="C1", label="Re < 0")
+        ax[1, 1].plot(ev_re_p, "o", color="C0", label="Re > 0")
+        ax[1, 1].axhline(0, color="gray")
+        ax[1, 1].legend()
         ax[1, 1].set_ylabel("eigenvalues")
         fig.savefig("out/img/{:05d}.svg".format(plotID))
         for a in ax.flatten():
@@ -141,7 +147,5 @@ while problem.r < 1:
     n += 1
     problem.continuation_step()
     print("step #:", n)
-    print("r:     ", problem.r)
     print("ds:    ", problem.continuation_stepper.ds)
-    # perform dealiasing
-    # problem.dealias()
+    print(ev_re[0])

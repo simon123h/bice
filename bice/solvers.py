@@ -20,8 +20,9 @@ class EigenSolver:
         else:
             # else: compute only the largest k eigenvalues with an iterative eigensolver
             # this iterative eigensolver relies on ARPACK (Arnoldi method)
+            # which = 'LR' --> largest real part first
             # TODO: optimize arguments for iterative eigensolver
-            eigenvalues, eigenvectors = scipy.sparse.linalg.eigs(A, k)
+            eigenvalues, eigenvectors = scipy.sparse.linalg.eigs(A, k, which='LM')
         # sort by largest eigenvalue (largest real part)
         idx = np.argsort(eigenvalues)[::-1]
         eigenvalues = eigenvalues[idx]
