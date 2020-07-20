@@ -1,4 +1,6 @@
+
 # Ideas
+
 - Add newton solver class and use it
 - use better newton solver in arclength continuation
 - Add default interfaces for FEM, FD and pseudospectral discretizations
@@ -10,3 +12,7 @@
 - bifurcation detection
 - branch switching
 - mesh adaption
+- bifurcation tracking
+- continuation of periodic solutions
+- check performance / increase performance of solvers
+- implement implicit BDF_n time-stepping schemes
