@@ -1,0 +1,1 @@
+# Continuation of localized states in the Swift-Hohenberg equation (SHE)

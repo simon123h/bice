@@ -72,7 +72,7 @@ fig, ax = plt.subplots(2, 1, figsize=(12.8,7.2))
 plotevery = 1000
 n = 0
 dudtnorm = 1
-if not os.path.exists("state.dat"):
+if not os.path.exists("initial_state.dat"):
     while dudtnorm > 1e-5:
         # plot
         if n % plotevery == 0:
@@ -96,10 +96,11 @@ if not os.path.exists("state.dat"):
         if np.max(problem.u) > 1e12:
             break
 
-    problem.save("state.dat")
+    problem.save("initial_state.dat")
 else:
-    problem.load("state.dat")
+    problem.load("initial_state.dat")
 
+# start parameter continuation
 problem.continuation_stepper = PseudoArclengthContinuation()
 problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.adapt_stepsize = True
