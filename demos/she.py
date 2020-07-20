@@ -6,7 +6,7 @@ import os
 import sys
 sys.path.append("..")  # noqa, needed for relative import of package
 from bice import Problem
-from bice.time_steppers import RungeKuttaFehlberg45
+from bice.time_steppers import RungeKuttaFehlberg45, ImplicitEuler
 from bice.continuation_steppers import NaturalContinuation, PseudoArclengthContinuation
 
 # Pseudospectral implementation of the 1-dimensional Swift-Hohenberg Equation
@@ -53,6 +53,12 @@ class SwiftHohenberg(Problem):
     def L2norm(self):
         return np.linalg.norm(self.u)
 
+    def save(self, filename):
+        np.savetxt(filename, problem.u)
+
+    def load(self, filename):
+        problem.u = np.loadtxt(filename)
+
 
 # create output folder
 shutil.rmtree("out", ignore_errors=True)
@@ -62,35 +68,40 @@ os.makedirs("out/img", exist_ok=True)
 problem = SwiftHohenberg(N=512, L=240)
 
 # time-stepping and plot
-fig, ax = plt.subplots(2, 1)
+fig, ax = plt.subplots(2, 1, figsize=(12.8,7.2))
 plotevery = 1000
 n = 0
 dudtnorm = 1
-while dudtnorm > 1e-5:
-    # plot
-    if n % plotevery == 0:
-        ax[0].plot(problem.x, problem.u)
-        u_k = np.fft.rfft(problem.u)
-        ax[1].plot(problem.k, np.abs(u_k))
-        fig.savefig("out/img/{:05d}.svg".format(n//plotevery))
-        ax[0].clear()
-        ax[1].clear()
-        dudtnorm = np.linalg.norm(problem.rhs(problem.u))
-        print("Step #{:05d}".format(n//plotevery))
-        print("dt:   {:}".format(problem.time_stepper.dt))
-        print("time: {:}".format(problem.time))
-        print("dudt: {:}".format(dudtnorm))
-    n += 1
-    # perform timestep
-    problem.time_step()
-    # perform dealiasing
-    problem.dealias()
-    # catch divergent solutions
-    if np.max(problem.u) > 1e12:
-        break
+if not os.path.exists("state.dat"):
+    while dudtnorm > 1e-5:
+        # plot
+        if n % plotevery == 0:
+            ax[0].plot(problem.x, problem.u)
+            u_k = np.fft.rfft(problem.u)
+            ax[1].plot(problem.k, np.abs(u_k))
+            fig.savefig("out/img/{:05d}.svg".format(n//plotevery))
+            ax[0].clear()
+            ax[1].clear()
+            dudtnorm = np.linalg.norm(problem.rhs(problem.u))
+            print("Step #{:05d}".format(n//plotevery))
+            print("dt:   {:}".format(problem.time_stepper.dt))
+            print("time: {:}".format(problem.time))
+            print("dudt: {:}".format(dudtnorm))
+        n += 1
+        # perform timestep
+        problem.time_step()
+        # perform dealiasing
+        problem.dealias()
+        # catch divergent solutions
+        if np.max(problem.u) > 1e12:
+            break
 
-# problem.continuation_stepper = PseudoArclengthContinuation()
-problem.continuation_stepper.ds = 1e-4
+    problem.save("state.dat")
+else:
+    problem.load("state.dat")
+
+problem.continuation_stepper = PseudoArclengthContinuation()
+problem.continuation_stepper.ds = 1e-5
 
 
 norms = []
@@ -101,7 +112,7 @@ plt.cla()
 print("Starting continuation")
 
 n = 0
-while n < 5:
+while problem.r < 1:
     norms.append(problem.L2norm())
     rs.append(problem.get_parameter())
     ax[0].plot(problem.x, problem.u)
