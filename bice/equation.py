@@ -1,4 +1,6 @@
 
+# NOTE: this class is not yet used at all, future work!
+
 class Equation:
 
     def __init__(self):
