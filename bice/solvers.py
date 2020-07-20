@@ -4,20 +4,13 @@ import scipy.sparse
 
 # NOTE: these classes are not yet used at all, future work!
 
-
-class LinearSolver:
-
-    def solve(self, f, u):
-        raise NotImplementedError
-
-
 class NewtonSolver:
 
     def solve(self, f, u):
         return scipy.optimize.newton(f, u)
 
 
-class DirectEigenSolver:
+class EigenSolver:
 
     def solve(self, A, k=None):
         if k is None:
