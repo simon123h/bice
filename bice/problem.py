@@ -56,9 +56,21 @@ class Problem():
         # perform timestep according to current scheme
         self.time_stepper.step(self)
 
-    # Solve the equation rhs(u) = 0 for u with the assigned linear solver
     # Perform a parameter continuation step, w.r.t the parameter defined by
-    # self.continuation_stepper.get_parameter/set_parameter
-
+    # self.continuation_stepper.get_continuation_parameter/set_continuation_parameter()
     def continuation_step(self):
         self.continuation_stepper.step(self)
+
+    # the default norm of the solution, used for bifurcation diagrams
+    def norm(self):
+        # defaults to the L2-norm
+        return np.linalg.norm(self.u)
+
+    # save the current solution to disk
+    def save(self, filename):
+        np.savetxt(filename, self.u)
+
+    # load the current solution from disk
+    def load(self, filename):
+        self.u = np.loadtxt(filename)
+

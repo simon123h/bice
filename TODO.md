@@ -17,7 +17,6 @@
 
 ## Mathematical features
 
-- Implement a default norm (L2-norm?) in Problem class
 - Add default interfaces for FEM, FD and pseudospectral discretizations
 - Mesh adaption
 - implement implicit BDF(n) time-stepping schemes
@@ -33,6 +32,7 @@
 - Bifurcation tracking (augmented systems)
 - Continuation of time-periodic solutions
 - Implement constraints as 'Equations'
+- Is there any better way to pass the continuation parameter then by overwriting the get_continuation_parameter()/set_continuation_parameter() methods?
 
 ## Optimization
 

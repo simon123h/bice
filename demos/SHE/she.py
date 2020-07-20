@@ -44,20 +44,11 @@ class SwiftHohenberg(Problem):
         self.u = np.fft.irfft(u_k)
 
     # for continuation
-    def get_parameter(self):
+    def get_continuation_parameter(self):
         return self.r
 
-    def set_parameter(self, v):
+    def set_continuation_parameter(self, v):
         self.r = v
-
-    def L2norm(self):
-        return np.linalg.norm(self.u)
-
-    def save(self, filename):
-        np.savetxt(filename, problem.u)
-
-    def load(self, filename):
-        problem.u = np.loadtxt(filename)
 
 
 # create output folder
@@ -68,7 +59,7 @@ os.makedirs("out/img", exist_ok=True)
 problem = SwiftHohenberg(N=512, L=240)
 
 # time-stepping and plot
-fig, ax = plt.subplots(3, 1, figsize=(12.8,12.8))
+fig, ax = plt.subplots(3, 1, figsize=(12, 12))
 n = 0
 plotevery = 1000
 plotID = 0
@@ -83,7 +74,7 @@ if not os.path.exists("initial_state.dat"):
             ax[1].plot(problem.k, np.abs(np.fft.rfft(problem.u)))
             ax[1].set_xlabel("k")
             ax[1].set_ylabel("fourier spectrum u(k,t)")
-            ax[2].plot(problem.get_parameter(), problem.L2norm(), label="current point", marker="x")
+            ax[2].plot(problem.get_continuation_parameter(), problem.L2norm(), label="current point", marker="x")
             ax[2].set_xlabel("parameter r")
             ax[2].set_ylabel("L2-norm")
             fig.savefig("out/img/{:05d}.svg".format(plotID))
