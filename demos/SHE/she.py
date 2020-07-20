@@ -14,6 +14,8 @@ Pseudospectral implementation of the 1-dimensional Swift-Hohenberg Equation
 equation, a nonlinear PDE
 \partial t h &= (r - (kc^2 + \Delta)^2)h + v * h^2 - g * h^3
 """
+
+
 class SwiftHohenberg(Problem):
 
     def __init__(self, N, L):
@@ -59,7 +61,7 @@ os.makedirs("out/img", exist_ok=True)
 problem = SwiftHohenberg(N=512, L=240)
 
 # time-stepping and plot
-fig, ax = plt.subplots(3, 1, figsize=(12, 12))
+fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 n = 0
 plotevery = 1000
 plotID = 0
@@ -68,15 +70,16 @@ if not os.path.exists("initial_state.dat"):
     while dudtnorm > 1e-5:
         # plot
         if n % plotevery == 0:
-            ax[0].plot(problem.x, problem.u)
-            ax[0].set_xlabel("x")
-            ax[0].set_ylabel("solution u(x,t)")
-            ax[1].plot(problem.k, np.abs(np.fft.rfft(problem.u)))
-            ax[1].set_xlabel("k")
-            ax[1].set_ylabel("fourier spectrum u(k,t)")
-            ax[2].plot(problem.get_continuation_parameter(), problem.norm(), label="current point", marker="x")
-            ax[2].set_xlabel("parameter r")
-            ax[2].set_ylabel("L2-norm")
+            ax[0, 0].plot(problem.x, problem.u)
+            ax[0, 0].set_xlabel("x")
+            ax[0, 0].set_ylabel("solution u(x,t)")
+            ax[1, 0].plot(problem.k, np.abs(np.fft.rfft(problem.u)))
+            ax[1, 0].set_xlabel("k")
+            ax[1, 0].set_ylabel("fourier spectrum u(k,t)")
+            ax[0, 1].plot(problem.get_continuation_parameter(),
+                          problem.norm(), label="current point", marker="x")
+            ax[0, 1].set_xlabel("parameter r")
+            ax[0, 1].set_ylabel("L2-norm")
             fig.savefig("out/img/{:05d}.svg".format(plotID))
             for a in ax:
                 a.clear()
@@ -116,27 +119,29 @@ while problem.r < 1:
     rs.append(problem.r)
     # plot
     if n % plotevery == 0:
-        ax[0].plot(problem.x, problem.u)
-        ax[0].set_xlabel("x")
-        ax[0].set_ylabel("solution u(x,t)")
-        ax[1].plot(problem.k, np.abs(np.fft.rfft(problem.u)))
-        ax[1].set_xlabel("k")
-        ax[1].set_ylabel("fourier spectrum u(k,t)")
-        ax[2].plot(rs, norms, label="branch")
-        ax[2].plot(problem.r, problem.norm(), label="current point", marker="x")
-        ax[2].set_xlabel("parameter r")
-        ax[2].set_ylabel("L2-norm")
-        ax[2].legend()
+        ax[0, 0].plot(problem.x, problem.u)
+        ax[0, 0].set_xlabel("x")
+        ax[0, 0].set_ylabel("solution u(x,t)")
+        ax[1, 0].plot(problem.k, np.abs(np.fft.rfft(problem.u)))
+        ax[1, 0].set_xlabel("k")
+        ax[1, 0].set_ylabel("fourier spectrum u(k,t)")
+        ax[0, 1].plot(rs, norms, label="branch")
+        ax[0, 1].plot(problem.r, problem.norm(),
+                      label="current point", marker="x")
+        ax[0, 1].set_xlabel("parameter r")
+        ax[0, 1].set_ylabel("L2-norm")
+        ax[0, 1].legend()
+        eigvals, eigvecs = problem.solve_eigenproblem(k=10)
+        ax[1, 1].plot(np.real(eigvals), marker="o", linestyle="None")
+        ax[1, 1].set_ylabel("eigenvalues")
         fig.savefig("out/img/{:05d}.svg".format(plotID))
-        for a in ax:
+        for a in ax.flatten():
             a.clear()
         plotID += 1
     n += 1
     problem.continuation_step()
     print("step #:", n)
     print("r:     ", problem.r)
-    print("L2norm:", problem.norm())
     print("ds:    ", problem.continuation_stepper.ds)
-    print("#iter: ", problem.continuation_stepper.nnewton_iter_taken)
     # perform dealiasing
     # problem.dealias()

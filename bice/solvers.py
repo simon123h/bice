@@ -4,6 +4,7 @@ import scipy.sparse
 
 # NOTE: these classes are not yet used at all, future work!
 
+
 class NewtonSolver:
 
     def solve(self, f, u):
@@ -22,7 +23,7 @@ class EigenSolver:
             # TODO: optimize arguments for iterative eigensolver
             eigenvalues, eigenvectors = scipy.sparse.linalg.eigs(A, k)
         # sort by largest eigenvalue (largest real part)
-        idx = np.argsort(eigenvalues)[-1]
+        idx = np.argsort(eigenvalues)[::-1]
         eigenvalues = eigenvalues[idx]
         eigenvectors = eigenvectors[:, idx]
         return (eigenvalues, eigenvectors)

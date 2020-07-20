@@ -1,6 +1,7 @@
+import numpy as np
 from .time_steppers import RungeKutta4
 from .continuation_steppers import PseudoArclengthContinuation
-import numpy as np
+from .solvers import NewtonSolver, EigenSolver
 
 
 class Problem():
@@ -25,6 +26,10 @@ class Problem():
         self.time_stepper = RungeKutta4(dt=1e-2)
         # The continuation stepper for parameter continuation
         self.continuation_stepper = PseudoArclengthContinuation()
+        # The Newton solver for finding roots of equations
+        self.newton_solver = NewtonSolver()
+        # An eigensolver for eigenvalues and -vectors
+        self.eigen_solver = EigenSolver()
 
     # The dimension of the system
     @property
@@ -51,6 +56,16 @@ class Problem():
             J[:, i] = (f1 - f2) / (2 * eps)
         return J
 
+    # Solve the system rhs(u) = 0 for u with Newton's method
+    def newton_solve(self):
+        # TODO: check for convergence
+        self.u = self.newton_solver.solve(self.rhs, self.u)
+
+    # Calculate the eigenvalues and eigenvectors of the Jacobian
+    # optional argument k: number of requested eigenvalues
+    def solve_eigenproblem(self, k=None):
+        return self.eigen_solver.solve(self.jacobian(self.u), k)
+
     # Integrate in time with the assigned time-stepper
     def time_step(self):
         # perform timestep according to current scheme
@@ -73,4 +88,3 @@ class Problem():
     # load the current solution from disk
     def load(self, filename):
         self.u = np.loadtxt(filename)
-
