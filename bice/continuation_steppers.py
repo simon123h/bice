@@ -71,6 +71,10 @@ class PseudoArclengthContinuation(ContinuationStepper):
         # rescale the parameter constraint, for numerical stability
         # may be decreased for, e.g., very sharp folds
         self.constraint_scale = 1
+        # finite-difference for calculating parameter derivatives
+        self.fd_epsilon = 1e-10
+        # stores the tangent between steps in order to use it for the next step
+        self.tangent = None
 
     # perform continuation step
 
@@ -78,27 +82,30 @@ class PseudoArclengthContinuation(ContinuationStepper):
         p = problem.get_parameter()
         u = problem.u
         N = u.size
-        # TODO: use tangent vector from previous run?
-        # build extended jacobian in (u, parameter)-space for tangent calculation
-        jac = problem.jacobian(u)
-        # last column of extended jacobian: d(rhs)/d(parameter) - calculate with FD
-        eps = 1e-10
-        problem.set_parameter(p - eps)
-        rhs_1 = problem.rhs(u)
-        problem.set_parameter(p + eps)
-        rhs_2 = problem.rhs(u)
-        drhs_dp = (rhs_2 - rhs_1) / (2. * eps)
-        problem.set_parameter(p)
-        jac = np.concatenate((jac, drhs_dp.reshape((N, 1))), axis=1)
-        zero = np.zeros(N+1)
-        zero[N] = 1  # for solvability
-        jac = np.concatenate((jac, zero.reshape((1, N+1))), axis=0)
-        # compute tangent by solving (jac)*tangent=0 and normalize
-        tangent = np.linalg.solve(jac, zero)
-        tangent /= np.linalg.norm(tangent)
         # save old variables
         u_old = u.copy()
         p_old = p
+        if self.tangent is not None:
+            # simply get tangent from difference between last steps
+            # NOTE: is it a good idea to always reuse the tangent or should we be able to switch this off?
+            tangent = self.tangent
+        else:
+            # calculate tangent from extended Jacobian in (u, parameter)-space
+            jac = problem.jacobian(u)
+            # last column of extended jacobian: d(rhs)/d(parameter), calculate it with FD
+            problem.set_parameter(p - self.fd_epsilon)
+            rhs_1 = problem.rhs(u)
+            problem.set_parameter(p + self.fd_epsilon)
+            rhs_2 = problem.rhs(u)
+            drhs_dp = (rhs_2 - rhs_1) / (2. * self.fd_epsilon)
+            problem.set_parameter(p)
+            jac = np.concatenate((jac, drhs_dp.reshape((N, 1))), axis=1)
+            zero = np.zeros(N+1)
+            zero[N] = 1  # for solvability
+            jac = np.concatenate((jac, zero.reshape((1, N+1))), axis=0)
+            # compute tangent by solving (jac)*tangent=0 and normalize
+            tangent = np.linalg.solve(jac, zero)
+            tangent /= np.linalg.norm(tangent)
         # make initial guess: u -> u + ds * tangent
         u = u + self.ds * tangent[:N]
         p = p + self.ds * tangent[N]
@@ -111,12 +118,12 @@ class PseudoArclengthContinuation(ContinuationStepper):
             rhs = problem.rhs(u)
             jac = problem.jacobian(u)
             # last column of extended jacobian: d(rhs)/d(parameter) - calculate with FD
-            problem.set_parameter(p - eps)
+            problem.set_parameter(p - self.fd_epsilon)
             rhs_1 = problem.rhs(u)
-            problem.set_parameter(p + eps)
+            problem.set_parameter(p + self.fd_epsilon)
             rhs_2 = problem.rhs(u)
             problem.set_parameter(p)
-            drhs_dp = (rhs_2 - rhs_1) / (2. * eps)
+            drhs_dp = (rhs_2 - rhs_1) / (2. * self.fd_epsilon)
             jac_ext = np.concatenate((jac, drhs_dp.reshape((N, 1))), axis=1)
             # last row of extended jacobian: tangent vector
             jac_ext = np.concatenate(
@@ -141,20 +148,15 @@ class PseudoArclengthContinuation(ContinuationStepper):
             # assign the new values
             problem.u = u
             problem.set_parameter(p)
+            # approximate tangent for the following step
+            self.tangent = np.append(u - u_old, p-p_old)
+            self.tangent /= np.linalg.norm(self.tangent)
         else:
             # we didn't converge :-(
             # reset to old values
             problem.u = u_old
             problem.set_parameter(p_old)
             # TODO: not converged, throw error
-
-        # adjust sign of step size according to current continuation direction
-        # this is crucial for the continuation of folds
-        # NOTE: maybe there is something even better for handling folds...?
-        if p < p_old:
-            self.ds = -abs(self.ds)
-        else:
-            self.ds = abs(self.ds)
 
         # adapt step size
         if self.adapt_stepsize:
