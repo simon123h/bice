@@ -9,11 +9,11 @@ from bice import Problem
 from bice.time_steppers import RungeKuttaFehlberg45, ImplicitEuler
 from bice.continuation_steppers import NaturalContinuation, PseudoArclengthContinuation
 
-# Pseudospectral implementation of the 1-dimensional Swift-Hohenberg Equation
-# equation, a nonlinear PDE
-# \partial t h &= (r - (kc^2 + \Delta)^2)h + v * h^2 - g * h^3
-
-
+"""
+Pseudospectral implementation of the 1-dimensional Swift-Hohenberg Equation
+equation, a nonlinear PDE
+\partial t h &= (r - (kc^2 + \Delta)^2)h + v * h^2 - g * h^3
+"""
 class SwiftHohenberg(Problem):
 
     def __init__(self, N, L):
@@ -74,7 +74,7 @@ if not os.path.exists("initial_state.dat"):
             ax[1].plot(problem.k, np.abs(np.fft.rfft(problem.u)))
             ax[1].set_xlabel("k")
             ax[1].set_ylabel("fourier spectrum u(k,t)")
-            ax[2].plot(problem.get_continuation_parameter(), problem.L2norm(), label="current point", marker="x")
+            ax[2].plot(problem.get_continuation_parameter(), problem.norm(), label="current point", marker="x")
             ax[2].set_xlabel("parameter r")
             ax[2].set_ylabel("L2-norm")
             fig.savefig("out/img/{:05d}.svg".format(plotID))
@@ -112,7 +112,7 @@ plotevery = 2
 while problem.r < 1:
     # save branch
     # TODO: this should happen elsewhere (e.g. in in problem class)
-    norms.append(problem.L2norm())
+    norms.append(problem.norm())
     rs.append(problem.r)
     # plot
     if n % plotevery == 0:
@@ -123,7 +123,7 @@ while problem.r < 1:
         ax[1].set_xlabel("k")
         ax[1].set_ylabel("fourier spectrum u(k,t)")
         ax[2].plot(rs, norms, label="branch")
-        ax[2].plot(problem.r, problem.L2norm(), label="current point", marker="x")
+        ax[2].plot(problem.r, problem.norm(), label="current point", marker="x")
         ax[2].set_xlabel("parameter r")
         ax[2].set_ylabel("L2-norm")
         ax[2].legend()
@@ -135,7 +135,7 @@ while problem.r < 1:
     problem.continuation_step()
     print("step #:", n)
     print("r:     ", problem.r)
-    print("L2norm:", problem.L2norm())
+    print("L2norm:", problem.norm())
     print("ds:    ", problem.continuation_stepper.ds)
     print("#iter: ", problem.continuation_stepper.nnewton_iter_taken)
     # perform dealiasing
