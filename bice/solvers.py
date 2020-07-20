@@ -2,11 +2,10 @@ import numpy as np
 import scipy.optimize
 import scipy.sparse
 
-# NOTE: these classes are not yet used at all, future work!
-
 
 class NewtonSolver:
-
+    # TODO: find an optimal solver
+    # TODO: catch errors, get number of iterations...
     def solve(self, f, u):
         return scipy.optimize.newton(f, u)
 
@@ -14,6 +13,7 @@ class NewtonSolver:
 class EigenSolver:
 
     def solve(self, A, k=None):
+        # TODO: find an optimal solver
         if k is None:
             # if no number of values was specified, use a direct eigensolver for computing all eigenvalues
             eigenvalues, eigenvectors = np.linalg.eig(A)
