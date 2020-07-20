@@ -172,4 +172,4 @@ class RungeKuttaFehlberg45(TimeStepper):
         else:
             # if we rejected too many steps already: abort with Exception
             raise Exception(
-                "Runge-Kutta-Fehlberg time-stepper exceeded maximum number of rejected steps:", recursion_count)
+                "Runge-Kutta-Fehlberg time-stepper exceeded maximum number of rejected steps:", self.rejection_count)
