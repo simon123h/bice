@@ -148,4 +148,3 @@ while problem.r < 1:
     problem.continuation_step()
     print("step #:", n)
     print("ds:    ", problem.continuation_stepper.ds)
-    print(ev_re[0])

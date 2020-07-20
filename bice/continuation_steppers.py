@@ -10,7 +10,10 @@ class ContinuationStepper:
 
     # constructor
     def __init__(self, ds=1e-3):
+        # continuation step size
         self.ds = ds
+        # should eigenvalues be calculated after each step?
+        self.check_eigenvalues = False
 
     # perform a continuation step on a problem
     def step(self, problem):

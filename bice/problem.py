@@ -2,6 +2,7 @@ import numpy as np
 from .time_steppers import RungeKutta4
 from .continuation_steppers import PseudoArclengthContinuation
 from .solvers import NewtonSolver, EigenSolver
+from .solution import Solution, BifurcationDiagram
 
 
 class Problem():
@@ -28,8 +29,12 @@ class Problem():
         self.continuation_stepper = PseudoArclengthContinuation()
         # The Newton solver for finding roots of equations
         self.newton_solver = NewtonSolver()
-        # An eigensolver for eigenvalues and -vectors
+        # The eigensolver for eigenvalues and -vectors
         self.eigen_solver = EigenSolver()
+        # The bifurcation diagram of the problem holds all branches and their solutions
+        self.bifurcation_diagram = BifurcationDiagram()
+        # how big does an eigenvalue need to be in order to be counted as 'positive'?
+        self.eigval_positive_tolerance = 1e-6
 
     # The dimension of the system
     @property
@@ -74,7 +79,31 @@ class Problem():
     # Perform a parameter continuation step, w.r.t the parameter defined by
     # self.continuation_stepper.get_continuation_parameter/set_continuation_parameter()
     def continuation_step(self):
+        # get the current branch in the bifurcation diagram
+        branch = self.bifurcation_diagram.get_current_branch()
+        # add initial point to the branch
+        if branch.is_empty():
+            branch.add_solution_point(self)
+        # perform the step with a continuation stepper
         self.continuation_stepper.step(self)
+        # add the solution to the branch
+        sol = branch.add_solution_point(self)
+        # if desired, solve the eigenproblem and deduce some information
+        if self.continuation_stepper.check_eigenvalues:
+            # solve eigenproblem
+            sol.eigenvalues, sol.eigenvectors = self.eigen_solver.solve(
+                self.jacobian(self.u))
+            # determine stability
+            sol.stability = np.real(
+                sol.eigenvalues[0]) >= self.eigval_positive_tolerance
+            # TODO: bifurcation detection
+
+    # create a new branch in the bifurcation diagram and prepare for a new continuation
+    def new_branch(self):
+        # create a new branch in the bifurcation diagram
+        self.bifurcation_diagram.new_branch()
+        # reset the settings and storage of the continuation stepper
+        self.continuation_stepper.factory_reset()
 
     # the default norm of the solution, used for bifurcation diagrams
     def norm(self):

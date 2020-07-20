@@ -9,7 +9,7 @@
 ## Architecture
 
 - A problem should consist of one or multiple "Equations" and is then assembled. --> generalize this assembly process.
-- Add a general NewtonSolver class and use it
+- Make more use of the general NewtonSolver class
 
 ## Bugs & issues
 
@@ -25,7 +25,6 @@
 ## Bifurcations, Continuation & Eigenproblems
 
 - Implement automatic recording of branches in the Problem class
-- Implement Eigensolver
 - Stability detection
 - Bifurcation detection
 - Branch switching
