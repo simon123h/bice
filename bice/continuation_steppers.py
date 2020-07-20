@@ -40,7 +40,7 @@ class NaturalContinuation(ContinuationStepper):
         problem.set_parameter(p + self.ds)
         # solve it with a Newton solver
         # TODO: detect if Newton solver failed and reject step
-        problem.u = scipy.optimize.newton(problem.rhs, problem.u)
+        problem.u = scipy.optimize.newton_krylov(problem.rhs, problem.u)
 
 
 class PseudoArclengthContinuation(ContinuationStepper):
@@ -115,7 +115,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
 
         # solve it with a Newton solver
         # TODO: detect if Newton solver failed and reject step
-        dU_ext = scipy.optimize.newton(f, dU_ext)
+        dU_ext = scipy.optimize.newton_krylov(f, dU_ext)
 
         # assign the new values
         problem.u = u_old + dU_ext[:N]

@@ -52,7 +52,7 @@ class ImplicitEuler(TimeStepper):
             return problem.rhs(u) - (u - problem.u) / self.dt
         # solve it with a Newton solver
         # TODO: detect if Newton solver failed and reject step
-        problem.u = scipy.optimize.newton(f, problem.u)
+        problem.u = scipy.optimize.newton_krylov(f, problem.u)
 
 
 class RungeKutta4(TimeStepper):
