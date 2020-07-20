@@ -101,7 +101,13 @@ else:
     problem.load("state.dat")
 
 problem.continuation_stepper = PseudoArclengthContinuation()
-problem.continuation_stepper.ds = 1e-5
+problem.continuation_stepper.ds = 1e-2
+problem.continuation_stepper.adapt_stepsize = True
+problem.continuation_stepper.ndesired_newton_steps = 3
+problem.continuation_stepper.convergence_epsilon = 1e-8
+problem.continuation_stepper.ds_decrease_factor = 0.2
+problem.continuation_stepper.ds_increase_factor = 1.1
+problem.continuation_stepper.constraint_scale = 0.1
 
 
 norms = []
@@ -117,14 +123,16 @@ while problem.r < 1:
     rs.append(problem.get_parameter())
     ax[0].plot(problem.x, problem.u)
     ax[1].plot(rs, norms)
+    ax[1].plot(problem.get_parameter(), problem.L2norm(), label="current point", marker="x")
     fig.savefig("out/img/c{:05d}.svg".format(n))
     n += 1
     ax[0].clear()
     ax[1].clear()
-    print("r:", problem.r)
-    print("norm:", problem.L2norm())
-    print("step #:", n)
     problem.continuation_step()
+    print("step #:", n)
+    print("r:     ", problem.r)
+    print("L2norm:", problem.L2norm())
+    print("ds:    ", problem.continuation_stepper.ds)
+    print("#iter: ", problem.continuation_stepper.nnewton_iter_taken)
     # perform dealiasing
-    problem.dealias()
-    n += 1
+    # problem.dealias()

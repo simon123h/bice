@@ -149,7 +149,8 @@ class PseudoArclengthContinuation(ContinuationStepper):
             # TODO: not converged, throw error
 
         # adjust sign of step size according to current continuation direction
-        # this is crucial for continuation of folds.
+        # this is crucial for the continuation of folds
+        # NOTE: maybe there is something even better for handling folds...?
         if p < p_old:
             self.ds = -abs(self.ds)
         else:
