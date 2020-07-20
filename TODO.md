@@ -11,6 +11,10 @@
 - A problem should consist of one or multiple "Equations" and is then assembled. --> generalize this assembly process.
 - Add a general NewtonSolver class and use it
 
+## Bugs & issues
+
+- Unsure whether Runge-Kutta-Fehlberg-45 works properly or if there is some bug. Does adaptive step-size work properly?
+
 ## Mathematical features
 
 - Implement a default norm (L2-norm?) in Problem class
@@ -23,11 +27,11 @@
 
 - Implement automatic recording of branches in the Problem class
 - Implement Eigensolver
-- stability detection
-- bifurcation detection
-- branch switching
-- bifurcation tracking (augmented systems)
-- continuation of time-periodic solutions
+- Stability detection
+- Bifurcation detection
+- Branch switching
+- Bifurcation tracking (augmented systems)
+- Continuation of time-periodic solutions
 - Implement constraints as 'Equations'
 
 ## Optimization

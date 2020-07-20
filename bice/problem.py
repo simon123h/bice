@@ -1,5 +1,5 @@
 from .time_steppers import RungeKutta4
-from .continuation_steppers import NaturalContinuation
+from .continuation_steppers import PseudoArclengthContinuation
 import numpy as np
 
 
@@ -24,7 +24,7 @@ class Problem():
         # The time-stepper for integration in time
         self.time_stepper = RungeKutta4(dt=1e-2)
         # The continuation stepper for parameter continuation
-        self.continuation_stepper = NaturalContinuation()
+        self.continuation_stepper = PseudoArclengthContinuation()
 
     # The dimension of the system
     @property

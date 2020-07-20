@@ -51,29 +51,29 @@ class PseudoArclengthContinuation(ContinuationStepper):
     def __init__(self, ds=1e-3):
         super().__init__(ds)
         # if the norm of the step in the newton loop is below this threshold, the method has converged
-        self.convergence_epsilon = 1e-10
+        self.convergence_tolerance = 1e-8
         # maximum number of newton iterations for solving
         self.max_newton_iterations = 30
         # should the step size be adapted while stepping?
         self.adapt_stepsize = True
         # the desired number of newton iterations for solving, step size is adapted if we over/undershoot this number
-        self.ndesired_newton_steps = 8
+        self.ndesired_newton_steps = 3
         # the actual number of newton iterations taken in the last continuation step
         self.nnewton_iter_taken = None
         # ds 'penalty' factor when less nthan desired_newton_steps are performed
         self.ds_decrease_factor = 0.5
         # ds 'penalty' factor when more nthan desired_newton_steps are performed
-        self.ds_increase_factor = 1.05
+        self.ds_increase_factor = 1.1
         # maximum step size
         self.ds_max = 1e0
         # minimum step size
         self.ds_min = 1e-9
         # rescale the parameter constraint, for numerical stability
         # may be decreased for, e.g., very sharp folds
-        self.constraint_scale = 1
+        self.parameter_arc_length_proportion = 1
         # finite-difference for calculating parameter derivatives
         self.fd_epsilon = 1e-10
-        # stores the tangent between steps in order to use it for the next step
+        # stores the du-vector of the last step in order to use it as tangent for the next step
         self.tangent = None
 
     # perform continuation step
@@ -87,7 +87,10 @@ class PseudoArclengthContinuation(ContinuationStepper):
         p_old = p
         if self.tangent is not None:
             # simply get tangent from difference between last steps
-            # NOTE: is it a good idea to always reuse the tangent or should we be able to switch this off?
+            # TODO: is it a good idea or should we be able to switch this off?
+            # NOTE: I tried making sure that the calculated tangent and the approximate tangent
+            # (self.tangent) are pointing in the same direction (tangent*self.tangent > 0),
+            # but that did just randomly flip the continuation direction :-/
             tangent = self.tangent
         else:
             # calculate tangent from extended Jacobian in (u, parameter)-space
@@ -130,7 +133,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
                 (jac_ext, tangent.reshape((1, N+1))), axis=0)
             # extended rhs: model's rhs + arclength condition
             rhs_ext = (u - u_old).dot(tangent[:N]) + (p - p_old) * \
-                tangent[N] * self.constraint_scale - self.ds
+                tangent[N] * self.parameter_arc_length_proportion - self.ds
             rhs_ext = np.append(rhs, rhs_ext)
             # solving (jac_ext) * du_ext = rhs_ext for du_ext will now give the new solution
             du_ext = np.linalg.solve(jac_ext, rhs_ext)
@@ -138,7 +141,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
             p = p - du_ext[N]
             # update counter and check for convergence
             count += 1
-            converged = np.linalg.norm(du_ext) < self.convergence_epsilon
+            converged = np.linalg.norm(du_ext) < self.convergence_tolerance
 
         # update number of steps taken
         self.nnewton_iter_taken = count

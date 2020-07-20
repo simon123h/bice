@@ -109,14 +109,8 @@ else:
     problem.load("initial_state.dat")
 
 # start parameter continuation
-problem.continuation_stepper = PseudoArclengthContinuation()
 problem.continuation_stepper.ds = 1e-2
-problem.continuation_stepper.adapt_stepsize = True
 problem.continuation_stepper.ndesired_newton_steps = 3
-problem.continuation_stepper.convergence_epsilon = 1e-8
-problem.continuation_stepper.ds_decrease_factor = 0.2
-problem.continuation_stepper.ds_increase_factor = 1.1
-problem.continuation_stepper.constraint_scale = 0.1
 
 # lists for bifurcation diagram
 norms = []
