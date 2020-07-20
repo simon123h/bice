@@ -1,13 +1,12 @@
 # Ideas
-- Newton solver
+- Add newton solver class and use it
+- use better newton solver in arclength continuation
+- Add default interfaces for FEM, FD and pseudospectral discretizations
+- implement default norm (L2-norm?)
+- implement: a problem should consist of one or multiple "Equations" and is then assembled. --> generalize this assembly process.
+- implement constraints as equations
+- implement automatic recording of branches in the Problem class
 - Eigensolver
-- interface for linear systems
-- ODEs & Pseudospektral & FEM
-- time stepper
-- arclength & natural continuation
-- Jacobians by FD
-- stepsize control
 - bifurcation detection
-- implement default norms
 - branch switching
 - mesh adaption
