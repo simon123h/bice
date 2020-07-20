@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import shutil
 import os
 import sys
-sys.path.append("..")  # noqa, needed for relative import of package
+sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem
 from bice.time_steppers import RungeKuttaFehlberg45, ImplicitEuler
 from bice.continuation_steppers import NaturalContinuation, PseudoArclengthContinuation
@@ -68,25 +68,33 @@ os.makedirs("out/img", exist_ok=True)
 problem = SwiftHohenberg(N=512, L=240)
 
 # time-stepping and plot
-fig, ax = plt.subplots(2, 1, figsize=(12.8,7.2))
-plotevery = 1000
+fig, ax = plt.subplots(3, 1, figsize=(12.8,12.8))
 n = 0
+plotevery = 1000
+plotID = 0
 dudtnorm = 1
 if not os.path.exists("initial_state.dat"):
     while dudtnorm > 1e-5:
         # plot
         if n % plotevery == 0:
             ax[0].plot(problem.x, problem.u)
-            u_k = np.fft.rfft(problem.u)
-            ax[1].plot(problem.k, np.abs(u_k))
-            fig.savefig("out/img/{:05d}.svg".format(n//plotevery))
-            ax[0].clear()
-            ax[1].clear()
+            ax[0].set_xlabel("x")
+            ax[0].set_ylabel("solution u(x,t)")
+            ax[1].plot(problem.k, np.abs(np.fft.rfft(problem.u)))
+            ax[1].set_xlabel("k")
+            ax[1].set_ylabel("fourier spectrum u(k,t)")
+            ax[2].plot(problem.get_parameter(), problem.L2norm(), label="current point", marker="x")
+            ax[2].set_xlabel("parameter r")
+            ax[2].set_ylabel("L2-norm")
+            fig.savefig("out/img/{:05d}.svg".format(plotID))
+            for a in ax:
+                a.clear()
+            plotID += 1
             dudtnorm = np.linalg.norm(problem.rhs(problem.u))
-            print("Step #{:05d}".format(n//plotevery))
-            print("dt:   {:}".format(problem.time_stepper.dt))
-            print("time: {:}".format(problem.time))
-            print("dudt: {:}".format(dudtnorm))
+            print("step #: {:}".format(n))
+            print("time:   {:}".format(problem.time))
+            print("dt:     {:}".format(problem.time_stepper.dt))
+            print("|dudt|: {:}".format(dudtnorm))
         n += 1
         # perform timestep
         problem.time_step()
@@ -110,25 +118,35 @@ problem.continuation_stepper.ds_decrease_factor = 0.2
 problem.continuation_stepper.ds_increase_factor = 1.1
 problem.continuation_stepper.constraint_scale = 0.1
 
-
+# lists for bifurcation diagram
 norms = []
 rs = []
 
-plt.cla()
-
-print("Starting continuation")
-
 n = 0
+plotevery = 2
 while problem.r < 1:
+    # save branch
+    # TODO: this should happen elsewhere (e.g. in in problem class)
     norms.append(problem.L2norm())
-    rs.append(problem.get_parameter())
-    ax[0].plot(problem.x, problem.u)
-    ax[1].plot(rs, norms)
-    ax[1].plot(problem.get_parameter(), problem.L2norm(), label="current point", marker="x")
-    fig.savefig("out/img/c{:05d}.svg".format(n))
+    rs.append(problem.r)
+    # plot
+    if n % plotevery == 0:
+        ax[0].plot(problem.x, problem.u)
+        ax[0].set_xlabel("x")
+        ax[0].set_ylabel("solution u(x,t)")
+        ax[1].plot(problem.k, np.abs(np.fft.rfft(problem.u)))
+        ax[1].set_xlabel("k")
+        ax[1].set_ylabel("fourier spectrum u(k,t)")
+        ax[2].plot(rs, norms, label="branch")
+        ax[2].plot(problem.r, problem.L2norm(), label="current point", marker="x")
+        ax[2].set_xlabel("parameter r")
+        ax[2].set_ylabel("L2-norm")
+        ax[2].legend()
+        fig.savefig("out/img/{:05d}.svg".format(plotID))
+        for a in ax:
+            a.clear()
+        plotID += 1
     n += 1
-    ax[0].clear()
-    ax[1].clear()
     problem.continuation_step()
     print("step #:", n)
     print("r:     ", problem.r)
