@@ -70,7 +70,7 @@ class Branch:
     # returns the list of parameters and norms of the stable sections only,
     # using numpy masked arrays
     def get_stable_sections(self):
-        condition = [s.stability is True for s in self.solutions]
+        condition = [s.stability is not True for s in self.solutions]
         pvals = np.ma.masked_where(condition, self.parameter_vals)
         nvals = np.ma.masked_where(condition, self.norm_vals)
         return pvals, nvals
