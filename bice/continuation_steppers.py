@@ -90,6 +90,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
             # NOTE: I tried making sure that the calculated tangent and the approximate tangent
             #       (self.tangent) are pointing in the same direction (tangent*self.tangent > 0),
             #       but that did just randomly flip the continuation direction :-/
+            #       Do we maybe have some bug in the calculation of the tangent?
             tangent = self.tangent
         else:
             # calculate tangent from extended Jacobian in (u, parameter)-space
