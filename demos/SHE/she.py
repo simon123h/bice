@@ -105,6 +105,7 @@ else:
 # start parameter continuation
 problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
+problem.continuation_stepper.check_eigenvalues = True
 
 # lists for bifurcation diagram
 norms = []
@@ -113,10 +114,11 @@ rs = []
 n = 0
 plotevery = 2
 while problem.r < 1:
-    # save branch
-    # TODO: this should happen elsewhere (e.g. in in problem class)
-    norms.append(problem.norm())
-    rs.append(problem.r)
+    # perform continuation step
+    sol = problem.continuation_step()
+    n += 1
+    print("step #:", n)
+    print("ds:    ", problem.continuation_stepper.ds)
     # plot
     if n % plotevery == 0:
         ax[0, 0].plot(problem.x, problem.u)
@@ -126,16 +128,23 @@ while problem.r < 1:
         ax[1, 0].set_xlim((0, problem.k[-1]/2))
         ax[1, 0].set_xlabel("k")
         ax[1, 0].set_ylabel("fourier spectrum u(k,t)")
-        ax[0, 1].plot(rs, norms, label="branch")
+        for branch in problem.bifurcation_diagram.branches:
+            r, norm = branch.data()
+            ax[0, 1].plot(r, norm, "--", color="C0")
+            r, norm = branch.data(only="stable")
+            ax[0, 1].plot(r, norm, color="C0")
+            r, norm = branch.data(only="bifurcations")
+            ax[0, 1].plot(r, norm, "*", color="C2")
         ax[0, 1].plot(problem.r, problem.norm(),
-                      label="current point", marker="x")
+                      "x", label="current point", color="black")
         ax[0, 1].set_xlabel("parameter r")
         ax[0, 1].set_ylabel("L2-norm")
         ax[0, 1].legend()
-        eigvals, eigvecs = problem.solve_eigenproblem()
-        ev_re = np.real(eigvals[:20])
-        ev_re_n = np.ma.masked_where(ev_re > 1e-6, ev_re)
-        ev_re_p = np.ma.masked_where(ev_re <= 1e-6, ev_re)
+        ev_re = np.real(sol.eigenvalues[:20])
+        ev_re_n = np.ma.masked_where(
+            ev_re > problem.eigval_zero_tolerance, ev_re)
+        ev_re_p = np.ma.masked_where(
+            ev_re <= problem.eigval_zero_tolerance, ev_re)
         ax[1, 1].plot(ev_re_n, "o", color="C0", label="Re < 0")
         ax[1, 1].plot(ev_re_p, "o", color="C1", label="Re > 0")
         ax[1, 1].axhline(0, color="gray")
@@ -145,7 +154,3 @@ while problem.r < 1:
         for a in ax.flatten():
             a.clear()
         plotID += 1
-    n += 1
-    problem.continuation_step()
-    print("step #:", n)
-    print("ds:    ", problem.continuation_stepper.ds)
