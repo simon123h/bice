@@ -85,16 +85,19 @@ class Problem():
         if branch.is_empty():
             sol = Solution(self)
             branch.add_solution_point(sol)
-            # if desired, solve the eigenproblem
-            if self.continuation_stepper.always_check_eigenvalues:
-                sol.eigenvalues, sol.eigenvectors = self.solve_eigenproblem()
+            # solve the eigenproblem
+            sol.eigenvalues, sol.eigenvectors = self.solve_eigenproblem()
+        # save the sign of the jacobian
+        jac_sign = np.linalg.slogdet(self.jacobian(self.u))[0]
         # perform the step with a continuation stepper
         self.continuation_stepper.step(self)
         # add the solution to the branch
         sol = Solution(self)
         branch.add_solution_point(sol)
-        # if desired, solve the eigenproblem
-        if self.continuation_stepper.always_check_eigenvalues:
+        # detect sign change in jacobian
+        jac_sign *= np.linalg.slogdet(self.jacobian(self.u))[0]
+        # if desired or Jac sign changed, solve the eigenproblem
+        if self.continuation_stepper.always_check_eigenvalues or jac_sign < 0:
             sol.eigenvalues, sol.eigenvectors = self.solve_eigenproblem()
         # return the solution object
         return sol
