@@ -85,7 +85,7 @@ class Problem():
         if branch.is_empty():
             sol = Solution(self)
             branch.add_solution_point(sol)
-            if self.continuation_stepper.check_eigenvalues:
+            if self.continuation_stepper.always_check_eigenvalues:
                 sol.eigenvalues, sol.eigenvectors = self.solve_eigenproblem()
         # perform the step with a continuation stepper
         self.continuation_stepper.step(self)
@@ -93,8 +93,7 @@ class Problem():
         sol = Solution(self)
         branch.add_solution_point(sol)
         # if desired, solve the eigenproblem and deduce some information
-        print(sol.id)
-        if self.continuation_stepper.check_eigenvalues and sol.id % 3 == 0:
+        if self.continuation_stepper.always_check_eigenvalues:
             # solve eigenproblem
             sol.eigenvalues, sol.eigenvectors = self.solve_eigenproblem()
         # return the solution object

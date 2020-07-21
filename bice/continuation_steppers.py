@@ -13,7 +13,7 @@ class ContinuationStepper:
         # continuation step size
         self.ds = ds
         # should eigenvalues be calculated after each step?
-        self.check_eigenvalues = False
+        self.always_check_eigenvalues = False
 
     # perform a continuation step on a problem
     def step(self, problem):
