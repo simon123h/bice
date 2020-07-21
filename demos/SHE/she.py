@@ -123,6 +123,7 @@ while problem.r < 1:
         ax[0, 0].set_xlabel("x")
         ax[0, 0].set_ylabel("solution u(x,t)")
         ax[1, 0].plot(problem.k, np.abs(np.fft.rfft(problem.u)))
+        ax[1, 0].set_xlim((0, problem.k[-1]/2))
         ax[1, 0].set_xlabel("k")
         ax[1, 0].set_ylabel("fourier spectrum u(k,t)")
         ax[0, 1].plot(rs, norms, label="branch")
