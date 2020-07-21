@@ -33,8 +33,8 @@ class Problem():
         self.eigen_solver = EigenSolver()
         # The bifurcation diagram of the problem holds all branches and their solutions
         self.bifurcation_diagram = BifurcationDiagram()
-        # how big does an eigenvalue need to be in order to be counted as 'positive'?
-        self.eigval_positive_tolerance = 1e-6
+        # how small does an eigenvalue need to be in order to be counted as 'zero'?
+        self.eigval_zero_tolerance = 1e-6
 
     # The dimension of the system
     @property
@@ -83,20 +83,16 @@ class Problem():
         branch = self.bifurcation_diagram.get_current_branch()
         # add initial point to the branch
         if branch.is_empty():
-            branch.add_solution_point(self)
+            branch.add_solution_point(Solution(self))
         # perform the step with a continuation stepper
         self.continuation_stepper.step(self)
         # add the solution to the branch
-        sol = branch.add_solution_point(self)
+        sol = Solution(self)
+        branch.add_solution_point(sol)
         # if desired, solve the eigenproblem and deduce some information
         if self.continuation_stepper.check_eigenvalues:
             # solve eigenproblem
-            sol.eigenvalues, sol.eigenvectors = self.eigen_solver.solve(
-                self.jacobian(self.u))
-            # determine stability
-            sol.stability = np.real(
-                sol.eigenvalues[0]) >= self.eigval_positive_tolerance
-            # TODO: bifurcation detection
+            sol.eigenvalues, sol.eigenvectors = self.solve_eigenproblem()
 
     # create a new branch in the bifurcation diagram and prepare for a new continuation
     def new_branch(self):
