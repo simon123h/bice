@@ -140,7 +140,7 @@ problem.continuation_stepper.always_check_eigenvalues = True
 
 n = 0
 plotevery = 5
-while problem.r > -0.0155:
+while problem.r > -0.016:
     # perform continuation step
     sol = problem.continuation_step()
     n += 1
@@ -151,11 +151,11 @@ while problem.r > -0.0155:
 
 # continuation in reverse direction
 # load the initial state
-problem.load("initial_state.dat")
 problem.new_branch()
-problem.continuation_stepper.ds = -1e-2
+problem.load("initial_state.dat")
 problem.r = -0.013
-while problem.r < -0.011:
+problem.continuation_stepper.ds = -1e-2
+while problem.r < -0.002:
     # perform continuation step
     sol = problem.continuation_step()
     n += 1
