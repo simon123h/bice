@@ -24,9 +24,6 @@
 
 ## Bifurcations, Continuation & Eigenproblems
 
-- Implement automatic recording of branches in the Problem class
-- Stability detection
-- Bifurcation detection
 - Branch switching
 - Bifurcation tracking (augmented systems)
 - Continuation of time-periodic solutions
