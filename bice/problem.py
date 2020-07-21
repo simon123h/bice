@@ -81,10 +81,11 @@ class Problem():
     def continuation_step(self):
         # get the current branch in the bifurcation diagram
         branch = self.bifurcation_diagram.current_branch()
-        # add initial point to the branch
+        # if the branch is empty, add initial point
         if branch.is_empty():
             sol = Solution(self)
             branch.add_solution_point(sol)
+            # if desired, solve the eigenproblem
             if self.continuation_stepper.always_check_eigenvalues:
                 sol.eigenvalues, sol.eigenvectors = self.solve_eigenproblem()
         # perform the step with a continuation stepper
@@ -92,9 +93,8 @@ class Problem():
         # add the solution to the branch
         sol = Solution(self)
         branch.add_solution_point(sol)
-        # if desired, solve the eigenproblem and deduce some information
+        # if desired, solve the eigenproblem
         if self.continuation_stepper.always_check_eigenvalues:
-            # solve eigenproblem
             sol.eigenvalues, sol.eigenvectors = self.solve_eigenproblem()
         # return the solution object
         return sol
