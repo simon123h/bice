@@ -61,6 +61,11 @@ class Problem():
             J[:, i] = (f1 - f2) / (2 * eps)
         return J
 
+    # The mass matrix determines the linear relation of the rhs to the temporal derivatives dudt
+    def mass_matrix(self):
+        # default case: assume the identity matrix I
+        return np.eye(self.dim)
+
     # Solve the system rhs(u) = 0 for u with Newton's method
     def newton_solve(self):
         # TODO: check for convergence
@@ -69,7 +74,7 @@ class Problem():
     # Calculate the eigenvalues and eigenvectors of the Jacobian
     # optional argument k: number of requested eigenvalues
     def solve_eigenproblem(self, k=None):
-        return self.eigen_solver.solve(self.jacobian(self.u), k)
+        return self.eigen_solver.solve(self.jacobian(self.u), self.mass_matrix(), k)
 
     # Integrate in time with the assigned time-stepper
     def time_step(self):
