@@ -22,6 +22,7 @@ class Solution:
         # reference to the corresponding problem
         self.problem = problem
         # vector of unknowns
+        # TODO: storing each solution may eat up some memory
         self.u = problem.u.copy()
         # time
         self.t = problem.time
@@ -32,6 +33,7 @@ class Solution:
         # eigenvalues
         self.eigenvalues = []
         # eigenvectors
+        # TODO: storing these eats up a lot of memory, reconsider it
         self.eigenvectors = []
         # optional reference to the corresponding branch
         self.branch = None

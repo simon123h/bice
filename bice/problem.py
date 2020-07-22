@@ -103,6 +103,9 @@ class Problem():
         jac_sign *= np.linalg.slogdet(self.jacobian(self.u))[0]
         # if desired or Jac sign changed, solve the eigenproblem
         if self.continuation_stepper.always_check_eigenvalues or jac_sign < 0:
+            # TODO: storing all eigenvectors for each solution takes up A LOT of memory!
+            #       We should probably not do that. Also, we could store only eigenvalues
+            #       that have Re >= 0.
             sol.eigenvalues, sol.eigenvectors = self.solve_eigenproblem()
         # return the solution object
         return sol
