@@ -101,12 +101,12 @@ class ThinFilm(Problem):
         u_k[-int(N*fraction):] = 0
         self.u = np.fft.irfft(u_k)
 
-    def good_dealias(self, u, k_space=False):
+    def good_dealias(self, u, k_space=False, flanke=1./3):
         if not k_space:
             u_k = np.fft.rfft(u)
         else:
              u_k = u
-        u_k *= np.exp(-36*(self.k / self.k[-1])**36)
+        u_k *= np.exp(-36*(self.k / self.k[-1] * (1-flanke) * 5./4.)**36)
         if not k_space:
             return np.fft.irfft(u_k)
         return u_k
