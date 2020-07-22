@@ -23,6 +23,8 @@ class SwiftHohenberg(Problem):
         self.kc = 0.5
         self.v = 0.41
         self.g = 1
+        # impose a translation constraint?
+        self.translation_constraint = False
         # space and fourier space
         self.x = np.linspace(-L/2, L/2, N)
         self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
@@ -37,8 +39,34 @@ class SwiftHohenberg(Problem):
 
     # definition of the equation, using pseudospectral method
     def rhs(self, u):
+        if self.translation_constraint:
+            vel = u[-1]
+            u = u[:-1]
+        else:
+            vel = 0
+        # res
+        res = np.zeros(self.dim)
+        # definition of the SHE
         u_k = np.fft.rfft(u)
-        return np.fft.irfft((self.r - (self.kc**2 - self.k**2)**2) * u_k) + self.v * u**2 - self.g * u**3
+        res[:u.size] = np.fft.irfft((self.r - (self.kc**2 - self.k**2)**2 + vel*1j*self.k)
+                                    * u_k) + self.v * u**2 - self.g * u**3
+        # definition of the constraint
+        if self.translation_constraint:
+            u_old = self.u[:-1]
+            # this is the classical constraint: du/dx * du/dp = 0
+            # res[u.size] = np.dot(
+            #     np.fft.irfft(-1j*self.k*np.fft.rfft(u_old)), u-u_old)
+            # this is the alternative center-of-mass constraint, requires less Fourier transforms :-)
+            res[u.size] = np.dot(self.x, u-u_old)
+        return res
+
+    # The mass matrix determines the linear relation of the rhs to the temporal derivatives dudt
+    def mass_matrix(self):
+        mm = np.eye(self.dim)
+        # if constraint is enabled, the constraint equation has no time evolution
+        if self.translation_constraint:
+            mm[-1, -1] = 0
+        return mm
 
     # set higher modes to null, for numerical stability
     def dealias(self, fraction=1./2.):
@@ -57,13 +85,20 @@ class SwiftHohenberg(Problem):
 
     # plot everything
     def plot(self, fig, ax, sol=None):
-        ax[0, 0].plot(self.x, self.u)
+        u = self.u
+        if self.translation_constraint:
+            u = u[:-1]
+        ax[0, 0].plot(self.x, u)
         ax[0, 0].set_xlabel("x")
         ax[0, 0].set_ylabel("solution u(x,t)")
-        ax[1, 0].plot(self.k, np.abs(np.fft.rfft(self.u)))
-        ax[1, 0].set_xlim((0, self.k[-1]/2))
-        ax[1, 0].set_xlabel("k")
-        ax[1, 0].set_ylabel("fourier spectrum u(k,t)")
+        if sol and len(sol.eigenvectors) > 0:
+            ax[1, 0].plot(np.real(sol.eigenvectors[0]))
+            ax[1, 0].set_ylabel("eigenvector")
+        else:
+            ax[1, 0].plot(self.k, np.abs(np.fft.rfft(u)))
+            ax[1, 0].set_xlim((0, self.k[-1]/2))
+            ax[1, 0].set_xlabel("k")
+            ax[1, 0].set_ylabel("fourier spectrum u(k,t)")
         for branch in self.bifurcation_diagram.branches:
             r, norm = branch.data()
             ax[0, 1].plot(r, norm, "--", color="C0")
@@ -137,6 +172,9 @@ else:
 problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
 problem.continuation_stepper.always_check_eigenvalues = True
+
+problem.translation_constraint = True
+problem.u = np.append(problem.u, [0])
 
 n = 0
 plotevery = 5
