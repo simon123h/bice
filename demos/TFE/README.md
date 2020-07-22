@@ -1,2 +1,2 @@
 
-# Continuation of the Thin-film equation (SHE)
+# Continuation of the Thin-film equation (TFE)
