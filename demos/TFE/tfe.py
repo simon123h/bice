@@ -65,6 +65,7 @@ class ThinFilm(Problem):
         klammer2 = np.fft.irfft(self.good_dealias(
             self.k**2 * (self.k**2 * h_k - djp_k), True))
 
+        res = np.zeros(self.dim)
         res[:h.size] = - dhhh_dx * klammer1 - h**3 * klammer2
 
         # definition of the constraint
