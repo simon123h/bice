@@ -32,13 +32,14 @@ class SwiftHohenberg(Problem, FiniteDifferenceEquation):
         # initial condition
         self.u = np.cos(2 * np.pi * self.x / 10) * np.exp(-0.005 * self.x**2)
         # initialize time stepper
-        self.time_stepper = RungeKutta4(dt=1e-3)
-        self.time_stepper.error_tolerance = 1e-7
-        self.time_stepper.dt = 4e-5
+        self.time_stepper = RungeKutta4()
+        self.time_stepper.dt = 1e-4
         # plotting
         self.plotID = 0
         # build finite difference matrices
         self.build_FD_matrices(N)
+        self.linear_op = (self.kc**2 + self.laplace)
+        self.linear_op = self.r - np.matmul(self.linear_op, self.linear_op)
 
     # definition of the equation, using pseudospectral method
     def rhs(self, u):
@@ -50,12 +51,13 @@ class SwiftHohenberg(Problem, FiniteDifferenceEquation):
         # res
         res = np.zeros(self.dim)
         # definition of the SHE
-        klammer = (self.kc**2 + self.laplace)
-        res[:u.size] = np.matmul(self.r - np.matmul(klammer, klammer), u) + \
-            self.v * u**2 - self.g * u**3 + vel*np.matmul(self.nabla, u)
+        res[:u.size] = np.matmul(self.linear_op, u) + self.v * \
+            u**2 - self.g * u**3
 
         # definition of the constraint
         if self.translation_constraint:
+            # add advection term with velocity as lagrange multiplier (additional degree of freedom)
+            res[:u.size] += vel*np.matmul(self.nabla, u)
             u_old = self.u[:-1]
             # this is the classical constraint: du/dx * du/dp = 0
             # res[u.size] = np.dot(
@@ -147,7 +149,7 @@ fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 n = 0
 plotevery = 1000
 dudtnorm = 1
-if not os.path.exists("initial_state.dat"):
+if not os.path.exists("initial_state2.dat"):
     while dudtnorm > 1e-5:
         # plot
         if n % plotevery == 0:
