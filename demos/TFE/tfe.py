@@ -33,8 +33,8 @@ class ThinFilm(Problem):
         # initialize time stepper
         self.time_stepper = RungeKutta4()
         # self.time_stepper = RungeKuttaFehlberg45()
-        self.time_stepper.error_tolerance = 1e-1
-        self.time_stepper.dt = 1e-5
+        self.time_stepper.error_tolerance = 1e1
+        self.time_stepper.dt = 3e-5
         # plotting
         self.plotID = 0
         # volume
@@ -101,12 +101,13 @@ class ThinFilm(Problem):
         u_k[-int(N*fraction):] = 0
         self.u = np.fft.irfft(u_k)
 
-    def good_dealias(self, u, k_space=False, flanke=1./3):
+    def good_dealias(self, u, k_space=False, ratio=1./2.):
         if not k_space:
             u_k = np.fft.rfft(u)
         else:
              u_k = u
-        u_k *= np.exp(-36*(self.k / self.k[-1] * (1-flanke) * 5./4.)**36)
+        k_F = (1-ratio) * self.k[-1]
+        u_k *= np.exp(-36*(4. * self.k / 5. / k_F)**36)
         if not k_space:
             return np.fft.irfft(u_k)
         return u_k
@@ -183,7 +184,7 @@ fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 
 # time-stepping
 n = 0
-plotevery = 1000
+plotevery = 3000
 dudtnorm = 1
 if not os.path.exists("initial_state2.dat"):
     while dudtnorm > 1e-8:
@@ -199,6 +200,7 @@ if not os.path.exists("initial_state2.dat"):
         problem.time_step()
         # perform dealiasing
         # problem.dealias()
+        problem.u = problem.good_dealias(problem.u)
         # calculate the new norm
         dudtnorm = np.linalg.norm(problem.rhs(problem.u))
         # catch divergent solutions
