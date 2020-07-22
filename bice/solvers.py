@@ -27,4 +27,4 @@ class EigenSolver:
         idx = np.argsort(eigenvalues)[::-1]
         eigenvalues = eigenvalues[idx]
         eigenvectors = eigenvectors[:, idx]
-        return (eigenvalues, eigenvectors)
+        return (eigenvalues, eigenvectors.T)
