@@ -116,7 +116,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
         converged = False
         count = 0
         while not converged and count < self.max_newton_iterations:
-            # build extended jacobian in (vars, parameter)-space
+            # build extended jacobian in (u, parameter)-space
             problem.set_continuation_parameter(p)
             jac = problem.jacobian(u)
             # last column of extended jacobian: d(rhs)/d(parameter) - calculate with FD
