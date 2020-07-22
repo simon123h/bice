@@ -34,7 +34,7 @@ class ThinFilm(Problem):
         self.time_stepper = RungeKutta4()
         # self.time_stepper = RungeKuttaFehlberg45()
         self.time_stepper.error_tolerance = 1e-1
-        self.time_stepper.dt = 5e-7
+        self.time_stepper.dt = 1e-5
         # plotting
         self.plotID = 0
         # volume
@@ -176,7 +176,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=512, L=100)
+problem = ThinFilm(N=256, L=100)
 
 # create figure
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
