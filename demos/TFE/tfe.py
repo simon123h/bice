@@ -48,21 +48,22 @@ class ThinFilm(Problem):
         else:
             vel = 0
             h = u
-        # res
-        res = np.zeros(self.dim)
-        # definition of the TFE
 
+        # definition of the TFE
         # dh/dt = d/dx (h^3 d/dx ( - d^2/dx^2 h - Pi(h) ))
 
         h_k = np.fft.rfft(h)
 
         djp_k = self.good_dealias(np.fft.rfft(self.djp(h)), k_space=True)
 
-        dhhh_dx = np.fft.irfft(self.good_dealias(self.good_dealias(np.fft.rfft(h**3), True) * 1j * self.k, True))
+        dhhh_dx = np.fft.irfft(self.good_dealias(
+            self.good_dealias(np.fft.rfft(h**3), True) * 1j * self.k, True))
 
-        klammer1 = np.fft.irfft(self.good_dealias(1j * self.k * (-self.k**2 * h_k + djp_k), True))
+        klammer1 = np.fft.irfft(self.good_dealias(
+            1j * self.k * (-self.k**2 * h_k + djp_k), True))
 
-        klammer2 = np.fft.irfft(self.good_dealias(self.k**2 * (self.k**2 * h_k - djp_k), True))
+        klammer2 = np.fft.irfft(self.good_dealias(
+            self.k**2 * (self.k**2 * h_k - djp_k), True))
 
         res[:h.size] = - dhhh_dx * klammer1 - h**3 * klammer2
 
@@ -105,7 +106,7 @@ class ThinFilm(Problem):
         if not k_space:
             u_k = np.fft.rfft(u)
         else:
-             u_k = u
+            u_k = u
         k_F = (1-ratio) * self.k[-1]
         u_k *= np.exp(-36*(4. * self.k / 5. / k_F)**36)
         if not k_space:
