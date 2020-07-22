@@ -34,7 +34,7 @@ class SwiftHohenberg(Problem):
         # initialize time stepper
         self.time_stepper = RungeKutta4(dt=1e-3)
         self.time_stepper.error_tolerance = 1e-7
-        self.time_stepper.dt = 1e-4
+        self.time_stepper.dt = 4e-5
         # plotting
         self.plotID = 0
         # FD matrices
