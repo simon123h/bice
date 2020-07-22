@@ -6,10 +6,10 @@ import shutil
 import matplotlib.pyplot as plt
 import numpy as np
 from bice.time_steppers import RungeKuttaFehlberg45, ImplicitEuler, RungeKutta4
-from bice import Problem
+from bice import Problem, FiniteDifferenceEquation
 
 
-class ThinFilm(Problem):
+class ThinFilm(Problem, FiniteDifferenceEquation):
     """
     Finite difference implementation of the 1-dimensional Swift-Hohenberg Equation
     equation, a nonlinear PDE
@@ -39,39 +39,10 @@ class ThinFilm(Problem):
         self.plotID = 0
         # volume
         self.fixed_volume = 0
-        # FD matrices
-        self.nabla = None
-        self.laplace = None
-        self.build_matrices()
-
-    def build_matrices(self):
-        N = self.dim
-        I = np.eye(N)
-        self.nabla = np.zeros((N, N))
-        self.nabla += -3*np.roll(I, -4, axis=1)
-        self.nabla += 32*np.roll(I, -3, axis=1)
-        self.nabla += -168*np.roll(I, -2, axis=1)
-        self.nabla += 672*np.roll(I, -1, axis=1)
-        self.nabla -= 672*np.roll(I, 1, axis=1)
-        self.nabla -= -168*np.roll(I, 2, axis=1)
-        self.nabla -= 32*np.roll(I, 3, axis=1)
-        self.nabla -= -3*np.roll(I, 4, axis=1)
-        self.nabla /= self.dx * 840
-
-        self.laplace = np.zeros((N, N))
-        self.laplace += -9*np.roll(I, -4, axis=1)
-        self.laplace += 128*np.roll(I, -3, axis=1)
-        self.laplace += -1008*np.roll(I, -2, axis=1)
-        self.laplace += 8064*np.roll(I, -1, axis=1)
-        self.laplace += -14350*np.roll(I, 0, axis=1)
-        self.laplace += 8064*np.roll(I, 1, axis=1)
-        self.laplace += -1008*np.roll(I, 2, axis=1)
-        self.laplace += 128*np.roll(I, 3, axis=1)
-        self.laplace += -9*np.roll(I, 4, axis=1)
-        self.laplace /= self.dx**2 * 5040
+        # build finite difference matrices
+        self.build_FD_matrices(N)
 
     # definition of the equation, using pseudospectral method
-
     def rhs(self, u):
         if self.translation_constraint:
             vel = u[-1]
@@ -182,8 +153,6 @@ os.makedirs("out/img", exist_ok=True)
 
 # create problem
 problem = ThinFilm(N=256, L=100)
-
-problem.build_matrices()
 
 # create figure
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))

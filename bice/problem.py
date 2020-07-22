@@ -129,3 +129,37 @@ class Problem():
     # load the current solution from disk
     def load(self, filename):
         self.u = np.loadtxt(filename)
+
+
+class FiniteDifferenceEquation:
+
+    def __init__(self):
+        # first order derivative
+        self.nabla = None
+        # second order derivative
+        self.laplace = None
+
+    def build_FD_matrices(self, N):
+        I = np.eye(N)
+        self.nabla = np.zeros((N, N))
+        self.nabla += -3*np.roll(I, -4, axis=1)
+        self.nabla += 32*np.roll(I, -3, axis=1)
+        self.nabla += -168*np.roll(I, -2, axis=1)
+        self.nabla += 672*np.roll(I, -1, axis=1)
+        self.nabla -= 672*np.roll(I, 1, axis=1)
+        self.nabla -= -168*np.roll(I, 2, axis=1)
+        self.nabla -= 32*np.roll(I, 3, axis=1)
+        self.nabla -= -3*np.roll(I, 4, axis=1)
+        self.nabla /= self.dx * 840
+
+        self.laplace = np.zeros((N, N))
+        self.laplace += -9*np.roll(I, -4, axis=1)
+        self.laplace += 128*np.roll(I, -3, axis=1)
+        self.laplace += -1008*np.roll(I, -2, axis=1)
+        self.laplace += 8064*np.roll(I, -1, axis=1)
+        self.laplace += -14350*np.roll(I, 0, axis=1)
+        self.laplace += 8064*np.roll(I, 1, axis=1)
+        self.laplace += -1008*np.roll(I, 2, axis=1)
+        self.laplace += 128*np.roll(I, 3, axis=1)
+        self.laplace += -9*np.roll(I, 4, axis=1)
+        self.laplace /= self.dx**2 * 5040
