@@ -1,12 +1,12 @@
 #!/usr/bin/python3
+import numpy as np
+import matplotlib.pyplot as plt
+import shutil
+import os
 import sys
 sys.path.append("../..")  # noqa, needed for relative import of package
-import os
-import shutil
-import matplotlib.pyplot as plt
-import numpy as np
-from bice.time_steppers import RungeKuttaFehlberg45, ImplicitEuler, RungeKutta4
 from bice import Problem, FiniteDifferenceEquation
+from bice.time_steppers import RungeKuttaFehlberg45, ImplicitEuler, RungeKutta4
 
 
 class ThinFilm(Problem, FiniteDifferenceEquation):
@@ -19,9 +19,9 @@ class ThinFilm(Problem, FiniteDifferenceEquation):
     def __init__(self, N, L):
         super().__init__()
         # parameters
-
-        # impose a translation constraint?
-        self.translation_constraint = False
+        self.fixed_volume = 0
+        # impose a volume constraint?
+        self.volume_constraint = False
         # space and fourier space
         self.x = np.linspace(-L/2, L/2, N, endpoint=False)
         self.dx = self.x[1] - self.x[0]
@@ -37,55 +37,35 @@ class ThinFilm(Problem, FiniteDifferenceEquation):
         self.time_stepper.dt = 4e-5
         # plotting
         self.plotID = 0
-        # volume
-        self.fixed_volume = 0
         # build finite difference matrices
         self.build_FD_matrices(N)
 
-    # definition of the equation, using pseudospectral method
-    def rhs(self, u):
-        if self.translation_constraint:
-            vel = u[-1]
-            h = u[:-1]
-        else:
-            vel = 0
-            h = u
-
+    # definition of the equation, using finite difference method
+    def rhs(self, h):
         # definition of the TFE
         # dh/dt = d/dx (h^3 d/dx ( - d^2/dx^2 h - Pi(h) ))
-
-        res = np.zeros(self.dim)
         dFdh = -np.matmul(self.laplace, h) - self.djp(h)
-        res[:h.size] = np.matmul(
-            self.nabla, h**3 * np.matmul(self.nabla, dFdh))
-
+        res = np.matmul(self.nabla, h**3 * np.matmul(self.nabla, dFdh))
         # definition of the constraint
-        if self.translation_constraint:
-            h_old = self.u[:-1]
-            # this is the classical constraint: du/dx * du/dp = 0
-            # res[u.size] = np.dot(
-            #     np.fft.irfft(-1j*self.k*np.fft.rfft(u_old)), u-u_old)
-            # this is the alternative center-of-mass constraint, requires less Fourier transforms :-)
-            res[u.size] = np.dot(self.x, h-h_old)
+        if self.volume_constraint:
+            h_old = self.u
+            # this is a parametric constraint, parameter fixed_volume needs to be set accordingly
+            res[0] = np.trapz(h, self.x) - self.fixed_volume
+            # alternative constraint that does not depend on parameter would be:
+            # res[0] = np.trapz(h-h_old, self.x)
         return res
 
     # The mass matrix determines the linear relation of the rhs to the temporal derivatives dudt
     def mass_matrix(self):
         mm = np.eye(self.dim)
         # if constraint is enabled, the constraint equation has no time evolution
-        if self.translation_constraint:
-            mm[-1, -1] = 0
+        if self.volume_constraint:
+            mm[0, 0] = 0
         return mm
 
     # disjoining pressure and derivatives
     def djp(self, h):
         return 1./h**6 - 1./h**3
-
-    def ddjp_dh(self, h):
-        return -6./h**7 + 3./h**4
-
-    def d2djp_dh2(self, h):
-        return 42./h**8 - 12./h**5
 
     # return the value of the continuation parameter
     def get_continuation_parameter(self):
@@ -98,8 +78,6 @@ class ThinFilm(Problem, FiniteDifferenceEquation):
     # plot everything
     def plot(self, fig, ax, sol=None):
         h = self.u
-        if self.translation_constraint:
-            h = h[:-1]
         ax[0, 0].plot(self.x, h)
         ax[0, 0].set_xlabel("x")
         ax[0, 0].set_ylabel("solution h(x,t)")
@@ -190,8 +168,8 @@ problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
 problem.continuation_stepper.always_check_eigenvalues = True
 
-problem.translation_constraint = True
-problem.u = np.append(problem.u, [0])
+problem.volume_constraint = True
+problem.fixed_volume = np.trapz(problem.u, problem.x)
 
 # n = 0
 # plotevery = 5

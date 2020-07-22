@@ -19,9 +19,9 @@ class ThinFilm(Problem):
     def __init__(self, N, L):
         super().__init__()
         # parameters
-
-        # impose a translation constraint?
-        self.translation_constraint = False
+        self.fixed_volume = 0
+        # impose a volume constraint?
+        self.volume_constraint = False
         # space and fourier space
         self.x = np.linspace(-L/2, L/2, N)
         self.dx = self.x[1] - self.x[0]
@@ -37,80 +37,51 @@ class ThinFilm(Problem):
         self.time_stepper.dt = 3e-5
         # plotting
         self.plotID = 0
-        # volume
-        self.fixed_volume = 0
 
     # definition of the equation, using pseudospectral method
-    def rhs(self, u):
-        if self.translation_constraint:
-            vel = u[-1]
-            h = u[:-1]
-        else:
-            vel = 0
-            h = u
-
+    def rhs(self, h):
         # definition of the TFE
         # dh/dt = d/dx (h^3 d/dx ( - d^2/dx^2 h - Pi(h) ))
-
         h_k = np.fft.rfft(h)
-
-        djp_k = self.good_dealias(np.fft.rfft(self.djp(h)), k_space=True)
-
-        dhhh_dx = np.fft.irfft(self.good_dealias(
-            self.good_dealias(np.fft.rfft(h**3), True) * 1j * self.k, True))
-
-        klammer1 = np.fft.irfft(self.good_dealias(
-            1j * self.k * (-self.k**2 * h_k + djp_k), True))
-
-        klammer2 = np.fft.irfft(self.good_dealias(
-            self.k**2 * (self.k**2 * h_k - djp_k), True))
-
+        djp_k = self.dealias(np.fft.rfft(self.djp(h)))
+        dhhh_dx = np.fft.irfft(self.dealias(
+            self.dealias(np.fft.rfft(h**3)) * 1j * self.k))
+        term1 = np.fft.irfft(self.dealias(
+            1j * self.k * (-self.k**2 * h_k + djp_k)))
+        term2 = np.fft.irfft(self.dealias(
+            self.k**2 * (self.k**2 * h_k - djp_k)))
         res = np.zeros(self.dim)
-        res[:h.size] = - dhhh_dx * klammer1 - h**3 * klammer2
-
+        res[:h.size] = - dhhh_dx * term1 - h**3 * term2
         # definition of the constraint
-        if self.translation_constraint:
-            h_old = self.u[:-1]
-            # this is the classical constraint: du/dx * du/dp = 0
-            # res[u.size] = np.dot(
-            #     np.fft.irfft(-1j*self.k*np.fft.rfft(u_old)), u-u_old)
-            # this is the alternative center-of-mass constraint, requires less Fourier transforms :-)
-            res[u.size] = np.dot(self.x, h-h_old)
+        if self.volume_constraint:
+            h_old = self.u
+            # this is a parametric constraint, parameter fixed_volume needs to be set accordingly
+            res[0] = np.trapz(h, self.x) - self.fixed_volume
+            # alternative constraint that does not depend on parameter would be:
+            # res[0] = np.trapz(h-h_old, self.x)
         return res
 
     # The mass matrix determines the linear relation of the rhs to the temporal derivatives dudt
     def mass_matrix(self):
         mm = np.eye(self.dim)
         # if constraint is enabled, the constraint equation has no time evolution
-        if self.translation_constraint:
-            mm[-1, -1] = 0
+        if self.volume_constraint:
+            mm[0, 0] = 0
         return mm
 
     # disjoining pressure and derivatives
     def djp(self, h):
         return 1./h**6 - 1./h**3
 
-    def ddjp_dh(self, h):
-        return -6./h**7 + 3./h**4
-
-    def d2djp_dh2(self, h):
-        return 42./h**8 - 12./h**5
-
     # set higher modes to null, for numerical stability
-    def dealias(self, fraction=1./3.):
-        u_k = np.fft.rfft(self.u)
-        N = len(u_k)
-        u_k[-int(N*fraction):] = 0
-        self.u = np.fft.irfft(u_k)
-
-    def good_dealias(self, u, k_space=False, ratio=1./2.):
-        if not k_space:
+    def dealias(self, u, real_space=False, ratio=1./2.):
+        if real_space:
             u_k = np.fft.rfft(u)
         else:
             u_k = u
         k_F = (1-ratio) * self.k[-1]
         u_k *= np.exp(-36*(4. * self.k / 5. / k_F)**36)
-        if not k_space:
+        if real_space:
             return np.fft.irfft(u_k)
         return u_k
 
@@ -125,8 +96,6 @@ class ThinFilm(Problem):
     # plot everything
     def plot(self, fig, ax, sol=None):
         h = self.u
-        if self.translation_constraint:
-            h = h[:-1]
         ax[0, 0].plot(self.x, h)
         ax[0, 0].set_xlabel("x")
         ax[0, 0].set_ylabel("solution h(x,t)")
@@ -201,8 +170,7 @@ if not os.path.exists("initial_state2.dat"):
         # perform timestep
         problem.time_step()
         # perform dealiasing
-        # problem.dealias()
-        problem.u = problem.good_dealias(problem.u)
+        problem.u = problem.dealias(problem.u, real_space=True)
         # calculate the new norm
         dudtnorm = np.linalg.norm(problem.rhs(problem.u))
         # catch divergent solutions
@@ -220,8 +188,8 @@ problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
 problem.continuation_stepper.always_check_eigenvalues = True
 
-problem.translation_constraint = True
-problem.u = np.append(problem.u, [0])
+problem.volume_constraint = True
+problem.fixed_volume = np.trapz(problem.u, problem.x)
 
 # n = 0
 # plotevery = 5
