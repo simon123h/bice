@@ -115,6 +115,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
 
         converged = False
         count = 0
+        # TODO: use problem.newton_solver instead of homebrewed newton solver
         while not converged and count < self.max_newton_iterations:
             # build extended jacobian in (u, parameter)-space
             problem.set_continuation_parameter(p)
