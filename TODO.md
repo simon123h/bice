@@ -9,7 +9,8 @@
 ## Architecture
 
 - A problem should consist of one or multiple "Equations" and is then assembled. --> generalize this assembly process.
-- Make more use of the general NewtonSolver class
+- Save/load solution points & everything that is needed
+- Store parameters in a np.array and pass index for continuation
 
 ## Bugs & issues
 
