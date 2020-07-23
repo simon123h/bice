@@ -190,7 +190,11 @@ while problem.r > -0.016:
 # continuation in reverse direction
 # load the initial state
 problem.new_branch()
+
+# complicated reload due to translation constraint...
 problem.load("initial_state.dat")
+problem.u = np.append(problem.u, [0])
+
 problem.r = -0.013
 problem.continuation_stepper.ds = -1e-2
 while problem.r < -0.002:
