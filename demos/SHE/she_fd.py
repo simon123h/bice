@@ -6,7 +6,7 @@ import os
 import sys
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, FiniteDifferenceEquation
-from bice.time_steppers import RungeKuttaFehlberg45, ImplicitEuler, RungeKutta4
+from bice.time_steppers import *
 
 
 class SwiftHohenberg(Problem, FiniteDifferenceEquation):
@@ -29,17 +29,18 @@ class SwiftHohenberg(Problem, FiniteDifferenceEquation):
         self.x = np.linspace(-L/2, L/2, N, endpoint=False)
         self.dx = self.x[1] - self.x[0]
         self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
-        # initial condition
-        self.u = np.cos(2 * np.pi * self.x / 10) * np.exp(-0.005 * self.x**2)
-        # initialize time stepper
-        self.time_stepper = RungeKutta4()
-        self.time_stepper.dt = 1e-4
-        # plotting
-        self.plotID = 0
         # build finite difference matrices
         self.build_FD_matrices(N)
         self.linear_op = (self.kc**2 + self.laplace)
         self.linear_op = self.r - np.matmul(self.linear_op, self.linear_op)
+        # initial condition
+        self.u = np.cos(2 * np.pi * self.x / 10) * np.exp(-0.005 * self.x**2)
+        # initialize time stepper
+        # self.time_stepper = BDF(self)
+        self.time_stepper = BDF2(dt=1e-3)
+        # self.time_stepper = RungeKutta4(dt=1e-4)
+        # plotting
+        self.plotID = 0
 
     # definition of the equation, using pseudospectral method
     def rhs(self, u):
