@@ -81,6 +81,18 @@ class ThinFilm(Problem, FiniteDifferenceEquation):
             mm[-1, -1] = 0
         return mm
 
+    # set higher modes to null, for numerical stability
+    def dealias(self, u, real_space=False, ratio=1./2.):
+        if real_space:
+            u_k = np.fft.rfft(u)
+        else:
+            u_k = u
+        k_F = (1-ratio) * self.k[-1]
+        u_k *= np.exp(-36*(4. * self.k / 5. / k_F)**36)
+        if real_space:
+            return np.fft.irfft(u_k)
+        return u_k
+
     # disjoining pressure and derivatives
     def djp(self, h):
         return 1./h**6 - 1./h**3
@@ -121,7 +133,7 @@ class ThinFilm(Problem, FiniteDifferenceEquation):
         ax[0, 1].plot(np.nan, np.nan, "*", color="C2", label="bifurcations")
         ax[0, 1].plot(self.volume, self.norm(),
                       "x", label="current point", color="black")
-        ax[0, 1].set_xlabel("parameter r")
+        ax[0, 1].set_xlabel("volume")
         ax[0, 1].set_ylabel("L2-norm")
         ax[0, 1].legend()
         if sol:
@@ -150,7 +162,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=300, L=100)
+problem = ThinFilm(N=256, L=100)
 
 # create figure
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
@@ -159,7 +171,7 @@ fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 n = 0
 plotevery = 1
 dudtnorm = 1
-if not os.path.exists("initial_state.dat"):
+if not os.path.exists("initial_state.dat") or np.loadtxt("initial_state.dat").size != problem.dim:
     while problem.time_stepper.dt < 1e6:
         # plot
         if n % plotevery == 0:
@@ -184,9 +196,9 @@ else:
     problem.load("initial_state.dat")
 
 # start parameter continuation
-problem.continuation_stepper.ds = 1e-4
+problem.continuation_stepper.ds = -1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
-problem.continuation_stepper.always_check_eigenvalues = True
+problem.continuation_stepper.always_check_eigenvalues = False
 
 # enable constraints
 problem.volume_constraint = True
@@ -200,6 +212,8 @@ plotevery = 1
 while problem.volume < 1000:
     # perform continuation step
     sol = problem.continuation_step()
+    # perform dealiasing
+    problem.u[:-1] = problem.dealias(problem.u[:-1], real_space=True)
     n += 1
     print("step #:", n, " ds:", problem.continuation_stepper.ds)
     # plot
