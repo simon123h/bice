@@ -187,14 +187,13 @@ while problem.r > -0.016:
     if n % plotevery == 0:
         problem.plot(fig, ax, sol)
 
-# continuation in reverse direction
-# load the initial state
-problem.new_branch()
 
-# complicated reload due to translation constraint...
+# load the initial state and add extra dof for translation constraint
 problem.load("initial_state.dat")
 problem.u = np.append(problem.u, [0])
 
+# continuation in reverse direction
+problem.new_branch()
 problem.r = -0.013
 problem.continuation_stepper.ds = -1e-2
 while problem.r < -0.002:
