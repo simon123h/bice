@@ -6,7 +6,8 @@ import os
 import sys
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, FiniteDifferenceEquation
-from bice.time_steppers import RungeKuttaFehlberg45, ImplicitEuler, RungeKutta4
+# from bice.time_steppers import RungeKuttaFehlberg45, ImplicitEuler, RungeKutta4
+from bice.time_steppers import *
 
 
 class ThinFilm(Problem, FiniteDifferenceEquation):
@@ -19,26 +20,24 @@ class ThinFilm(Problem, FiniteDifferenceEquation):
     def __init__(self, N, L):
         super().__init__()
         # parameters
-        self.fixed_volume = 0
+        self.volume = 0
         # impose a volume constraint?
         self.volume_constraint = False
         # space and fourier space
         self.x = np.linspace(-L/2, L/2, N, endpoint=False)
         self.dx = self.x[1] - self.x[0]
         self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
+        # build finite difference matrices
+        self.build_FD_matrices(N)
         # initial condition
         self.u = np.ones(N) * 3
         self.u = 2 * np.cos(self.x*2*np.pi/L) + 3
         # self.u = np.maximum(10 * np.cos(self.x / 5), 1)
         # initialize time stepper
-        self.time_stepper = RungeKutta4()
-        # self.time_stepper = RungeKuttaFehlberg45()
-        self.time_stepper.error_tolerance = 1e-1
-        self.time_stepper.dt = 4e-5
+        self.time_stepper = BDF(self)
+        # self.time_stepper = BDF2(dt=5e-1)
         # plotting
         self.plotID = 0
-        # build finite difference matrices
-        self.build_FD_matrices(N)
 
     # definition of the equation, using finite difference method
     def rhs(self, h):
@@ -49,8 +48,8 @@ class ThinFilm(Problem, FiniteDifferenceEquation):
         # definition of the constraint
         if self.volume_constraint:
             h_old = self.u
-            # this is a parametric constraint, parameter fixed_volume needs to be set accordingly
-            res[0] = np.trapz(h, self.x) - self.fixed_volume
+            # this is a parametric constraint, parameter volume needs to be set accordingly
+            res[0] = np.trapz(h, self.x) - self.volume
             # alternative constraint that does not depend on parameter would be:
             # res[0] = np.trapz(h-h_old, self.x)
         return res
@@ -69,11 +68,11 @@ class ThinFilm(Problem, FiniteDifferenceEquation):
 
     # return the value of the continuation parameter
     def get_continuation_parameter(self):
-        return self.fixed_volume
+        return self.volume
 
     # set the value of the continuation parameter
     def set_continuation_parameter(self, v):
-        self.fixed_volume = v
+        self.volume = v
 
     # plot everything
     def plot(self, fig, ax, sol=None):
@@ -99,7 +98,7 @@ class ThinFilm(Problem, FiniteDifferenceEquation):
             r, norm = branch.data(only="bifurcations")
             ax[0, 1].plot(r, norm, "*", color="C2")
         ax[0, 1].plot(np.nan, np.nan, "*", color="C2", label="bifurcations")
-        ax[0, 1].plot(self.fixed_volume, self.norm(),
+        ax[0, 1].plot(self.volume, self.norm(),
                       "x", label="current point", color="black")
         ax[0, 1].set_xlabel("parameter r")
         ax[0, 1].set_ylabel("L2-norm")
@@ -130,17 +129,17 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=256, L=100)
+problem = ThinFilm(N=300, L=100)
 
 # create figure
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 
 # time-stepping
 n = 0
-plotevery = 1000
+plotevery = 5
 dudtnorm = 1
-if not os.path.exists("initial_state2.dat"):
-    while dudtnorm > 1e-8:
+if not os.path.exists("initial_state.dat"):
+    while problem.time_stepper.dt < 1e6:
         # plot
         if n % plotevery == 0:
             problem.plot(fig, ax)
@@ -169,18 +168,19 @@ problem.continuation_stepper.ndesired_newton_steps = 3
 problem.continuation_stepper.always_check_eigenvalues = True
 
 problem.volume_constraint = True
-problem.fixed_volume = np.trapz(problem.u, problem.x)
+problem.volume = np.trapz(problem.u, problem.x)
+print(problem.volume)
 
-# n = 0
-# plotevery = 5
-# while problem.r > -0.016:
-#     # perform continuation step
-#     sol = problem.continuation_step()
-#     n += 1
-#     print("step #:", n, " ds:", problem.continuation_stepper.ds)
-#     # plot
-#     if n % plotevery == 0:
-#         problem.plot(fig, ax, sol)
+n = 0
+plotevery = 5
+while problem.volume < 1000:
+    # perform continuation step
+    sol = problem.continuation_step()
+    n += 1
+    print("step #:", n, " ds:", problem.continuation_stepper.ds)
+    # plot
+    if n % plotevery == 0:
+        problem.plot(fig, ax, sol)
 
 # # continuation in reverse direction
 # # load the initial state
