@@ -152,6 +152,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
             # approximate tangent for the following step
             self.tangent = np.append(u - u_old, p - p_old)
             self.tangent /= np.linalg.norm(self.tangent)
+            # adjust sign of tangent for negative continuation direction
             if self.ds < 0:
                 self.tangent *= -1
         else:
