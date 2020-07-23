@@ -136,8 +136,8 @@ class PseudoArclengthContinuation(ContinuationStepper):
             rhs_ext = np.append(problem.rhs(u), arclength_condition)
             # solving (jac_ext) * du_ext = rhs_ext for du_ext will now give the new solution
             du_ext = np.linalg.solve(jac_ext, rhs_ext)
-            u = u - du_ext[:N]
-            p = p - du_ext[N]
+            u -= du_ext[:N]
+            p -= du_ext[N]
             # update counter and check for convergence
             count += 1
             converged = np.linalg.norm(du_ext) < self.convergence_tolerance
@@ -152,6 +152,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
             # approximate tangent for the following step
             self.tangent = np.append(u - u_old, p - p_old)
             self.tangent /= np.linalg.norm(self.tangent)
+            # adjust sign of tangent for negative continuation direction
             if self.ds < 0:
                 self.tangent *= -1
         else:
