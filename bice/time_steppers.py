@@ -226,4 +226,4 @@ class BDF(TimeStepper):
             return self.problem.rhs(u)
         # create instance of scipy.integrate.BDF
         self.bdf = scipy.integrate.BDF(
-            f, self.problem.time, self.problem.u, self.problem.time+1e18, rtol=self.rtol, atol=self.atol, vectorized=True)
+            f, self.problem.time, self.problem.u, self.problem.time+1e18, rtol=self.rtol, atol=self.atol, vectorized=False)
