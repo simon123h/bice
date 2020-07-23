@@ -205,6 +205,7 @@ class BDF(TimeStepper):
     """
 
     def __init__(self, problem):
+        super().__init__()
         self.problem = problem
         self.rtol = 1e-5
         self.atol = 1e-8
