@@ -5,10 +5,15 @@ import scipy.linalg
 
 
 class NewtonSolver:
-    # TODO: find an optimal solver
     # TODO: catch errors, get number of iterations...
+    def __init__(self):
+        self.method = "krylov"
+
     def solve(self, f, u):
-        return scipy.optimize.newton(f, u)
+        # TODO: find an optimal solver
+        return scipy.optimize.newton_krylov(f, u)
+        # return scipy.optimize.newton(f, u)
+        # return scipy.optimize.root(f, u, method=self.method)
 
 
 class EigenSolver:
