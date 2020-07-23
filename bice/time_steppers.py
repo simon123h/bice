@@ -1,5 +1,5 @@
 import numpy as np
-import scipy.optimize
+import scipy.integrate
 
 
 class TimeStepper:
@@ -7,9 +7,6 @@ class TimeStepper:
     Abstract base class for all time-steppers.
     Specifies attributes and methods that all time-steppers should have.
     """
-
-    # is the time-stepping scheme explicit (or implicit?)
-    is_explicit = True
 
     # constructor
     def __init__(self, dt=1e-2):
@@ -41,18 +38,18 @@ class ImplicitEuler(TimeStepper):
     """
     Implicit Euler scheme
     """
-    is_explicit = False
 
     def step(self, problem):
         # advance in time
         problem.time += self.dt
-        # assemble the system
-        # TODO: should this assembly process be generalized in some way?
+
         def f(u):
+            # assemble the system
+            # TODO: should this assembly process be generalized in some way?
             return problem.rhs(u) - (u - problem.u) / self.dt
         # solve it with a Newton solver
         # TODO: detect if Newton solver failed and reject step
-        problem.u = scipy.optimize.newton_krylov(f, problem.u)
+        problem.u = problem.newton_solver.solve(f, problem.u)
 
 
 class RungeKutta4(TimeStepper):
@@ -173,3 +170,59 @@ class RungeKuttaFehlberg45(TimeStepper):
             # if we rejected too many steps already: abort with Exception
             raise Exception(
                 "Runge-Kutta-Fehlberg time-stepper exceeded maximum number of rejected steps:", self.rejection_count)
+
+
+class BDF2(TimeStepper):
+    """
+    'Backward Differentiation Formula' scheme of order 2
+    """
+
+    def __init__(self, dt=1e-3):
+        super().__init__(dt)
+        self.history = []
+        self.order = 2
+
+    def step(self, problem):
+        # advance in time
+        problem.time += self.dt
+
+        # recover the history (impulsive start, if history is missing)
+        u_1 = problem.u
+        u_2 = self.history[1] if len(self.history) > 1 else u_1
+
+        def f(u):
+            # assemble the system
+            return self.dt * problem.rhs(u) - (3*u - 4*u_1 + u_2)
+        # solve it with a Newton solver
+        problem.u = problem.newton_solver.solve(f, problem.u)
+        # update history
+        self.history = [problem.u] + self.history[:self.order]
+
+class BDF(TimeStepper):
+    """
+    'Backward Differentiation Formula' scheme of variable order
+    using scipy.integrate
+    """
+
+    def __init__(self, problem):
+        self.problem = problem
+        self.rtol = 1e-5
+        self.atol = 1e-8
+        self.factory_reset()
+
+    def step(self, problem):
+        # perform the step
+        self.bdf.step()
+        # assign the new variables
+        self.dt = self.bdf.step_size
+        self.problem.time = self.bdf.t
+        self.problem.u = self.bdf.y
+
+    def factory_reset(self):
+        # create wrapper for the right-hand side
+        def f(t, u):
+            self.problem.time = t
+            return self.problem.rhs(u)
+        # create instance of scipy.integrate.BDF
+        self.bdf = scipy.integrate.BDF(
+            f, self.problem.time, self.problem.u, self.problem.time+1e18, rtol=self.rtol, atol=self.atol, vectorized=True)
