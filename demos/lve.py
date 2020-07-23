@@ -23,11 +23,11 @@ class LotkaVolterra(Problem):
         # initial condition
         self.u = np.array([1., 0.7])
         # time stepper
-        self.time_stepper = BDF(self)
+        # self.time_stepper = BDF(self)
         # self.time_stepper = BDF2(dt=1e-1)
         # self.time_stepper = Euler(dt=5e-4)
         # self.time_stepper = ImplicitEuler(dt=1e-2)
-        # self.time_stepper = RungeKutta4(dt=2e-1)
+        self.time_stepper = RungeKutta4(dt=2e-1)
 
     def rhs(self, u):
         x = u[0]
@@ -46,7 +46,6 @@ print(problem.time_stepper)
 # for n in range(10000):
 start = time.time()
 while problem.time < 1e3:
-    print(problem.time / 1e3)
     data.append(problem.u.copy())
     problem.time_step()
 end = time.time()
