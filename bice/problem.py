@@ -35,36 +35,94 @@ class Problem():
         self.bifurcation_diagram = BifurcationDiagram()
         # how small does an eigenvalue need to be in order to be counted as 'zero'?
         self.eigval_zero_tolerance = 1e-6
+        # the list of equations that are part of this problem
+        self.equations = []
 
     # The dimension of the system
     @property
     def dim(self):
         return self.u.size
 
+    # add an equation to the problem
+    def add_equation(self, eq):
+        # append to list of equations
+        self.equations.append(eq)
+        # append eq's degrees of freedom to the problem dofs
+        self.u = np.append(self.u, eq.u)
+        # assign this problem to the equation
+        eq.problem = self
+        # redo the mapping from equation to problem variables
+        self.assign_equation_numbers()
+
+    # remove an equation from the problem
+    def remove_equation(self, eq):
+        # remove from the list of equations
+        self.equations.remove(eq)
+        # remove the equations association with the problem
+        eq.problem = None
+        # write the associated unknowns back into the equation
+        eq.u = self.u[eq.idx]
+        # remove eq's degrees of freedom from the problem dofs
+        self.u = np.delete(self.u, eq.idx)
+        # redo the mapping from equation to problem variables
+        self.assign_equation_numbers()
+
+    # create the mapping from equation variables to problem variables, in the sense
+    # that problem.u[eq.idx] = eq.u where eq.idx is the mapping
+    def assign_equation_numbers(self):
+        # counter for the current position in problem.u
+        i = 0
+        # assign index range for each equation according to their dimension
+        for eq in self.equations:
+            eq.idx = range(i, eq.dim)
+            # increment counter by dimension
+            i += eq.dim
+
     # Calculate the right-hand side of the system 0 = rhs(u)
     def rhs(self, u):
-        raise NotImplementedError(
-            "No right-hand side (rhs) implemented for this problem!")
+        # the (empty) vector of residuals
+        res = np.zeros(self.dim)
+        # add the residuals of each equation
+        for eq in self.equations:
+            if eq.is_coupled:
+                # coupled equations work on the full set of variables
+                res += eq.rhs(u)
+            else:
+                # uncoupled equations simply work on their own variables, so we do a mapping
+                res[eq.idx] += eq.rhs(u[eq.idx])
+        # all residuals assembled, return
+        return res
 
-    # Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u.
-    # 'eps' is the step size used for the central FD scheme
-    def jacobian(self, u, eps=1e-10):
-        # default implementation: calculate Jacobian with finite differences
-        J = np.zeros([self.dim, self.dim], dtype=np.float)
-        for i in range(self.dim):
-            u1 = u.copy()
-            u2 = u.copy()
-            u1[i] += eps
-            u2[i] -= eps
-            f1 = self.rhs(u1)
-            f2 = self.rhs(u2)
-            J[:, i] = (f1 - f2) / (2 * eps)
+    # Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u
+    def jacobian(self, u):
+        # the (empty) Jacobian
+        J = np.zeros(self.dim)
+        # add the Jacobian of each equation
+        for eq in self.equations:
+            if eq.is_coupled:
+                # coupled equations work on the full set of variables
+                J += eq.jacobian(u)
+            else:
+                # uncoupled equations simply work on their own variables, so we do a mapping
+                J[eq.idx] += eq.jacobian(u[eq.idx])
+        # all entries assembled, return
         return J
 
-    # The mass matrix determines the linear relation of the rhs to the temporal derivatives dudt
+    # The mass matrix determines the linear relation of the rhs to the temporal derivatives:
+    # M * du/dt = rhs(u)
     def mass_matrix(self):
-        # default case: assume the identity matrix I
-        return np.eye(self.dim)
+        # the (empty) mass matrix
+        mm = np.zeros(self.dim)
+        # add the entries of each equation
+        for eq in self.equations:
+            if eq.is_coupled:
+                # coupled equations work on the full set of variables
+                mm += eq.mass_matrix()
+            else:
+                # uncoupled equations simply work on their own variables, so we do a mapping
+                mm[eq.idx] += eq.mass_matrix()
+        # all entries assembled, return
+        return mm
 
     # Solve the system rhs(u) = 0 for u with Newton's method
     def newton_solve(self):
@@ -129,37 +187,3 @@ class Problem():
     # load the current solution from disk
     def load(self, filename):
         self.u = np.loadtxt(filename)
-
-
-class FiniteDifferenceEquation:
-
-    def __init__(self):
-        # first order derivative
-        self.nabla = None
-        # second order derivative
-        self.laplace = None
-
-    def build_FD_matrices(self, N):
-        I = np.eye(N)
-        self.nabla = np.zeros((N, N))
-        self.nabla += -3*np.roll(I, -4, axis=1)
-        self.nabla += 32*np.roll(I, -3, axis=1)
-        self.nabla += -168*np.roll(I, -2, axis=1)
-        self.nabla += 672*np.roll(I, -1, axis=1)
-        self.nabla -= 672*np.roll(I, 1, axis=1)
-        self.nabla -= -168*np.roll(I, 2, axis=1)
-        self.nabla -= 32*np.roll(I, 3, axis=1)
-        self.nabla -= -3*np.roll(I, 4, axis=1)
-        self.nabla /= self.dx * 840
-
-        self.laplace = np.zeros((N, N))
-        self.laplace += -9*np.roll(I, -4, axis=1)
-        self.laplace += 128*np.roll(I, -3, axis=1)
-        self.laplace += -1008*np.roll(I, -2, axis=1)
-        self.laplace += 8064*np.roll(I, -1, axis=1)
-        self.laplace += -14350*np.roll(I, 0, axis=1)
-        self.laplace += 8064*np.roll(I, 1, axis=1)
-        self.laplace += -1008*np.roll(I, 2, axis=1)
-        self.laplace += 128*np.roll(I, 3, axis=1)
-        self.laplace += -9*np.roll(I, 4, axis=1)
-        self.laplace /= self.dx**2 * 5040
