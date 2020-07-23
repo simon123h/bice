@@ -44,7 +44,7 @@ class SwiftHohenberg(Problem):
             u = u[:-1]
         else:
             vel = 0
-        # res
+        # result vector
         res = np.zeros(self.dim)
         # definition of the SHE
         u_k = np.fft.rfft(u)

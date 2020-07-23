@@ -49,7 +49,7 @@ class SwiftHohenberg(Problem, FiniteDifferenceEquation):
             u = u[:-1]
         else:
             vel = 0
-        # res
+        # result vector
         res = np.zeros(self.dim)
         # definition of the SHE
         res[:u.size] = np.matmul(self.linear_op, u) + self.v * \
