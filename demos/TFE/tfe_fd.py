@@ -23,6 +23,8 @@ class ThinFilm(Problem, FiniteDifferenceEquation):
         self.volume = 0
         # impose a volume constraint?
         self.volume_constraint = False
+        # impose a translation constraint?
+        self.translation_constraint = False
         # space and fourier space
         self.x = np.linspace(-L/2, L/2, N, endpoint=False)
         self.dx = self.x[1] - self.x[0]
@@ -41,13 +43,28 @@ class ThinFilm(Problem, FiniteDifferenceEquation):
 
     # definition of the equation, using finite difference method
     def rhs(self, h):
+        if self.translation_constraint:
+            vel = h[-1]
+            h = h[:-1]
+            h_old = self.u[:-1]
+        else:
+            vel = 0
+            h_old = self.u
+        # result vector
+        res = np.zeros(self.dim)
         # definition of the TFE
         # dh/dt = d/dx (h^3 d/dx ( - d^2/dx^2 h - Pi(h) ))
         dFdh = -np.matmul(self.laplace, h) - self.djp(h)
-        res = np.matmul(self.nabla, h**3 * np.matmul(self.nabla, dFdh))
+        res[:h.size] = np.matmul(
+            self.nabla, h**3 * np.matmul(self.nabla, dFdh))
         # definition of the constraint
+        if self.translation_constraint:
+            # translation constraint:
+            res[h.size] = np.dot(self.x, h-h_old)
+            res[:h.size] += vel*np.matmul(self.nabla, h)
         if self.volume_constraint:
-            h_old = self.u
+            # volume constraint:
+            # since the constraint brings no extra dof, we 'hijack' the equation of some other dof
             # this is a parametric constraint, parameter volume needs to be set accordingly
             res[0] = np.trapz(h, self.x) - self.volume
             # alternative constraint that does not depend on parameter would be:
@@ -60,6 +77,8 @@ class ThinFilm(Problem, FiniteDifferenceEquation):
         # if constraint is enabled, the constraint equation has no time evolution
         if self.volume_constraint:
             mm[0, 0] = 0
+        if self.translation_constraint:
+            mm[-1, -1] = 0
         return mm
 
     # disjoining pressure and derivatives
@@ -77,6 +96,8 @@ class ThinFilm(Problem, FiniteDifferenceEquation):
     # plot everything
     def plot(self, fig, ax, sol=None):
         h = self.u
+        if self.translation_constraint:
+            h = h[:-1]
         ax[0, 0].plot(self.x, h)
         ax[0, 0].set_xlabel("x")
         ax[0, 0].set_ylabel("solution h(x,t)")
@@ -136,7 +157,7 @@ fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 
 # time-stepping
 n = 0
-plotevery = 5
+plotevery = 1
 dudtnorm = 1
 if not os.path.exists("initial_state.dat"):
     while problem.time_stepper.dt < 1e6:
@@ -163,16 +184,19 @@ else:
     problem.load("initial_state.dat")
 
 # start parameter continuation
-problem.continuation_stepper.ds = 1e-2
+problem.continuation_stepper.ds = 1e-4
 problem.continuation_stepper.ndesired_newton_steps = 3
 problem.continuation_stepper.always_check_eigenvalues = True
 
+# enable constraints
 problem.volume_constraint = True
 problem.volume = np.trapz(problem.u, problem.x)
-print(problem.volume)
+problem.translation_constraint = True
+problem.u = np.append(problem.u, [0])
+
 
 n = 0
-plotevery = 5
+plotevery = 1
 while problem.volume < 1000:
     # perform continuation step
     sol = problem.continuation_step()
