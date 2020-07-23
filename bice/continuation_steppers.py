@@ -166,21 +166,18 @@ class PseudoArclengthContinuation(ContinuationStepper):
                 "Newton solver did not converge after", count, "iterations!")
 
         # adapt step size
-        # TODO: @max, is there a better way to do step size control?
         if self.adapt_stepsize:
             if count > self.ndesired_newton_steps and abs(self.ds) > self.ds_min:
                 # decrease step size
-                sign = np.sign(self.ds)
                 self.ds = max(
-                    abs(self.ds)*self.ds_decrease_factor, self.ds_min)*sign
+                    abs(self.ds)*self.ds_decrease_factor, self.ds_min)*np.sign(self.ds)
                 # redo continuation step
                 # self.u = u_old
                 # problem.set_continuation_parameter(p_old)
                 # self.step(problem)
             elif count < self.ndesired_newton_steps:
-                sign = np.sign(self.ds)
                 self.ds = min(
-                    abs(self.ds)*self.ds_increase_factor, self.ds_max)*sign
+                    abs(self.ds)*self.ds_increase_factor, self.ds_max)*np.sign(self.ds)
 
     # reset the continuation-stepper parameters & storage to default, e.g.,
     # when starting off a new solution point, switching branches or
