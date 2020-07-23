@@ -176,7 +176,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
                 # problem.set_continuation_parameter(p_old)
                 # self.step(problem)
             elif count < self.ndesired_newton_steps:
-                sign = -1 if self.ds < 0 else 1
+                sign = np.sign(self.ds)
                 self.ds = min(
                     abs(self.ds)*self.ds_increase_factor, self.ds_max)*sign
 
