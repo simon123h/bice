@@ -11,6 +11,7 @@
 - A problem should consist of one or multiple "Equations" and is then assembled. --> generalize this assembly process.
 - Save/load solution points & everything that is needed
 - Store parameters in a np.array and pass index for continuation
+- Change the is_stable() method in Solution to prevent recursion. Stability of a solution should be calculated once and for all
 
 ## Bugs & issues
 
