@@ -20,7 +20,7 @@ class Problem():
         # the list of governing equations in this problem
         self.eq = []
         # The vector of unknowns (NumPy array)
-        self.u = None
+        self.u = np.array([])
         # Time variable
         self.time = 0
         # The time-stepper for integration in time
