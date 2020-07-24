@@ -57,7 +57,7 @@ class TranslationConstraint(Equation):
         velocity = u[self.idx]
         # add constraint to residuals of reference equation (velocity is the langrange multiplier)
         eq_dudx = np.gradient(eq_u, eq.x)
-        res[eq.idx] = np.sum(velocity * eq_dudx)
+        res[eq.idx] = velocity * eq_dudx
         # calculate the difference in center of masses between current
         # and previous unknowns of the reference equation
         res[self.idx] = np.dot(eq.x, eq_u-eq_u_old)
