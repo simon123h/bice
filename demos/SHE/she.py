@@ -5,11 +5,12 @@ import shutil
 import os
 import sys
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem
-from bice.time_steppers import RungeKuttaFehlberg45, ImplicitEuler
+from bice import Problem, Equation
+from bice.time_steppers import RungeKutta4, RungeKuttaFehlberg45
+from bice.constraints import TranslationConstraint
 
 
-class SwiftHohenberg(Problem):
+class SwiftHohenbergEquation(Equation):
     """
     Pseudospectral implementation of the 1-dimensional Swift-Hohenberg Equation
     equation, a nonlinear PDE
@@ -23,13 +24,25 @@ class SwiftHohenberg(Problem):
         self.kc = 0.5
         self.v = 0.41
         self.g = 1
-        # impose a translation constraint?
-        self.translation_constraint = False
         # space and fourier space
         self.x = np.linspace(-L/2, L/2, N)
         self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
         # initial condition
         self.u = np.cos(2 * np.pi * self.x / 10) * np.exp(-0.005 * self.x**2)
+
+    # definition of the SHE (right-hand side)
+    def rhs(self, u):
+        u_k = np.fft.rfft(u)
+        return np.fft.irfft((self.r - (self.kc**2 - self.k**2)**2) * u_k) + self.v * u**2 - self.g * u**3
+
+
+class SwiftHohenbergProblem(Problem):
+
+    def __init__(self, N, L):
+        super().__init__()
+        # Add the Swift-Hohenberg equation to the problem
+        self.she = SwiftHohenbergEquation(N, L)
+        self.add_equation(self.she)
         # initialize time stepper
         self.time_stepper = RungeKuttaFehlberg45(dt=1e-3)
         self.time_stepper.error_tolerance = 1e-7
@@ -37,66 +50,32 @@ class SwiftHohenberg(Problem):
         # plotting
         self.plotID = 0
 
-    # definition of the equation, using pseudospectral method
-    def rhs(self, u):
-        if self.translation_constraint:
-            vel = u[-1]
-            u = u[:-1]
-        else:
-            vel = 0
-        # result vector
-        res = np.zeros(self.dim)
-        # definition of the SHE
-        u_k = np.fft.rfft(u)
-        res[:u.size] = np.fft.irfft((self.r - (self.kc**2 - self.k**2)**2 + vel*1j*self.k)
-                                    * u_k) + self.v * u**2 - self.g * u**3
-        # definition of the constraint
-        if self.translation_constraint:
-            u_old = self.u[:-1]
-            # this is the classical constraint: du/dx * du/dp = 0
-            # res[u.size] = np.dot(
-            #     np.fft.irfft(-1j*self.k*np.fft.rfft(u_old)), u-u_old)
-            # this is the alternative center-of-mass constraint, requires less Fourier transforms :-)
-            res[u.size] = np.dot(self.x, u-u_old)
-        return res
-
-    # The mass matrix determines the linear relation of the rhs to the temporal derivatives dudt
-    def mass_matrix(self):
-        mm = np.eye(self.dim)
-        # if constraint is enabled, the constraint equation has no time evolution
-        if self.translation_constraint:
-            mm[-1, -1] = 0
-        return mm
-
     # set higher modes to null, for numerical stability
     def dealias(self, fraction=1./2.):
-        u_k = np.fft.rfft(self.u)
+        u_k = np.fft.rfft(self.she.u)
         N = len(u_k)
         u_k[-int(N*fraction):] = 0
-        self.u = np.fft.irfft(u_k)
+        self.she.u = np.fft.irfft(u_k)
 
     # return the value of the continuation parameter
     def get_continuation_parameter(self):
-        return self.r
+        return self.she.r
 
     # set the value of the continuation parameter
     def set_continuation_parameter(self, v):
-        self.r = v
+        self.she.r = v
 
     # plot everything
     def plot(self, fig, ax, sol=None):
-        u = self.u
-        if self.translation_constraint:
-            u = u[:-1]
-        ax[0, 0].plot(self.x, u)
+        ax[0, 0].plot(self.she.x, self.she.u)
         ax[0, 0].set_xlabel("x")
         ax[0, 0].set_ylabel("solution u(x,t)")
         if sol and len(sol.eigenvectors) > 0:
             ax[1, 0].plot(np.real(sol.eigenvectors[0]))
             ax[1, 0].set_ylabel("eigenvector")
         else:
-            ax[1, 0].plot(self.k, np.abs(np.fft.rfft(u)))
-            ax[1, 0].set_xlim((0, self.k[-1]/2))
+            ax[1, 0].plot(self.she.k, np.abs(np.fft.rfft(self.she.u)))
+            ax[1, 0].set_xlim((0, self.she.k[-1]/2))
             ax[1, 0].set_xlabel("k")
             ax[1, 0].set_ylabel("fourier spectrum u(k,t)")
         for branch in self.bifurcation_diagram.branches:
@@ -107,7 +86,7 @@ class SwiftHohenberg(Problem):
             r, norm = branch.data(only="bifurcations")
             ax[0, 1].plot(r, norm, "*", color="C2")
         ax[0, 1].plot(np.nan, np.nan, "*", color="C2", label="bifurcations")
-        ax[0, 1].plot(self.r, self.norm(),
+        ax[0, 1].plot(self.she.r, self.norm(),
                       "x", label="current point", color="black")
         ax[0, 1].set_xlabel("parameter r")
         ax[0, 1].set_ylabel("L2-norm")
@@ -134,7 +113,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = SwiftHohenberg(N=512, L=240)
+problem = SwiftHohenbergProblem(N=512, L=240)
 
 # create figure
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
@@ -158,7 +137,7 @@ if not os.path.exists("initial_state.dat"):
         # perform dealiasing
         problem.dealias()
         # calculate the new norm
-        dudtnorm = np.linalg.norm(problem.rhs(problem.u))
+        dudtnorm = np.linalg.norm(problem.she.rhs(problem.u))
         # catch divergent solutions
         if np.max(problem.u) > 1e12:
             break
@@ -173,12 +152,12 @@ problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
 problem.continuation_stepper.always_check_eigenvalues = True
 
-problem.translation_constraint = True
-problem.u = np.append(problem.u, [0])
+constraint = TranslationConstraint(problem.she)
+problem.add_equation(constraint)
 
 n = 0
 plotevery = 5
-while problem.r > -0.016:
+while problem.she.r > -0.016:
     # perform continuation step
     sol = problem.continuation_step()
     n += 1
@@ -194,9 +173,9 @@ problem.u = np.append(problem.u, [0])
 
 # continuation in reverse direction
 problem.new_branch()
-problem.r = -0.013
+problem.she.r = -0.013
 problem.continuation_stepper.ds = -1e-2
-while problem.r < -0.002:
+while problem.she.r < -0.002:
     # perform continuation step
     sol = problem.continuation_step()
     n += 1
