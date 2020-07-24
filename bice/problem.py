@@ -77,9 +77,7 @@ class Problem():
             # unknowns / equations indexing
             eq.idx = range(i, eq.dim)
             # the corresponding indexing for matrices (boolean mask)
-            mx, my = np.meshgrid(eq.idx, eq.idx)
-            eq.matrix_idx = np.zeros((self.dim, self.dim), dtype=bool)
-            eq.matrix_idx[mx, my] = True
+            eq.matrix_idx = tuple(np.meshgrid(eq.idx, eq.idx))
             # increment counter by dimension
             i += eq.dim
 
@@ -109,10 +107,8 @@ class Problem():
                 J += eq.jacobian(u)
             else:
                 # uncoupled equations simply work on their own variables, so we do a mapping
-                np.putmask(J, eq.matrix_idx, eq.jacobian(u[eq.idx]))
-                # this is equivalent to, but faster than:
-                # mx, my = np.meshgrid(eq.idx, eq.idx)
-                # J[mx, my] += eq.jacobian(u[eq.idx])
+                # np.putmask(J, eq.matrix_idx, eq.jacobian(u[eq.idx]))
+                J[eq.matrix_idx] += eq.jacobian(u[eq.idx])
         # all entries assembled, return
         return J
 
@@ -128,7 +124,7 @@ class Problem():
                 M += eq.mass_matrix()
             else:
                 # uncoupled equations simply work on their own variables, so we do a mapping
-                np.putmask(M, eq.matrix_idx, eq.mass_matrix())
+                M[eq.matrix_idx] += eq.mass_matrix()
         # all entries assembled, return
         return M
 
