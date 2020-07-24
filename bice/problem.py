@@ -74,7 +74,12 @@ class Problem():
         i = 0
         # assign index range for each equation according to their dimension
         for eq in self.equations:
+            # unknowns / equations indexing
             eq.idx = range(i, eq.dim)
+            # the corresponding indexing for matrices (boolean mask)
+            mx, my = np.meshgrid(eq.idx, eq.idx)
+            eq.matrix_idx = np.zeros((self.dim, self.dim), dtype=bool)
+            eq.matrix_idx[mx, my] = True
             # increment counter by dimension
             i += eq.dim
 
@@ -96,7 +101,7 @@ class Problem():
     # Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u
     def jacobian(self, u):
         # the (empty) Jacobian
-        J = np.zeros(self.dim)
+        J = np.zeros((self.dim, self.dim))
         # add the Jacobian of each equation
         for eq in self.equations:
             if eq.is_coupled:
@@ -104,7 +109,10 @@ class Problem():
                 J += eq.jacobian(u)
             else:
                 # uncoupled equations simply work on their own variables, so we do a mapping
-                J[eq.idx] += eq.jacobian(u[eq.idx])
+                np.putmask(J, eq.matrix_idx, eq.jacobian(u[eq.idx]))
+                # this is equivalent to, but faster than:
+                # mx, my = np.meshgrid(eq.idx, eq.idx)
+                # J[mx, my] += eq.jacobian(u[eq.idx])
         # all entries assembled, return
         return J
 
@@ -112,17 +120,17 @@ class Problem():
     # M * du/dt = rhs(u)
     def mass_matrix(self):
         # the (empty) mass matrix
-        mm = np.zeros(self.dim)
+        M = np.zeros((self.dim, self.dim))
         # add the entries of each equation
         for eq in self.equations:
             if eq.is_coupled:
                 # coupled equations work on the full set of variables
-                mm += eq.mass_matrix()
+                M += eq.mass_matrix()
             else:
                 # uncoupled equations simply work on their own variables, so we do a mapping
-                mm[eq.idx] += eq.mass_matrix()
+                np.putmask(M, eq.matrix_idx, eq.mass_matrix())
         # all entries assembled, return
-        return mm
+        return M
 
     # Solve the system rhs(u) = 0 for u with Newton's method
     def newton_solve(self):

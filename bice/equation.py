@@ -14,6 +14,9 @@ class Equation:
         self.is_coupled = False
         # Indices for the mapping from Problem.u to Equation.u: eq.u = problem.u[eq.idx]
         self.idx = None
+        # 2d-indices for the mapping from Problem's matrices to Equation matrices
+        # (e.g., Jacobian or mass matrix)
+        self.matrix_idx = None
         # the problem that the equation belongs to
         self.problem = None
         # the equation's storage for the unknowns if it is not currently part of a problem
@@ -51,8 +54,9 @@ class Equation:
     # Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u
     def jacobian(self, u):
         # default implementation: calculate Jacobian with finite differences
-        J = np.zeros([self.dim, self.dim], dtype=np.float)
-        for i in range(self.dim):
+        N = self.problem.dim if self.is_coupled else self.dim
+        J = np.zeros([N, N], dtype=np.float)
+        for i in range(N):
             eps = 1e-10
             u1 = u.copy()
             u2 = u.copy()

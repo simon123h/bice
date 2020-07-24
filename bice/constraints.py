@@ -61,6 +61,7 @@ class TranslationConstraint(Equation):
         # calculate the difference in center of masses between current
         # and previous unknowns of the reference equation
         res[self.idx] = np.dot(eq.x, eq_u-eq_u_old)
+        return res
 
     def mass_matrix(self):
         # couples to no time-derivatives
