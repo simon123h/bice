@@ -1,3 +1,4 @@
-from .problem import Problem, FiniteDifferenceEquation
+from .problem import Problem
+from .equation import Equation, FiniteDifferenceEquation
 
-__all__ = ['problem', 'time_steppers', 'Problem', 'FiniteDifferenceEquation']
+__all__ = ['Problem', 'Equation', 'FiniteDifferenceEquation']
