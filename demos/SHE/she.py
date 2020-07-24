@@ -46,7 +46,6 @@ class SwiftHohenbergProblem(Problem):
         # initialize time stepper
         self.time_stepper = RungeKuttaFehlberg45(dt=1e-3)
         self.time_stepper.error_tolerance = 1e-7
-        self.time_stepper.dt = 1e-3
         # plotting
         self.plotID = 0
 
@@ -137,7 +136,7 @@ if not os.path.exists("initial_state.dat"):
         # perform dealiasing
         problem.dealias()
         # calculate the new norm
-        dudtnorm = np.linalg.norm(problem.she.rhs(problem.u))
+        dudtnorm = np.linalg.norm(problem.rhs(problem.u))
         # catch divergent solutions
         if np.max(problem.u) > 1e12:
             break
@@ -168,8 +167,9 @@ while problem.she.r > -0.016:
 
 
 # load the initial state and add extra dof for translation constraint
+problem.remove_equation(constraint)
 problem.load("initial_state.dat")
-problem.u = np.append(problem.u, [0])
+problem.add_equation(constraint)
 
 # continuation in reverse direction
 problem.new_branch()

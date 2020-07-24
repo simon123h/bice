@@ -74,12 +74,13 @@ class Equation:
         return np.eye(self.dim)
 
 
-class FiniteDifferenceEquation:
+class FiniteDifferenceEquation(Equation):
     """
     TODO: add docstring
     """
 
     def __init__(self):
+        super().__init__()
         # first order derivative
         self.nabla = None
         # second order derivative

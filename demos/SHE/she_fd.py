@@ -6,12 +6,13 @@ import os
 import sys
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, FiniteDifferenceEquation
-from bice.time_steppers import *
+from bice.time_steppers import RungeKutta4, BDF, BDF2
+from bice.constraints import TranslationConstraint
 
 
-class SwiftHohenberg(Problem, FiniteDifferenceEquation):
+class SwiftHohenbergEquation(FiniteDifferenceEquation):
     """
-    Pseudospectral implementation of the 1-dimensional Swift-Hohenberg Equation
+    Finite difference implementation of the 1-dimensional Swift-Hohenberg Equation
     equation, a nonlinear PDE
     \partial t h &= (r - (kc^2 + \Delta)^2)h + v * h^2 - g * h^3
     """
@@ -23,11 +24,8 @@ class SwiftHohenberg(Problem, FiniteDifferenceEquation):
         self.kc = 0.5
         self.v = 0.41
         self.g = 1
-        # impose a translation constraint?
-        self.translation_constraint = False
         # space and fourier space
-        self.x = np.linspace(-L/2, L/2, N, endpoint=False)
-        self.dx = self.x[1] - self.x[0]
+        self.x = np.linspace(-L/2, L/2, N)
         self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
         # build finite difference matrices
         self.build_FD_matrices(N)
@@ -35,6 +33,19 @@ class SwiftHohenberg(Problem, FiniteDifferenceEquation):
         self.linear_op = self.r - np.matmul(self.linear_op, self.linear_op)
         # initial condition
         self.u = np.cos(2 * np.pi * self.x / 10) * np.exp(-0.005 * self.x**2)
+
+    # definition of the SHE (right-hand side)
+    def rhs(self, u):
+        return np.matmul(self.linear_op, u) + self.v * u**2 - self.g * u**3
+
+
+class SwiftHohenbergProblem(Problem):
+
+    def __init__(self, N, L):
+        super().__init__()
+        # Add the Swift-Hohenberg equation to the problem
+        self.she = SwiftHohenbergEquation(N, L)
+        self.add_equation(self.she)
         # initialize time stepper
         # self.time_stepper = BDF(self)
         self.time_stepper = BDF2(dt=1e-3)
@@ -42,68 +53,32 @@ class SwiftHohenberg(Problem, FiniteDifferenceEquation):
         # plotting
         self.plotID = 0
 
-    # definition of the equation, using pseudospectral method
-    def rhs(self, u):
-        if self.translation_constraint:
-            vel = u[-1]
-            u = u[:-1]
-        else:
-            vel = 0
-        # result vector
-        res = np.zeros(self.dim)
-        # definition of the SHE
-        res[:u.size] = np.matmul(self.linear_op, u) + self.v * \
-            u**2 - self.g * u**3
-
-        # definition of the constraint
-        if self.translation_constraint:
-            # add advection term with velocity as lagrange multiplier (additional degree of freedom)
-            res[:u.size] += vel*np.matmul(self.nabla, u)
-            u_old = self.u[:-1]
-            # this is the classical constraint: du/dx * du/dp = 0
-            # res[u.size] = np.dot(
-            #     np.fft.irfft(-1j*self.k*np.fft.rfft(u_old)), u-u_old)
-            # this is the alternative center-of-mass constraint, requires less Fourier transforms :-)
-            res[u.size] = np.dot(self.x, u-u_old)
-        return res
-
-    # The mass matrix determines the linear relation of the rhs to the temporal derivatives dudt
-    def mass_matrix(self):
-        mm = np.eye(self.dim)
-        # if constraint is enabled, the constraint equation has no time evolution
-        if self.translation_constraint:
-            mm[-1, -1] = 0
-        return mm
-
     # set higher modes to null, for numerical stability
     def dealias(self, fraction=1./2.):
-        u_k = np.fft.rfft(self.u)
+        u_k = np.fft.rfft(self.she.u)
         N = len(u_k)
         u_k[-int(N*fraction):] = 0
-        self.u = np.fft.irfft(u_k)
+        self.she.u = np.fft.irfft(u_k)
 
     # return the value of the continuation parameter
     def get_continuation_parameter(self):
-        return self.r
+        return self.she.r
 
     # set the value of the continuation parameter
     def set_continuation_parameter(self, v):
-        self.r = v
+        self.she.r = v
 
     # plot everything
     def plot(self, fig, ax, sol=None):
-        u = self.u
-        if self.translation_constraint:
-            u = u[:-1]
-        ax[0, 0].plot(self.x, u)
+        ax[0, 0].plot(self.she.x, self.she.u)
         ax[0, 0].set_xlabel("x")
         ax[0, 0].set_ylabel("solution u(x,t)")
         if sol and len(sol.eigenvectors) > 0:
             ax[1, 0].plot(np.real(sol.eigenvectors[0]))
             ax[1, 0].set_ylabel("eigenvector")
         else:
-            ax[1, 0].plot(self.k, np.abs(np.fft.rfft(u)))
-            ax[1, 0].set_xlim((0, self.k[-1]/2))
+            ax[1, 0].plot(self.she.k, np.abs(np.fft.rfft(self.she.u)))
+            ax[1, 0].set_xlim((0, self.she.k[-1]/2))
             ax[1, 0].set_xlabel("k")
             ax[1, 0].set_ylabel("fourier spectrum u(k,t)")
         for branch in self.bifurcation_diagram.branches:
@@ -114,7 +89,7 @@ class SwiftHohenberg(Problem, FiniteDifferenceEquation):
             r, norm = branch.data(only="bifurcations")
             ax[0, 1].plot(r, norm, "*", color="C2")
         ax[0, 1].plot(np.nan, np.nan, "*", color="C2", label="bifurcations")
-        ax[0, 1].plot(self.r, self.norm(),
+        ax[0, 1].plot(self.she.r, self.norm(),
                       "x", label="current point", color="black")
         ax[0, 1].set_xlabel("parameter r")
         ax[0, 1].set_ylabel("L2-norm")
@@ -141,7 +116,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = SwiftHohenberg(N=512, L=240)
+problem = SwiftHohenbergProblem(N=512, L=240)
 
 # create figure
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
@@ -150,7 +125,7 @@ fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 n = 0
 plotevery = 1000
 dudtnorm = 1
-if not os.path.exists("initial_state2.dat"):
+if not os.path.exists("initial_state.dat"):
     while dudtnorm > 1e-5:
         # plot
         if n % plotevery == 0:
@@ -180,12 +155,12 @@ problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
 problem.continuation_stepper.always_check_eigenvalues = True
 
-problem.translation_constraint = True
-problem.u = np.append(problem.u, [0])
+constraint = TranslationConstraint(problem.she)
+problem.add_equation(constraint)
 
 n = 0
 plotevery = 5
-while problem.r > -0.016:
+while problem.she.r > -0.016:
     # perform continuation step
     sol = problem.continuation_step()
     n += 1
@@ -194,13 +169,17 @@ while problem.r > -0.016:
     if n % plotevery == 0:
         problem.plot(fig, ax, sol)
 
-# continuation in reverse direction
-# load the initial state
-problem.new_branch()
+
+# load the initial state and add extra dof for translation constraint
+problem.remove_equation(constraint)
 problem.load("initial_state.dat")
-problem.r = -0.013
+problem.add_equation(constraint)
+
+# continuation in reverse direction
+problem.new_branch()
+problem.she.r = -0.013
 problem.continuation_stepper.ds = -1e-2
-while problem.r < -0.002:
+while problem.she.r < -0.002:
     # perform continuation step
     sol = problem.continuation_step()
     n += 1
