@@ -1,10 +1,12 @@
 from .equation import Equation
 import numpy as np
 
+
 class VolumeConstraint(Equation):
     """
     TODO: add docstring
     """
+    # TODO: is this constraint implemented correctly?
 
     def __init__(self, reference_equation):
         super().__init__()
@@ -38,22 +40,27 @@ class TranslationConstraint(Equation):
         self.ref_eq = reference_equation
         # the dimension of this equation is equal to the spatial dimension of the reference eq
         # TODO: fix for higher than 1 dimensions
-        self.dim = 1
+        dim = 1
         # initialize unknowns (velocity vector) to zero
-        self.u = np.zeros(self.dim)
+        self.u = np.zeros(dim)
         # the constraint equation couples to some other equation of the problem
         self.is_coupled = True
 
     def rhs(self, u):
+        # TODO: fix for higher than 1 dimensions
+        # set up the vector of the residual contributions
         res = np.zeros(self.problem.dim)
-        # add constraint to residuals of reference equation (u is the langrange multiplier)
-        # TODO: get spatial derivative of ref_eq.u
-        eq_dudx = self.ref_eq.get_dudx()  # ... but how?
-        res[self.ref_eq.idx] = u[self.idx] * eq_dudx
+        # define some variables
+        eq = self.ref_eq
+        eq_u = u[eq.idx]
+        eq_u_old = eq.u
+        velocity = u[self.idx]
+        # add constraint to residuals of reference equation (velocity is the langrange multiplier)
+        eq_dudx = np.gradient(eq_u, eq.x)
+        res[eq.idx] = np.sum(velocity * eq_dudx)
         # calculate the difference in center of masses between current
         # and previous unknowns of the reference equation
-        # TODO: fix for higher than 1 dimensions
-        res[self.idx] = np.dot(self.ref_eq.x, u[self.ref_eq.idx]-self.ref_eq.u)
+        res[self.idx] = np.dot(eq.x, eq_u-eq_u_old)
 
     def mass_matrix(self):
         # couples to no time-derivatives

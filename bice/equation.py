@@ -6,8 +6,7 @@ class Equation:
     TODO: add docstring
     """
 
-    def __init__(self, dim=0):
-        self.dim = dim
+    def __init__(self):
         # Does the equation couple to any other unknowns?
         # If it is coupled, the all unknowns and methods of this equation will have the
         # full dimension of the problem and need to be mapped to the equation's
@@ -18,13 +17,13 @@ class Equation:
         # the problem that the equation belongs to
         self.problem = None
         # the equation's storage for the unknowns if it is not currently part of a problem
-        self.__u = np.zeros(self.dim)
+        self.__u = None
 
     # Getter for the vector of unknowns
     @property
     def u(self):
         if self.problem is None:
-            # return the unknowns that are stored in the equation
+            # return the unknowns that are stored in the equation itself
             return self.__u
         # fetch the unknowns from the problem with the equation mapping
         return self.problem.u[self.idx]
@@ -38,6 +37,11 @@ class Equation:
         else:
             # set the unknowns in the problem with the equation mapping
             self.problem.u[self.idx] = v
+
+    # The number of unknowns / degrees of freedom of the equation
+    @property
+    def dim(self):
+        return self.u.size
 
     # Calculate the right-hand side of the equation 0 = rhs(u)
     def rhs(self, u):
