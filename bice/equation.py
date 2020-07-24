@@ -8,7 +8,7 @@ class Equation:
 
     def __init__(self):
         # Does the equation couple to any other unknowns?
-        # If it is coupled, the all unknowns and methods of this equation will have the
+        # If it is coupled, then all unknowns and methods of this equation will have the
         # full dimension of the problem and need to be mapped to the equation's
         # variables accordingly. Otherwise, they only have the dimension of this equation.
         self.is_coupled = False
@@ -31,7 +31,7 @@ class Equation:
         # fetch the unknowns from the problem with the equation mapping
         return self.problem.u[self.idx]
 
-    # Getter for the vector of unknowns
+    # Setter for the vector of unknowns
     @u.setter
     def u(self, v):
         if self.problem is None:

@@ -168,6 +168,11 @@ class Problem():
             # TODO: storing all eigenvectors for each solution takes up A LOT of memory!
             #       We should probably not do that. Also, we could store only eigenvalues
             #       that have Re >= 0.
+            #       @simon: sign of determinant only changes if you have simple bifurcations
+            #       for bifs with symmetry you get 2 EVs crossing Im-axis and no change in sign of det(jac)
+            #       @simon: also, instead of saving eigenvalues and eigenvectos, we could
+            #       just save the number of unstable EVs, the rest can be recalculated
+            #       from solution, if necessary.
             sol.eigenvalues, sol.eigenvectors = self.solve_eigenproblem()
         # return the solution object
         return sol
@@ -181,6 +186,9 @@ class Problem():
 
     # the default norm of the solution, used for bifurcation diagrams
     def norm(self):
+        #       TODO: @simon: if we want to calculate more than one measure,
+        #        we could just return an array here, and do the choosing what
+        #        to plot in the problem-specific plot function, right?
         # defaults to the L2-norm
         return np.linalg.norm(self.u)
 

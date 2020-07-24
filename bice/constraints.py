@@ -7,6 +7,10 @@ class VolumeConstraint(Equation):
     TODO: add docstring
     """
     # TODO: is this constraint implemented correctly?
+    #  @simon: should this simply keep the volume constant? then it's correct i guess.
+    #  Should it keep the volume at a value specified by a parameter, i.e. enabling
+    #  continuation in the volume, then rhs should return something like:
+    #  np.trapz(self.ref_eq.u - volume_parameter, self.ref_eq.x)
 
     def __init__(self, reference_equation):
         super().__init__()
@@ -48,6 +52,8 @@ class TranslationConstraint(Equation):
 
     def rhs(self, u):
         # TODO: fix for higher than 1 dimensions
+        #  @simon: how about storing x, y, z, ... arrays as list in eq.x and then iterate lines 64-68 over list items
+        #  don't know if that works for irregularly spaced grids
         # set up the vector of the residual contributions
         res = np.zeros(self.problem.dim)
         # define some variables

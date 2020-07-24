@@ -156,6 +156,7 @@ class RungeKuttaFehlberg45(TimeStepper):
                 min(max(1 * (self.error_tolerance / eps)**0.25, 0.5), 2)
 
         # If it is less than the tolerance, the step is accepted and RK4 value is stored
+        # TODO: @simon: shouldn't this be the RK5 value? It's more accurate and we already calculated it
         if eps <= self.error_tolerance:
             # update problem variables
             problem.time = t + dt_old
@@ -197,6 +198,7 @@ class BDF2(TimeStepper):
         problem.u = problem.newton_solver.solve(f, problem.u)
         # update history
         self.history = [problem.u] + self.history[:self.order]
+
 
 class BDF(TimeStepper):
     """

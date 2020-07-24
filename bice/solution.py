@@ -23,6 +23,8 @@ class Solution:
         self.problem = problem
         # vector of unknowns
         # TODO: storing each solution may eat up some memory
+        #  @simon: do we need to save every solution? we could save some
+        #  solutions to the disk instead
         self.u = problem.u.copy()
         # time
         self.t = problem.time
@@ -59,7 +61,7 @@ class Solution:
                 # there is no previous solution, we cannot determine the bifurcation type
                 return None
             prev_sol = sols_with_eigenvals[-1]
-            # check whether any eigenvalues crossed the real axis in between this and the previous step
+            # check whether any eigenvalues crossed the imaginary axis in between this and the previous step
             npos_eigvals_this = np.count_nonzero(
                 np.real(self.eigenvalues) > self.problem.eigval_zero_tolerance)
             npos_eigvals_prev = np.count_nonzero(
@@ -69,8 +71,14 @@ class Solution:
         if nzero_evs > 0:
             # simply return the number of eigenvalues that crossed zero
             # TODO: better distinction between bifurcation types
+            #  normal branchpoint if Im(zero_EV) == 0, hopfpoint if not,
+            #  also some folds (exchange of symmetry, i.e. walking around the outer
+            #  forks of a pitchfork) only touch zero and then go back, leaving the
+            #  number of unstable EVs unchanged
             return nzero_evs
         # else, no eigenvalues crossed zero --> no bifurcation
+        # TODO: Folds w/o change of unstable EVs are especially interesting, if we don't yet
+        #  know the middle fork of the pitchfork, since it hints for undiscovered branches.
         return None
 
     # is the solution stable?
@@ -81,7 +89,8 @@ class Solution:
                 np.real(self.eigenvalues) > self.problem.eigval_zero_tolerance)
             return npos_evs == 0
         else:
-            # if we do not know the eigenvalues of this solution, recover the stability from the previous solution in the branch
+            # if we do not know the eigenvalues of this solution, recover the stability
+            # from the previous solution in the branch
             if self.branch is None:
                 # if we do not know the branch either, we cannot recover the stability
                 return None
@@ -91,6 +100,8 @@ class Solution:
                 # there is no previous solution, we cannot recover the stability
                 return None
             # else, return the stability of the previous solution
+            # TODO: I fear we might run into fake stable/unstable solutions, if we just assume
+            #  stability from stability of previous solution. Couldn't we miss a bifurcation and destroy the branch?
             return prev_sol.is_stable()
 
     # get access to the previous solution in the branch
