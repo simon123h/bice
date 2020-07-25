@@ -146,7 +146,7 @@ plotID = 0
 n = 0
 plotevery = 1
 dudtnorm = 1
-if not os.path.exists("initial_state2.dat"):
+if not os.path.exists("initial_state.dat"):
     while dudtnorm > 1e-8:
         # plot
         if n % plotevery == 0:
