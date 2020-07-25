@@ -4,7 +4,12 @@ import numpy as np
 
 class VolumeConstraint(Equation):
     """
-    TODO: add docstring
+    A volume constraint (or mass constraint) assures the conservation of
+    the integral of the unknowns of some given equation when solving the system.
+    We may even prescribe the target volume (or mass) with a parameter,
+    but we don't have to.
+    The constraint equation comes with an additional (unknown) Lagrange
+    multiplier that can be interpreted as an influx into the system.
     """
     # TODO: is this constraint implemented correctly?
     #  @simon: should this simply keep the volume constant? then it's correct i guess.
@@ -52,7 +57,11 @@ class VolumeConstraint(Equation):
 
 class TranslationConstraint(Equation):
     """
-    TODO: add docstring
+    A translation constraint assures that the center of mass of some
+    reference equation's unknowns does not move when solving the system.
+    The additional constraint equations (one per spatial dimension) come
+    with Lagrange multipliers, that correspond to the velocities of a comoving
+    frame (advection term).
     """
 
     def __init__(self, reference_equation):

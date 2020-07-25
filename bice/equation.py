@@ -3,7 +3,19 @@ import numpy as np
 
 class Equation:
     """
-    TODO: add docstring
+    The Equation class holds algebraic (Cauchy) equations of the form
+    M du/dt = rhs(u, t, r)
+    where M is the mass matrix, u is the vector of unknowns, t is the time
+    and r is a parameter vector. This may include ODEs and PDEs.
+    All custom equations must inherit from this class and implement the rhs(u) method.
+    Time and parameters are implemented as member attributes.
+    The general Equation class gives the general interface, takes care of some bookkeeping,
+    i.e., mapping the equation's unknowns and variables to the ones of the Problem that
+    the equation belongs to, and provides some general functionality that every equation
+    should have.
+    This is a very fundamental class. Specializations of the Equation class exist for covering
+    more intricate types of equations, i.e., particular discretizations for spatial fields, e.g.,
+    finite difference schemes or pseudospectral methods.
     """
 
     def __init__(self):
@@ -87,7 +99,9 @@ class Equation:
 
 class FiniteDifferenceEquation(Equation):
     """
-    TODO: add docstring
+    The FiniteDifferenceEquation is a subclass of the general Equation
+    and provides some useful routines that are needed for implementing
+    ODEs/PDEs with a finite difference scheme.
     """
 
     def __init__(self):
@@ -99,7 +113,8 @@ class FiniteDifferenceEquation(Equation):
         # the spatial coordinates
         self.x = np.linspace(0, 1, 100, endpoint=False)
 
-    def build_FD_matrices(self, N):
+    def build_FD_matrices(self):
+        N = self.dim
         # identity matrix
         I = np.eye(N)
         # spatial increment
