@@ -32,77 +32,39 @@ class Solution:
         self.p = problem.get_continuation_parameter()
         # value of the solution norm
         self.norm = problem.norm()
-        # eigenvalues
-        self.eigenvalues = []
-        # eigenvectors
-        # TODO: storing these eats up a lot of memory, reconsider it
-        self.eigenvectors = []
+        # number of true positive eigenvalues
+        self.nunstable_eigenvalues = None
         # optional reference to the corresponding branch
         self.branch = None
 
-    # is the solution point at any type of bifurcation, if so, which?
-    def bifurcation_type(self):
-        # check whether we know the eigenvalues
-        if len(self.eigenvalues) == 0:
-            # if not, we cannot detect any bifurcation type
+    # how many eigenvalues have crossed the imaginary axis with this solution?
+    @property
+    def neigenvalues_crossed(self):
+        # if we do not know the number of unstable eigenvalues, we have no result
+        if self.nunstable_eigenvalues is None:
             return None
-        if self.branch is None:
-            # if we're not on a branch, we simply check for eigenvalues, that are zero
-            nzero_evs = np.count_nonzero(
-                abs(np.real(self.eigenvalues)) <= self.problem.eigval_zero_tolerance)
+        # else, compare with the nearest previous neighbor that has info on eigenvalues
+        # get branch points with eigenvalue info
+        bps = [s for s in self.branch.solutions if s.nunstable_eigenvalues is not None]
+        # find index of previous solution
+        index = bps.index(self) - 1
+        if index < 0:
+            # if there is no previous solution with info on eigenvalues, we have no result
+            return None
         else:
-            # if we do know the branch, check whether the eigenvalues changed
-            # from the last known eigenvalues in the branch
-            # get the previous eigenvalues
-            index = self.branch.solutions.index(self)
-            sols_with_eigenvals = [
-                s for s in self.branch.solutions[:index] if len(s.eigenvalues) > 0]
-            if not sols_with_eigenvals:
-                # there is no previous solution, we cannot determine the bifurcation type
-                return None
-            prev_sol = sols_with_eigenvals[-1]
-            # check whether any eigenvalues crossed the imaginary axis in between this and the previous step
-            npos_eigvals_this = np.count_nonzero(
-                np.real(self.eigenvalues) > self.problem.eigval_zero_tolerance)
-            npos_eigvals_prev = np.count_nonzero(
-                np.real(prev_sol.eigenvalues) > self.problem.eigval_zero_tolerance)
-            nzero_evs = abs(npos_eigvals_this - npos_eigvals_prev)
-        # return the number of eigenvalues that crossed zero in this step
-        if nzero_evs > 0:
-            # simply return the number of eigenvalues that crossed zero
-            # TODO: better distinction between bifurcation types
-            #  normal branchpoint if Im(zero_EV) == 0, hopfpoint if not,
-            #  also some folds (exchange of symmetry, i.e. walking around the outer
-            #  forks of a pitchfork) only touch zero and then go back, leaving the
-            #  number of unstable EVs unchanged
-            return nzero_evs
-        # else, no eigenvalues crossed zero --> no bifurcation
-        # TODO: Folds w/o change of unstable EVs are especially interesting, if we don't yet
-        #  know the middle fork of the pitchfork, since it hints for undiscovered branches.
-        return None
+            # return the difference in unstable eigenvalues to the previous solution
+            return self.nunstable_eigenvalues - bps[index].nunstable_eigenvalues
 
     # is the solution stable?
     def is_stable(self):
-        if len(self.eigenvalues) > 0:
-            # if we know the eigenvalues, check for positive eigenvalues
-            npos_evs = np.count_nonzero(
-                np.real(self.eigenvalues) > self.problem.eigval_zero_tolerance)
-            return npos_evs == 0
-        else:
-            # if we do not know the eigenvalues of this solution, recover the stability
-            # from the previous solution in the branch
-            if self.branch is None:
-                # if we do not know the branch either, we cannot recover the stability
-                return None
-            # get the previous solution
-            prev_sol = self.get_neighboring_solution(-1)
-            if prev_sol is None:
-                # there is no previous solution, we cannot recover the stability
-                return None
-            # else, return the stability of the previous solution
-            # TODO: I fear we might run into fake stable/unstable solutions, if we just assume
-            #  stability from stability of previous solution. Couldn't we miss a bifurcation and destroy the branch?
-            return prev_sol.is_stable()
+        # if we don't know the number of eigenvalues, return None
+        if self.nunstable_eigenvalues is None:
+            return None
+        # if there is any true positive eigenvalues, the solution is not stable
+        if self.nunstable_eigenvalues > 0:
+            return False
+        # otherwise, the solution is considered to be stable (or metastable at least)
+        return True
 
     # get access to the previous solution in the branch
     def get_neighboring_solution(self, distance):
@@ -154,10 +116,6 @@ class Branch:
     def norm_vals(self):
         return [s.norm for s in self.solutions]
 
-    # return a list of all bifurcation points on the branch
-    def get_bifurcation_points(self):
-        return [s for s in self.solutions if s.bifurcation_type() is not None]
-
     # returns the list of parameters and norms of the branch
     # optional argument only (str) may restrict the data to:
     #    - only="stable": stable parts only
@@ -171,7 +129,7 @@ class Branch:
         elif only == "unstable":
             condition = [s.is_stable() for s in self.solutions]
         elif only == "bifurcations":
-            condition = [s.bifurcation_type() is None for s in self.solutions]
+            condition = [s.neigenvalues_crossed in [None, 0] for s in self.solutions]
         # mask lists where condition is met and return
         pvals = np.ma.masked_where(condition, self.parameter_vals())
         nvals = np.ma.masked_where(condition, self.norm_vals())

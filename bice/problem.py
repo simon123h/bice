@@ -37,6 +37,11 @@ class Problem():
         self.eigval_zero_tolerance = 1e-6
         # the list of equations that are part of this problem
         self.equations = []
+        # storage for the latest eigenvalues that were calculated
+        # TODO: what if these become invalid, e.g., due to manual changes to the unknowns?
+        self.latest_eigenvalues = None
+        # storage for the latest eigenvectors that were calculated
+        self.latest_eigenvectors = None
 
     # The dimension of the system
     @property
@@ -153,29 +158,26 @@ class Problem():
             sol = Solution(self)
             branch.add_solution_point(sol)
             # solve the eigenproblem
-            sol.eigenvalues, sol.eigenvectors = self.solve_eigenproblem()
-        # save the sign of the jacobian
-        jac_sign = np.linalg.slogdet(self.jacobian(self.u))[0]
+            eigenvalues, eigenvectors = self.solve_eigenproblem()
+            # count number of positive eigenvalues
+            sol.nunstable_eigenvalues = len([ev for ev in np.real(
+                eigenvalues) if ev > self.eigval_zero_tolerance])
         # perform the step with a continuation stepper
         self.continuation_stepper.step(self)
         # add the solution to the branch
         sol = Solution(self)
         branch.add_solution_point(sol)
-        # detect sign change in jacobian
-        jac_sign *= np.linalg.slogdet(self.jacobian(self.u))[0]
-        # if desired or Jac sign changed, solve the eigenproblem
-        if self.continuation_stepper.always_check_eigenvalues or jac_sign < 0:
-            # TODO: storing all eigenvectors for each solution takes up A LOT of memory!
-            #       We should probably not do that. Also, we could store only eigenvalues
-            #       that have Re >= 0.
-            #       @simon: sign of determinant only changes if you have simple bifurcations
-            #       for bifs with symmetry you get 2 EVs crossing Im-axis and no change in sign of det(jac)
-            #       @simon: also, instead of saving eigenvalues and eigenvectos, we could
-            #       just save the number of unstable EVs, the rest can be recalculated
-            #       from solution, if necessary.
-            sol.eigenvalues, sol.eigenvectors = self.solve_eigenproblem()
-        # return the solution object
-        return sol
+        # if desired, solve the eigenproblem
+        if self.continuation_stepper.always_check_eigenvalues:
+            # call eigensolver
+            eigenvalues, eigenvectors = self.solve_eigenproblem()
+            # count number of positive eigenvalues
+            sol.nunstable_eigenvalues = len([ev for ev in np.real(
+                eigenvalues) if ev > self.eigval_zero_tolerance])
+            # temporarily save eigenvalues and eigenvectors for this step
+            # NOTE: this is currently only needed for plotting
+            self.latest_eigenvalues = eigenvalues
+            self.latest_eigenvectors = eigenvectors
 
     # return the value of the continuation parameter
     def get_continuation_parameter(self):
@@ -196,9 +198,9 @@ class Problem():
 
     # the default norm of the solution, used for bifurcation diagrams
     def norm(self):
-        #       TODO: @simon: if we want to calculate more than one measure,
-        #        we could just return an array here, and do the choosing what
-        #        to plot in the problem-specific plot function, right?
+        # TODO: @simon: if we want to calculate more than one measure,
+        #       we could just return an array here, and do the choosing what
+        #       to plot in the problem-specific plot function, right?
         # defaults to the L2-norm
         return np.linalg.norm(self.u)
 
@@ -218,14 +220,6 @@ class Problem():
         # plot all equations
         for eq in self.equations:
             eq.plot(ax[0, 0])
-        # if sol and len(sol.eigenvectors) > 0:
-        #     ax[1, 0].plot(np.real(sol.eigenvectors[0]))
-        #     ax[1, 0].set_ylabel("eigenvector")
-        # else:
-        #     ax[1, 0].plot(self.she.k, np.abs(np.fft.rfft(self.she.u)))
-        #     ax[1, 0].set_xlim((0, self.she.k[-1]/2))
-        #     ax[1, 0].set_xlabel("k")
-        #     ax[1, 0].set_ylabel("fourier spectrum u(k,t)")
         # plot the bifurcation diagram
         for branch in self.bifurcation_diagram.branches:
             r, norm = branch.data()
@@ -240,14 +234,19 @@ class Problem():
         ax[0, 1].set_xlabel("continuation parameter")
         ax[0, 1].set_ylabel("norm")
         ax[0, 1].legend()
-        # if False:
-        #     ev_re = np.real(sol.eigenvalues[:20])
-        #     ev_re_n = np.ma.masked_where(
-        #         ev_re > self.eigval_zero_tolerance, ev_re)
-        #     ev_re_p = np.ma.masked_where(
-        #         ev_re <= self.eigval_zero_tolerance, ev_re)
-        #     ax[1, 1].plot(ev_re_n, "o", color="C0", label="Re < 0")
-        #     ax[1, 1].plot(ev_re_p, "o", color="C1", label="Re > 0")
-        #     ax[1, 1].axhline(0, color="gray")
-        #     ax[1, 1].legend()
-        #     ax[1, 1].set_ylabel("eigenvalues")
+        # plot the eigenvalues, if any
+        if self.latest_eigenvalues is not None:
+            ev_re = np.real(self.latest_eigenvalues[:20])
+            ev_re_n = np.ma.masked_where(
+                ev_re > self.eigval_zero_tolerance, ev_re)
+            ev_re_p = np.ma.masked_where(
+                ev_re <= self.eigval_zero_tolerance, ev_re)
+            ax[1, 1].plot(ev_re_n, "o", color="C0", label="Re < 0")
+            ax[1, 1].plot(ev_re_p, "o", color="C1", label="Re > 0")
+            ax[1, 1].axhline(0, color="gray")
+            ax[1, 1].legend()
+            ax[1, 1].set_ylabel("eigenvalues")
+        # plot the eigenvector, if any
+        if self.latest_eigenvectors is not None:
+            ax[1, 0].plot(np.real(self.latest_eigenvectors[0]))
+            ax[1, 0].set_ylabel("eigenvector")
