@@ -78,7 +78,9 @@ class Equation:
         ax.set_xlabel("x")
         ax.set_ylabel("solution u(x,t)")
         ax.plot(self.x, self.u)
-
+        # ax.set_xlabel("k")
+        # ax.set_ylabel("fourier spectrum u(k,t)")
+        # ax.plot(self.she.k, np.abs(np.fft.rfft(self.she.u)))
 
 
 class FiniteDifferenceEquation(Equation):
