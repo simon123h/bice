@@ -18,18 +18,28 @@ class VolumeConstraint(Equation):
         self.ref_eq = reference_equation
         # the constraint equation couples to some other equation of the problem
         self.is_coupled = True
-        # this equation brings zero degrees of freedom!
-        self.u = np.array([])
+        # this equation brings a single extra degree of freedom (influx Lagrange multiplier)
+        self.u = np.array([0])
         # This parameter allows for prescribing a fixed volume (unless it is None)
         self.fixed_volume = None
 
     def rhs(self, u):
-        # calculate the difference in volumes between current
-        # and previous unknowns of the reference equation
+        # generate empty vector of residual contributions
+        res = np.zeros((u.size))
+        # employ the constraint equation
         if self.fixed_volume is None:
-           return np.trapz(u[self.ref_eq.idx]-self.ref_eq.u, self.ref_eq.x)
+            # calculate the difference in volumes between current
+            # and previous unknowns of the reference equation
+            res[self.idx] = np.trapz(u[self.ref_eq.idx] -
+                                     self.ref_eq.u, self.ref_eq.x)
         else:
-           return np.trapz(u[self.ref_eq.idx], self.ref_eq.x) - self.fixed_volume
+            # parametric constraint: calculate the difference between current
+            # volume and the prescribed fixed_volume parameter
+            res[self.idx] = np.trapz(u[self.ref_eq.idx],
+                                     self.ref_eq.x) - self.fixed_volume
+        # Add the constraint to the reference equation: unknown influx is the Langrange multiplier
+        res[self.ref_eq.idx] = u[self.idx]
+        return res
 
     def mass_matrix(self):
         # couples to no time-derivatives
@@ -38,7 +48,6 @@ class VolumeConstraint(Equation):
     def plot(self, ax):
         # nothing to plot
         pass
-
 
 
 class TranslationConstraint(Equation):
