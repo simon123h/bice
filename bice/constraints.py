@@ -31,6 +31,11 @@ class VolumeConstraint(Equation):
         # couples to no time-derivatives
         return np.zeros(self.problem.dim)
 
+    def plot(self, ax):
+        # nothing to plot
+        pass
+
+
 
 class TranslationConstraint(Equation):
     """
@@ -72,3 +77,7 @@ class TranslationConstraint(Equation):
     def mass_matrix(self):
         # couples to no time-derivatives
         return np.zeros(self.problem.dim)
+
+    def plot(self, ax):
+        # nothing to plot
+        pass

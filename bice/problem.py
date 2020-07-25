@@ -177,6 +177,16 @@ class Problem():
         # return the solution object
         return sol
 
+    # return the value of the continuation parameter
+    def get_continuation_parameter(self):
+        raise NotImplementedError(
+            "No method get_continuation_parameter() implemented for this equation!")
+
+    # set the value of the continuation parameter
+    def set_continuation_parameter(self, v):
+        raise NotImplementedError(
+            "No method set_continuation_parameter() implemented for this equation!")
+
     # create a new branch in the bifurcation diagram and prepare for a new continuation
     def new_branch(self):
         # create a new branch in the bifurcation diagram
@@ -199,3 +209,45 @@ class Problem():
     # load the current solution from disk
     def load(self, filename):
         self.u = np.loadtxt(filename)
+
+    # plot everything
+    def plot(self, ax):
+        # clear the axes
+        for a in ax.flatten():
+            a.clear()
+        # plot all equations
+        for eq in self.equations:
+            eq.plot(ax[0, 0])
+        # if sol and len(sol.eigenvectors) > 0:
+        #     ax[1, 0].plot(np.real(sol.eigenvectors[0]))
+        #     ax[1, 0].set_ylabel("eigenvector")
+        # else:
+        #     ax[1, 0].plot(self.she.k, np.abs(np.fft.rfft(self.she.u)))
+        #     ax[1, 0].set_xlim((0, self.she.k[-1]/2))
+        #     ax[1, 0].set_xlabel("k")
+        #     ax[1, 0].set_ylabel("fourier spectrum u(k,t)")
+        # plot the bifurcation diagram
+        for branch in self.bifurcation_diagram.branches:
+            r, norm = branch.data()
+            ax[0, 1].plot(r, norm, "--", color="C0")
+            r, norm = branch.data(only="stable")
+            ax[0, 1].plot(r, norm, color="C0")
+            r, norm = branch.data(only="bifurcations")
+            ax[0, 1].plot(r, norm, "*", color="C2")
+        ax[0, 1].plot(np.nan, np.nan, "*", color="C2", label="bifurcations")
+        ax[0, 1].plot(self.get_continuation_parameter(), self.norm(),
+                      "x", label="current point", color="black")
+        ax[0, 1].set_xlabel("continuation parameter")
+        ax[0, 1].set_ylabel("norm")
+        ax[0, 1].legend()
+        # if False:
+        #     ev_re = np.real(sol.eigenvalues[:20])
+        #     ev_re_n = np.ma.masked_where(
+        #         ev_re > self.eigval_zero_tolerance, ev_re)
+        #     ev_re_p = np.ma.masked_where(
+        #         ev_re <= self.eigval_zero_tolerance, ev_re)
+        #     ax[1, 1].plot(ev_re_n, "o", color="C0", label="Re < 0")
+        #     ax[1, 1].plot(ev_re_p, "o", color="C1", label="Re > 0")
+        #     ax[1, 1].axhline(0, color="gray")
+        #     ax[1, 1].legend()
+        #     ax[1, 1].set_ylabel("eigenvalues")

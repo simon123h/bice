@@ -73,6 +73,13 @@ class Equation:
         # default case: assume the identity matrix I (--> du/dt = rhs(u))
         return np.eye(self.dim)
 
+    # plot the solution into a matplotlib axes object
+    def plot(self, ax):
+        ax.set_xlabel("x")
+        ax.set_ylabel("solution u(x,t)")
+        ax.plot(self.x, self.u)
+
+
 
 class FiniteDifferenceEquation(Equation):
     """
