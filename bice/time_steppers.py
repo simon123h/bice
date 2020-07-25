@@ -45,7 +45,6 @@ class ImplicitEuler(TimeStepper):
 
         def f(u):
             # assemble the system
-            # TODO: should this assembly process be generalized in some way?
             return problem.rhs(u) - (u - problem.u) / self.dt
         # solve it with a Newton solver
         # TODO: detect if Newton solver failed and reject step
@@ -75,6 +74,9 @@ class RungeKuttaFehlberg45(TimeStepper):
     Local truncation error is estimated by comparison of
     RK4 and RK5 schemes and determines the optimal step size.
     """
+
+    # Coefficients borrowed from:
+    # https://github.com/LorranSutter/DiscreteMethods/blob/master/discreteMethods.py
 
     # Coefficients related to the independent variable of the evaluations
     a2 = 2.500000000000000e-01  # 1/4
@@ -156,7 +158,6 @@ class RungeKuttaFehlberg45(TimeStepper):
                 min(max(1 * (self.error_tolerance / eps)**0.25, 0.5), 2)
 
         # If it is less than the tolerance, the step is accepted and RK4 value is stored
-        # TODO: @simon: shouldn't this be the RK5 value? It's more accurate and we already calculated it
         if eps <= self.error_tolerance:
             # update problem variables
             problem.time = t + dt_old

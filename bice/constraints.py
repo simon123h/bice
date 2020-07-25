@@ -82,7 +82,6 @@ class TranslationConstraint(Equation):
         #  @simon: how about storing x, y, z, ... arrays as list in eq.x and then iterate lines 64-68 over list items
         #  don't know if that works for irregularly spaced grids
         # set up the vector of the residual contributions
-        # TODO: add optional fixed_volume parameter
         res = np.zeros(self.problem.dim)
         # define some variables
         eq = self.ref_eq

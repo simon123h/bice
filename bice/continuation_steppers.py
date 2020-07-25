@@ -86,11 +86,6 @@ class PseudoArclengthContinuation(ContinuationStepper):
         p_old = p
         if self.tangent is not None:
             # simply get tangent from difference between last steps
-            # TODO: is it a good idea or should we be able to switch this off?
-            # NOTE: I tried making sure that the calculated tangent and the approximate tangent
-            #       (self.tangent) are pointing in the same direction (tangent*self.tangent > 0),
-            #       but that did just randomly flip the continuation direction :-/
-            #       Do we maybe have some bug in the calculation of the tangent?
             tangent = self.tangent
         else:
             # calculate tangent from extended Jacobian in (u, parameter)-space
