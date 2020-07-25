@@ -117,19 +117,12 @@ class ThinFilm(Problem):
         # self.time_stepper.error_tolerance = 1e1
         # self.time_stepper.dt = 3e-5
         self.time_stepper = BDF(self) # better for FD
+        # assign the continuation parameter
+        self.continuation_parameter = (self.volume_constraint, "fixed_volume")
 
     # set higher modes to null, for numerical stability
     def dealias(self, fraction=1./2.):
         self.tfe.u = self.tfe.dealias(self.tfe.u, True)
-
-    # return the value of the continuation parameter
-    def get_continuation_parameter(self):
-        return self.volume_constraint.fixed_volume
-
-    # set the value of the continuation parameter
-    def set_continuation_parameter(self, v):
-        self.volume_constraint.fixed_volume = v
-
 
 # create output folder
 shutil.rmtree("out", ignore_errors=True)
@@ -183,6 +176,7 @@ problem.continuation_stepper.always_check_eigenvalues = True
 problem.volume_constraint.fixed_volume = np.trapz(problem.tfe.u, problem.tfe.x)
 problem.add_equation(problem.volume_constraint)
 problem.add_equation(problem.translation_constraint)
+
 
 n = 0
 plotevery = 1

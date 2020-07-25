@@ -42,6 +42,9 @@ class Problem():
         self.latest_eigenvalues = None
         # storage for the latest eigenvectors that were calculated
         self.latest_eigenvectors = None
+        # The continuation parameter is defined by passing an object and the name of the
+        # object's attribute that corresponds to the continuation parameter as a tuple
+        self.continuation_parameter = None
 
     # The dimension of the system
     @property
@@ -148,8 +151,7 @@ class Problem():
         # perform timestep according to current scheme
         self.time_stepper.step(self)
 
-    # Perform a parameter continuation step, w.r.t the parameter defined by
-    # self.continuation_stepper.get_continuation_parameter/set_continuation_parameter()
+    # Perform a parameter continuation step
     def continuation_step(self):
         # get the current branch in the bifurcation diagram
         branch = self.bifurcation_diagram.current_branch()
@@ -181,15 +183,24 @@ class Problem():
 
     # return the value of the continuation parameter
     def get_continuation_parameter(self):
-        raise NotImplementedError(
-            "No method get_continuation_parameter() implemented for this equation!")
+        # if no continuation parameter set, return None
+        if self.continuation_parameter is None:
+            return None
+        # else, get the value using the builtin 'getattr'
+        obj, attr_name = tuple(self.continuation_parameter)
+        return getattr(obj, attr_name)
 
     # set the value of the continuation parameter
-    def set_continuation_parameter(self, v):
-        raise NotImplementedError(
-            "No method set_continuation_parameter() implemented for this equation!")
+    def set_continuation_parameter(self, val):
+        # if no continuation parameter set, do nothing
+        if self.continuation_parameter is None:
+            return
+        # else, assign the new value using the builtin 'setattr'
+        obj, attr_name = tuple(self.continuation_parameter)
+        setattr(obj, attr_name, val)
 
     # create a new branch in the bifurcation diagram and prepare for a new continuation
+
     def new_branch(self):
         # create a new branch in the bifurcation diagram
         self.bifurcation_diagram.new_branch()

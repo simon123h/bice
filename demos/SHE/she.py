@@ -77,6 +77,8 @@ class SwiftHohenbergProblem(Problem):
         self.time_stepper = RungeKuttaFehlberg45(dt=1e-3)
         self.time_stepper.error_tolerance = 1e-7
         # self.time_stepper = BDF2(dt=1e-3) # better for FD
+        # assign the continuation parameter
+        self.continuation_parameter = (self.she, "r")
 
     # set higher modes to null, for numerical stability
     def dealias(self, fraction=1./2.):
@@ -84,14 +86,6 @@ class SwiftHohenbergProblem(Problem):
         N = len(u_k)
         u_k[-int(N*fraction):] = 0
         self.she.u = np.fft.irfft(u_k)
-
-    # return the value of the continuation parameter
-    def get_continuation_parameter(self):
-        return self.she.r
-
-    # set the value of the continuation parameter
-    def set_continuation_parameter(self, v):
-        self.she.r = v
 
 
 # create output folder

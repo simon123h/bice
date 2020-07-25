@@ -33,6 +33,8 @@ class Equation:
         self.problem = None
         # the equation's storage for the unknowns if it is not currently part of a problem
         self.__u = None
+        # the list of parameter names (list of strings, must match the name of the attributes)
+        self.parameter_names = []
 
     # Getter for the vector of unknowns
     @property
