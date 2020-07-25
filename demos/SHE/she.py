@@ -54,7 +54,7 @@ class SwiftHohenbergEquationFD(FiniteDifferenceEquation):
         self.x = np.linspace(-L/2, L/2, N)
         self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
         # build finite difference matrices
-        self.build_FD_matrices(N)
+        self.build_FD_matrices()
         self.linear_op = (self.kc**2 + self.laplace)
         self.linear_op = self.r - np.matmul(self.linear_op, self.linear_op)
         # initial condition

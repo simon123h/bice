@@ -77,7 +77,7 @@ class ThinFilmEquationFD(FiniteDifferenceEquation):
         self.x = np.linspace(-L/2, L/2, N)
         self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
         # build finite difference matrices
-        self.build_FD_matrices(N)
+        self.build_FD_matrices()
         # initial condition
         # self.u = np.ones(N) * 3
         self.u = 2 * np.cos(self.x*2*np.pi/L) + 3
