@@ -44,6 +44,8 @@ class Equation:
     # The number of unknowns / degrees of freedom of the equation
     @property
     def dim(self):
+        if self.idx is None:
+            return self.__u.size
         return self.u.size
 
     # Calculate the right-hand side of the equation 0 = rhs(u)

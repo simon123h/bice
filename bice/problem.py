@@ -80,7 +80,7 @@ class Problem():
         # assign index range for each equation according to their dimension
         for eq in self.equations:
             # unknowns / equations indexing
-            eq.idx = range(i, eq.dim)
+            eq.idx = range(i, i+eq.dim)
             # the corresponding indexing for matrices (boolean mask)
             eq.matrix_idx = tuple(np.meshgrid(eq.idx, eq.idx))
             # increment counter by dimension
