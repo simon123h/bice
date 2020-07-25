@@ -19,13 +19,17 @@ class VolumeConstraint(Equation):
         # the constraint equation couples to some other equation of the problem
         self.is_coupled = True
         # this equation brings zero degrees of freedom!
-        self.dim = 0
-        self.u = np.zeros(self.dim)
+        self.u = np.array([])
+        # This parameter allows for prescribing a fixed volume (unless it is None)
+        self.fixed_volume = None
 
     def rhs(self, u):
         # calculate the difference in volumes between current
         # and previous unknowns of the reference equation
-        return np.trapz(u[self.ref_eq.idx]-self.ref_eq.u, self.ref_eq.x)
+        if self.fixed_volume is None:
+           return np.trapz(u[self.ref_eq.idx]-self.ref_eq.u, self.ref_eq.x)
+        else:
+           return np.trapz(u[self.ref_eq.idx], self.ref_eq.x) - self.fixed_volume
 
     def mass_matrix(self):
         # couples to no time-derivatives
@@ -60,6 +64,7 @@ class TranslationConstraint(Equation):
         #  @simon: how about storing x, y, z, ... arrays as list in eq.x and then iterate lines 64-68 over list items
         #  don't know if that works for irregularly spaced grids
         # set up the vector of the residual contributions
+        # TODO: add optional fixed_volume parameter
         res = np.zeros(self.problem.dim)
         # define some variables
         eq = self.ref_eq
