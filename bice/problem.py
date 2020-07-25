@@ -243,7 +243,7 @@ class Problem():
             bifs = [s for s in branch.solutions if s.neigenvalues_crossed not in [None, 0]]
             for bif in bifs:
                 s = bif.neigenvalues_crossed
-                s = "+"*s if s > 0 else "-"*s
+                s = "+"*s if s > 0 else "-"*(-s)
                 ax[0, 1].annotate(s, (bif.p, bif.norm))
         ax[0, 1].plot(np.nan, np.nan, "*", color="C2", label="bifurcations")
         ax[0, 1].plot(self.get_continuation_parameter(), self.norm(),
