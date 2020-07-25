@@ -1,11 +1,14 @@
 
 # TODO list
+**NOTE:**
+
+**This list is deprecated. The issues are now found in the GitLab repo!**
+
 
 ## General
 
 - Find backronym
 - Follow the TODO's in the code
-- Move issues and TODO-list to GitLab issues
 
 ## Architecture
 
@@ -20,7 +23,6 @@
 ## Bugs & issues
 
 - Unsure whether Runge-Kutta-Fehlberg-45 works properly or if there is some bug. Does adaptive step-size work properly?
-- Update TFE demos to use the new Equation interface
 
 ## Mathematical features
 
