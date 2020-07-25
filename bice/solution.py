@@ -174,3 +174,27 @@ class BifurcationDiagram:
     # remove a branch from the BifurcationDiagram by its ID
     def remove_branch_by_ID(self, branch_id):
         self.branches = [b for b in self.branches if b.id != branch_id]
+
+
+    # plot the bifurcation diagram
+    def plot(self, problem, ax):
+        # plot every branch separately
+        for branch in self.branches:
+            p, norm = branch.data()
+            ax.plot(p, norm, "--", color="C0")
+            p, norm = branch.data(only="stable")
+            ax.plot(p, norm, color="C0")
+            p, norm = branch.data(only="bifurcations")
+            ax.plot(p, norm, "*", color="C2")
+            # annotate bifurcations with +/- signs corresponding to their null-eigenvalues
+            bifs = [s for s in branch.solutions if s.neigenvalues_crossed not in [None, 0]]
+            for bif in bifs:
+                s = bif.neigenvalues_crossed
+                s = "+"*s if s > 0 else "-"*(-s)
+                ax.annotate(" "+s, (bif.p, bif.norm))
+        ax.plot(np.nan, np.nan, "*", color="C2", label="bifurcations")
+        ax.plot(problem.get_continuation_parameter(), problem.norm(),
+                      "x", label="current point", color="black")
+        ax.set_xlabel("continuation parameter")
+        ax.set_ylabel("norm")
+        ax.legend()
