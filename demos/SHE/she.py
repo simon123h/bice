@@ -107,7 +107,7 @@ if not os.path.exists("initial_state.dat"):
     while dudtnorm > 1e-5:
         # plot
         if n % plotevery == 0:
-            problem.plot(fig, ax)
+            problem.plot(ax)
             fig.savefig("out/img/{:05d}.svg".format(plotID))
             plotID += 1
             print("step #: {:}".format(n))
