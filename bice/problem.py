@@ -53,17 +53,24 @@ class Problem():
 
     # add an equation to the problem
     def add_equation(self, eq):
+        # check if eq already in self.equations
+        if eq in self.equations:
+            print("Equation is already part of the problem!")
+            return
         # append to list of equations
         self.equations.append(eq)
         # append eq's degrees of freedom to the problem dofs
         self.u = np.append(self.u, eq.u)
-        # assign this problem to the equation
-        eq.problem = self
         # redo the mapping from equation to problem variables
         self.assign_equation_numbers()
+        # assign this problem to the equation
+        eq.problem = self
 
     # remove an equation from the problem
     def remove_equation(self, eq):
+        # check if eq in self.equations
+        if eq not in self.equations:
+            return
         # remove from the list of equations
         self.equations.remove(eq)
         # remove the equations association with the problem
@@ -84,13 +91,12 @@ class Problem():
         for eq in self.equations:
             # unknowns / equations indexing
             eq.idx = range(i, i+eq.dim)
-            # the corresponding indexing for matrices (boolean mask)
-            eq.matrix_idx = tuple(np.meshgrid(eq.idx, eq.idx))
             # increment counter by dimension
             i += eq.dim
 
     # Calculate the right-hand side of the system 0 = rhs(u)
     def rhs(self, u):
+        # TODO: if there is only one equation, we could return the rhs directly
         # the (empty) vector of residuals
         res = np.zeros(self.dim)
         # add the residuals of each equation
@@ -106,6 +112,7 @@ class Problem():
 
     # Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u
     def jacobian(self, u):
+        # TODO: if there is only one equation, we could return the Jacobian directly
         # the (empty) Jacobian
         J = np.zeros((self.dim, self.dim))
         # add the Jacobian of each equation
@@ -115,14 +122,14 @@ class Problem():
                 J += eq.jacobian(u)
             else:
                 # uncoupled equations simply work on their own variables, so we do a mapping
-                # np.putmask(J, eq.matrix_idx, eq.jacobian(u[eq.idx]))
-                J[eq.matrix_idx] += eq.jacobian(u[eq.idx])
+                J[eq.idx[0]:len(eq.idx), eq:idx[0]:len(eq.idx)] += eq.jacobian(u[eq.idx])
         # all entries assembled, return
         return J
 
     # The mass matrix determines the linear relation of the rhs to the temporal derivatives:
     # M * du/dt = rhs(u)
     def mass_matrix(self):
+        # TODO: if there is only one equation, we could return the matrix directly
         # the (empty) mass matrix
         M = np.zeros((self.dim, self.dim))
         # add the entries of each equation
@@ -132,7 +139,7 @@ class Problem():
                 M += eq.mass_matrix()
             else:
                 # uncoupled equations simply work on their own variables, so we do a mapping
-                M[eq.matrix_idx] += eq.mass_matrix()
+                M[eq.idx[0]:len(eq.idx), eq.idx[0]:len(eq.idx)] += eq.mass_matrix()
         # all entries assembled, return
         return M
 

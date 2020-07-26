@@ -25,6 +25,7 @@ class Equation:
         # variables accordingly. Otherwise, they only have the dimension of this equation.
         self.is_coupled = False
         # Indices for the mapping from Problem.u to Equation.u: eq.u = problem.u[eq.idx]
+        # TODO: this could also be a property and calculated from an initial coordinate and the dimension
         self.idx = None
         # 2d-indices for the mapping from Problem's matrices to Equation matrices
         # (e.g., Jacobian or mass matrix)
