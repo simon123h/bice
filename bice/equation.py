@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.optimize
 from .profiling import profile
 
 class Equation:
@@ -63,19 +64,24 @@ class Equation:
             "No right-hand side (rhs) implemented for this equation!")
 
     # Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u
+    @profile
     def jacobian(self, u):
         # default implementation: calculate Jacobian with finite differences
+        # TODO: is there some way to make this more performant?
         N = self.problem.dim if self.is_coupled else self.dim
         J = np.zeros([N, N], dtype=np.float)
-        for i in range(N):
+        f0 = self.rhs(u)
+        for i in np.arange(N):
             eps = 1e-10
             u1 = u.copy()
-            u2 = u.copy()
             u1[i] += eps
-            u2[i] -= eps
             f1 = self.rhs(u1)
-            f2 = self.rhs(u2)
-            J[:, i] = (f1 - f2) / (2 * eps)
+            J[:, i] = (f1 - f0) / eps
+            # alternatively, central differences:
+            # u2 = u.copy()
+            # u2[i] -= eps
+            # f2 = self.rhs(u2)
+            # J[:, i] = (f1 - f2) / (2 * eps)
         return J
 
     # The mass matrix M determines the linear relation of the rhs to the temporal derivatives:
