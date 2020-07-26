@@ -188,11 +188,13 @@ class Problem():
         if branch.is_empty():
             sol = Solution(self)
             branch.add_solution_point(sol)
-            # solve the eigenproblem
-            eigenvalues, eigenvectors = self.solve_eigenproblem()
-            # count number of positive eigenvalues
-            sol.nunstable_eigenvalues = len([ev for ev in np.real(
-                eigenvalues) if ev > self.eigval_zero_tolerance])
+            # if desired, solve the eigenproblem
+            if self.continuation_stepper.always_check_eigenvalues:
+                # solve the eigenproblem
+                eigenvalues, eigenvectors = self.solve_eigenproblem()
+                # count number of positive eigenvalues
+                sol.nunstable_eigenvalues = len([ev for ev in np.real(
+                    eigenvalues) if ev > self.eigval_zero_tolerance])
         # perform the step with a continuation stepper
         self.continuation_stepper.step(self)
         # add the solution to the branch
