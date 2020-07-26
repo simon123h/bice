@@ -8,7 +8,7 @@ sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, Equation, FiniteDifferenceEquation
 from bice.time_steppers import RungeKutta4, RungeKuttaFehlberg45, BDF2
 from bice.constraints import TranslationConstraint, VolumeConstraint
-from bice.profiling import profile, start_profiling, print_profiling_summary
+from bice.profiling import profile, Profiler
 
 
 class CahnHilliardEquation(Equation):
@@ -87,12 +87,12 @@ dudtnorm = 1
 
 # if not os.path.exists("initial_state2.dat"):
 
-start_profiling()
+Profiler.start()
 
 for i in range(500):
     problem.time_step()
 
-print_profiling_summary()
+Profiler.print_summary()
 
 # while dudtnorm > 1e-6:
 # # for i in range(500):
