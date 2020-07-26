@@ -156,8 +156,6 @@ while problem.she.r > -0.016:
         problem.plot(ax)
         fig.savefig("out/img/{:05d}.svg".format(plotID))
         plotID += 1
-    if n > 10:
-        break
 Profiler.print_summary()
 
 # load the initial state and add extra dof for translation constraint

@@ -67,22 +67,27 @@ class Equation:
     @profile
     def jacobian(self, u):
         # default implementation: calculate Jacobian with finite differences
-        # TODO: is there some way to make this more performant?
+        eps = 1e-10
+        use_central_differences = False
         N = self.problem.dim if self.is_coupled else self.dim
-        J = np.zeros([N, N], dtype=np.float)
-        f0 = self.rhs(u)
+        J = np.zeros((N, N))
+        if not use_central_differences:
+            f0 = self.rhs(u)
+        u1 = u.copy()
         for i in np.arange(N):
-            eps = 1e-10
-            u1 = u.copy()
-            u1[i] += eps
+            k = u1[i]
+            u1[i] = k + eps
             f1 = self.rhs(u1)
-            J[:, i] = (f1 - f0) / eps
-            # alternatively, central differences:
-            # u2 = u.copy()
-            # u2[i] -= eps
-            # f2 = self.rhs(u2)
-            # J[:, i] = (f1 - f2) / (2 * eps)
-        return J
+            if use_central_differences:
+                # central difference
+                u1[i] = k - eps
+                f2 = self.rhs(u1)
+                J[i] = (f1 - f2) / (2*eps)
+            else:
+                # forward difference
+                J[i] = (f1 - f0) / eps
+            u1[i] = k
+        return J.T
 
     # The mass matrix M determines the linear relation of the rhs to the temporal derivatives:
     # M * du/dt = rhs(u)
