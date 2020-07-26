@@ -3,6 +3,7 @@ from .time_steppers import RungeKutta4
 from .continuation_steppers import PseudoArclengthContinuation
 from .solvers import NewtonSolver, EigenSolver
 from .solution import Solution, BifurcationDiagram
+from .profiling import profile
 
 
 class Problem():
@@ -95,6 +96,7 @@ class Problem():
             i += eq.dim
 
     # Calculate the right-hand side of the system 0 = rhs(u)
+    @profile
     def rhs(self, u):
         # if there is only one equation, we can return the rhs directly
         if len(self.equations) == 1:
@@ -113,6 +115,7 @@ class Problem():
         return res
 
     # Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u
+    @profile
     def jacobian(self, u):
         # if there is only one equation, we can return the matrix directly
         if len(self.equations) == 1:
@@ -133,6 +136,7 @@ class Problem():
 
     # The mass matrix determines the linear relation of the rhs to the temporal derivatives:
     # M * du/dt = rhs(u)
+    @profile
     def mass_matrix(self):
         # if there is only one equation, we can return the matrix directly
         if len(self.equations) == 1:
@@ -152,21 +156,25 @@ class Problem():
         return M
 
     # Solve the system rhs(u) = 0 for u with Newton's method
+    @profile
     def newton_solve(self):
         # TODO: check for convergence
         self.u = self.newton_solver.solve(self.rhs, self.u)
 
     # Calculate the eigenvalues and eigenvectors of the Jacobian
     # optional argument k: number of requested eigenvalues
+    @profile
     def solve_eigenproblem(self, k=None):
         return self.eigen_solver.solve(self.jacobian(self.u), self.mass_matrix(), k)
 
     # Integrate in time with the assigned time-stepper
+    @profile
     def time_step(self):
         # perform timestep according to current scheme
         self.time_stepper.step(self)
 
     # Perform a parameter continuation step
+    @profile
     def continuation_step(self):
         # get the current branch in the bifurcation diagram
         branch = self.bifurcation_diagram.current_branch()
@@ -239,6 +247,7 @@ class Problem():
         self.u = np.loadtxt(filename)
 
     # plot everything
+    @profile
     def plot(self, ax):
         # clear the axes
         for a in ax.flatten():

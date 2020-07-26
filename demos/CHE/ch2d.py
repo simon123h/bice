@@ -8,6 +8,7 @@ sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, Equation, FiniteDifferenceEquation
 from bice.time_steppers import RungeKutta4, RungeKuttaFehlberg45, BDF2
 from bice.constraints import TranslationConstraint, VolumeConstraint
+from bice.profiling import profile, start_profiling, print_profiling_summary
 
 
 class CahnHilliardEquation(Equation):
@@ -32,6 +33,7 @@ class CahnHilliardEquation(Equation):
         self.u = (np.random.random((N, N))-0.5)*0.02
 
     # definition of the CHE (right-hand side)
+    @profile
     def rhs(self, u):
         N0 = u.size
         u2 = u.reshape((self.x[0].size, self.x[1].size))
@@ -71,7 +73,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = CahnHilliardProblem(N=100, L=128)
+problem = CahnHilliardProblem(N=128, L=128)
 
 # create figure
 # fig, ax = plt.subplots(2, 2, figsize=(16, 9))
@@ -81,37 +83,42 @@ plotID = 0
 n = 0
 plotevery = 1000
 dudtnorm = 1
-mx, my = np.meshgrid(problem.che.x[0], problem.che.x[1])
+# mx, my = np.meshgrid(problem.che.x[0], problem.che.x[1])
 
 # if not os.path.exists("initial_state2.dat"):
-# while dudtnorm > 1e-6:
 
-for i in range(5000):
-    # plot
-    if n % plotevery == 0:
-        plt.cla()
-        plt.pcolormesh(mx, my, problem.che.u.reshape(
-            (problem.che.x[0].size, problem.che.x[1].size)), edgecolors='face')
-        plt.colorbar()
-        plt.savefig("out/img/{:05d}.svg".format(plotID))
-        plt.close()
-        # problem.plot(ax)
-        # fig.savefig("out/img/{:05d}.svg".format(plotID))
-        plotID += 1
-        print("step #: {:}".format(n))
-        print("time:   {:}".format(problem.time))
-        print("dt:     {:}".format(problem.time_stepper.dt))
-        print("|dudt|: {:}".format(dudtnorm))
-    n += 1
-    # perform timestep
+start_profiling()
+
+for i in range(500):
     problem.time_step()
-    # perform dealiasing
-    # problem.dealias()
-    # calculate the new norm
-    dudtnorm = np.linalg.norm(problem.rhs(problem.u))
-    # catch divergent solutions
-    if np.max(problem.u) > 1e12:
-        break
+
+print_profiling_summary()
+
+# while dudtnorm > 1e-6:
+# # for i in range(500):
+#     # plot
+#     if n % plotevery == 0:
+#         plt.cla()
+#         plt.pcolormesh(mx, my, problem.che.u.reshape(
+#             (problem.che.x[0].size, problem.che.x[1].size)), edgecolors='face')
+#         plt.colorbar()
+#         plt.savefig("out/img/{:05d}.svg".format(plotID))
+#         plt.close()
+#         # problem.plot(ax)
+#         # fig.savefig("out/img/{:05d}.svg".format(plotID))
+#         plotID += 1
+#         print("step #: {:}".format(n))
+#         print("dt:     {:}".format(problem.time_stepper.dt))
+#         print("|dudt|: {:}".format(dudtnorm))
+
+#     n += 1
+#     # perform timestep
+#     problem.time_step()
+#     # calculate the new norm
+#     dudtnorm = np.linalg.norm(problem.rhs(problem.u))
+#     # catch divergent solutions
+#     if np.max(problem.u) > 1e12:
+#         break
 
 
 #     # save the state, so we can reload it later
