@@ -96,8 +96,10 @@ class Problem():
 
     # Calculate the right-hand side of the system 0 = rhs(u)
     def rhs(self, u):
-        # TODO: if there is only one equation, we could return the rhs directly
-        # the (empty) vector of residuals
+        # if there is only one equation, we can return the rhs directly
+        if len(self.equations) == 1:
+            return self.equations[0].rhs(u[self.equations[0].idx])
+        # otherwise, we need to assemble the vector
         res = np.zeros(self.dim)
         # add the residuals of each equation
         for eq in self.equations:
@@ -112,8 +114,10 @@ class Problem():
 
     # Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u
     def jacobian(self, u):
-        # TODO: if there is only one equation, we could return the Jacobian directly
-        # the (empty) Jacobian
+        # if there is only one equation, we can return the matrix directly
+        if len(self.equations) == 1:
+            return self.equations[0].jacobian(u[self.equations[0].idx])
+        # otherwise, we need to assemble the matrix
         J = np.zeros((self.dim, self.dim))
         # add the Jacobian of each equation
         for eq in self.equations:
@@ -122,15 +126,18 @@ class Problem():
                 J += eq.jacobian(u)
             else:
                 # uncoupled equations simply work on their own variables, so we do a mapping
-                J[eq.idx[0]:len(eq.idx), eq:idx[0]:len(eq.idx)] += eq.jacobian(u[eq.idx])
+                J[eq.idx[0]:len(eq.idx), eq:idx[0]:len(
+                    eq.idx)] += eq.jacobian(u[eq.idx])
         # all entries assembled, return
         return J
 
     # The mass matrix determines the linear relation of the rhs to the temporal derivatives:
     # M * du/dt = rhs(u)
     def mass_matrix(self):
-        # TODO: if there is only one equation, we could return the matrix directly
-        # the (empty) mass matrix
+        # if there is only one equation, we can return the matrix directly
+        if len(self.equations) == 1:
+            return self.equations[0].mass_matrix()
+        # otherwise, we need to assemble the matrix
         M = np.zeros((self.dim, self.dim))
         # add the entries of each equation
         for eq in self.equations:
@@ -139,7 +146,8 @@ class Problem():
                 M += eq.mass_matrix()
             else:
                 # uncoupled equations simply work on their own variables, so we do a mapping
-                M[eq.idx[0]:len(eq.idx), eq.idx[0]:len(eq.idx)] += eq.mass_matrix()
+                M[eq.idx[0]:len(eq.idx), eq.idx[0]:len(
+                    eq.idx)] += eq.mass_matrix()
         # all entries assembled, return
         return M
 
