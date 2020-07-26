@@ -1,5 +1,5 @@
 import numpy as np
-
+from .profiling import profile
 
 class Equation:
     """
@@ -24,23 +24,19 @@ class Equation:
         # full dimension of the problem and need to be mapped to the equation's
         # variables accordingly. Otherwise, they only have the dimension of this equation.
         self.is_coupled = False
-        # Indices for the mapping from Problem.u to Equation.u: eq.u = problem.u[eq.idx]
-        # TODO: this could also be a property and calculated from an initial coordinate and the dimension
-        self.idx = None
-        # 2d-indices for the mapping from Problem's matrices to Equation matrices
-        # (e.g., Jacobian or mass matrix)
-        self.matrix_idx = None
         # the problem that the equation belongs to
         self.problem = None
-        # the equation's storage for the unknowns if it is not currently part of a problem
+        # Slice for the mapping from Problem.u to Equation.u: eq.u = problem.u[eq.idx]
+        self.idx = None
+        # The equation's storage for the unknowns if it is not currently part of a problem
         self.__u = None
-        # the list of parameter names (list of strings, must match the name of the attributes)
+        # The list of parameter names (list of strings, must match the name of the attributes)
         self.parameter_names = []
 
     # Getter for the vector of unknowns
     @property
     def u(self):
-        if self.problem is None:
+        if self.idx is None:
             # return the unknowns that are stored in the equation itself
             return self.__u
         # fetch the unknowns from the problem with the equation mapping
@@ -49,7 +45,7 @@ class Equation:
     # Setter for the vector of unknowns
     @u.setter
     def u(self, v):
-        if self.problem is None:
+        if self.idx is None:
             # update the unknowns stored in the equation itself
             self.__u = v
         else:
@@ -59,8 +55,6 @@ class Equation:
     # The number of unknowns / degrees of freedom of the equation
     @property
     def dim(self):
-        if self.idx is None:
-            return self.__u.size
         return self.u.size
 
     # Calculate the right-hand side of the equation 0 = rhs(u)

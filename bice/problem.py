@@ -62,10 +62,10 @@ class Problem():
         self.equations.append(eq)
         # append eq's degrees of freedom to the problem dofs
         self.u = np.append(self.u, eq.u)
-        # redo the mapping from equation to problem variables
-        self.assign_equation_numbers()
         # assign this problem to the equation
         eq.problem = self
+        # redo the mapping from equation to problem variables
+        self.assign_equation_numbers()
 
     # remove an equation from the problem
     def remove_equation(self, eq):
@@ -76,10 +76,13 @@ class Problem():
         self.equations.remove(eq)
         # remove the equations association with the problem
         eq.problem = None
+        # ...and also the lookup table for the unknowns/equation of the problem
+        idx = eq.idx
+        eq.idx = None
         # write the associated unknowns back into the equation
-        eq.u = self.u[eq.idx]
+        eq.u = self.u[idx]
         # remove eq's degrees of freedom from the problem dofs
-        self.u = np.delete(self.u, eq.idx)
+        self.u = np.delete(self.u, idx)
         # redo the mapping from equation to problem variables
         self.assign_equation_numbers()
 
