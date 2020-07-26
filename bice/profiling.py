@@ -31,6 +31,10 @@ def profile(method):
 
 
 class Profiler:
+    """
+    The Profiler is a static class that contains the methods
+    needed for accessing/controlling the profiling of the code.
+    """
 
     __start_time = None
     execution_times = {}
@@ -49,16 +53,29 @@ class Profiler:
         return Profiler.__start_time is not None
 
     @staticmethod
-    # give a summary on the execution times of the methods that were decorated with @profile
+    # Print a summary on the execution times of the methods that were decorated with @profile
     def print_summary(absolute_time=False):
+        # check if Profiler is active
+        if not Profiler.is_active():
+            print("Profiler is inactive.")
+            return
+        # check if any profiled methods were executed
+        if len(Profiler.execution_times) == 0:
+            print("No profiled methods were executed.")
+            return
+        # calculate total time
         total_time = time.time() - Profiler.__start_time
-        print("Time used in methods:")
+        # sort methods by execution time (descending)
         sorted_method_stats = {k: v for k, v in sorted(
             Profiler.execution_times.items(), key=lambda item: item[1], reverse=True)}
+        # print the stats
+        print("Time used in methods:")
         for k in sorted_method_stats:
+            # give time in seconds (absolute)
             if absolute_time:
                 print(" {:s} :  {:.3}s".format(
                     k.ljust(30), Profiler.execution_times[k]))
             else:
+                # or give time in percent (relative)
                 print(" {:s} :  {:.4%}".format(
                     k.ljust(30), Profiler.execution_times[k]/total_time))
