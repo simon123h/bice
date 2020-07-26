@@ -91,9 +91,16 @@ class Equation:
 
     # plot the solution into a matplotlib axes object
     def plot(self, ax):
-        ax.set_xlabel("x")
-        ax.set_ylabel("solution u(x,t)")
-        ax.plot(self.x, self.u)
+        if self.x.ndim == 1:
+            ax.set_xlabel("x")
+            ax.set_ylabel("solution u(x,t)")
+            ax.plot(self.x, self.u)
+        if self.x.ndim == 2:
+            ax.set_xlabel("x")
+            ax.set_ylabel("y")
+            mx, my = np.meshgrid(self.x[0], self.x[1])
+            # u = self.u.reshape((self.x[0].size, self.x[1].size))
+            # ax.imshow(u)
         # ax.set_xlabel("k")
         # ax.set_ylabel("fourier spectrum u(k,t)")
         # ax.plot(self.she.k, np.abs(np.fft.rfft(self.she.u)))
