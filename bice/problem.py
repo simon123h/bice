@@ -129,7 +129,7 @@ class Problem():
                 J += eq.jacobian(u)
             else:
                 # uncoupled equations simply work on their own variables, so we do a mapping
-                J[eq.idx[0]:len(eq.idx), eq:idx[0]:len(
+                J[eq.idx[0]:len(eq.idx), eq.idx[0]:len(
                     eq.idx)] += eq.jacobian(u[eq.idx])
         # all entries assembled, return
         return J
