@@ -100,7 +100,7 @@ class Problem():
     def rhs(self, u):
         # if there is only one equation, we can return the rhs directly
         if len(self.equations) == 1:
-            return self.equations[0].rhs(u[self.equations[0].idx])
+            return self.equations[0].rhs(u)
         # otherwise, we need to assemble the vector
         res = np.zeros(self.dim)
         # add the residuals of each equation
@@ -119,7 +119,7 @@ class Problem():
     def jacobian(self, u):
         # if there is only one equation, we can return the matrix directly
         if len(self.equations) == 1:
-            return self.equations[0].jacobian(u[self.equations[0].idx])
+            return self.equations[0].jacobian(u)
         # otherwise, we need to assemble the matrix
         J = np.zeros((self.dim, self.dim))
         # add the Jacobian of each equation
