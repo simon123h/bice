@@ -48,10 +48,10 @@ class CahnHilliardProblem(Problem):
         self.add_equation(self.che)
         # initialize time stepper
         # self.time_stepper = RungeKuttaFehlberg45(dt=1e-3)
-        # self.time_stepper.error_tolerance = 1e-7
-        self.time_stepper = RungeKutta4(dt=5e-3)
+        self.time_stepper.error_tolerance = 1e-7
+        self.time_stepper = RungeKutta4(dt=10e-3)
         # assign the continuation parameter
-        self.continuation_parameter = (self.che, "e")
+        self.continuation_parameter = (self.che, "D")
 
     # set higher modes to null, for numerical stability
     def dealias(self, fraction=1./2.):
@@ -77,13 +77,8 @@ n = 0
 plotevery = 1000
 dudtnorm = 1
 
-problem.plot(ax)
-fig.savefig("out/img/{:05d}.svg".format(plotID))
-plotID += 1
-
-
 if not os.path.exists("initial_state.dat"):
-    while dudtnorm > 1e-5:
+    while dudtnorm > 1e-6:
         # plot
         if n % plotevery == 0:
             problem.plot(ax)
@@ -110,7 +105,7 @@ else:
     problem.load("initial_state.dat")
 
 # start parameter continuation
-problem.continuation_stepper.ds = 1e-4
+problem.continuation_stepper.ds = 1e-3
 problem.continuation_stepper.ndesired_newton_steps = 3
 problem.continuation_stepper.always_check_eigenvalues = True
 
@@ -121,13 +116,13 @@ problem.add_equation(volume_constraint)
 
 n = 0
 plotevery = 1
-while problem.che.e > 0:
-    # perform continuation step
-    problem.continuation_step()
-    n += 1
-    print("step #:", n, " ds:", problem.continuation_stepper.ds)
+while problem.che.D > 0:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
         fig.savefig("out/img/{:05d}.svg".format(plotID))
         plotID += 1
+    # perform continuation step
+    problem.continuation_step()
+    print("step #:", n, " ds:", problem.continuation_stepper.ds)
+    n += 1
