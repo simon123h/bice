@@ -91,7 +91,11 @@ class Problem():
         # assign index range for each equation according to their dimension
         for eq in self.equations:
             # unknowns / equations indexing
-            eq.idx = range(i, i+eq.dim)
+            # NOTE: It is very important for performance that this is a slice,
+            #       not a range or anything else. Slices extract coherent parts
+            #       of an array, which goes much much faster than extracting values
+            #       from positions given by integer indices.
+            eq.idx = slice(i, i+eq.dim)
             # increment counter by dimension
             i += eq.dim
 
@@ -100,6 +104,7 @@ class Problem():
     def rhs(self, u):
         # if there is only one equation, we can return the rhs directly
         if len(self.equations) == 1:
+            eq = self.equations[0]
             return self.equations[0].rhs(u)
         # otherwise, we need to assemble the vector
         res = np.zeros(self.dim)
@@ -129,8 +134,7 @@ class Problem():
                 J += eq.jacobian(u)
             else:
                 # uncoupled equations simply work on their own variables, so we do a mapping
-                J[eq.idx[0]:len(eq.idx), eq.idx[0]:len(
-                    eq.idx)] += eq.jacobian(u[eq.idx])
+                J[eq.idx, eq.idx] += eq.jacobian(u[eq.idx])
         # all entries assembled, return
         return J
 
@@ -150,8 +154,7 @@ class Problem():
                 M += eq.mass_matrix()
             else:
                 # uncoupled equations simply work on their own variables, so we do a mapping
-                M[eq.idx[0]:len(eq.idx), eq.idx[0]:len(
-                    eq.idx)] += eq.mass_matrix()
+                M[eq.idx, eq.idx] += eq.mass_matrix()
         # all entries assembled, return
         return M
 
