@@ -1,5 +1,7 @@
 import time
 
+# TODO: add comments
+# TODO: add option to disable profiling
 
 start_time = None
 time_stats = {}
@@ -31,4 +33,4 @@ def print_profiling_summary():
     sorted_stats = {k: v for k, v in sorted(
         time_stats.items(), key=lambda item: item[1], reverse=True)}
     for k in sorted_stats:
-        print(" {} :  {}".format(k.ljust(30), time_stats[k]/total_time))
+        print(" {:s} :  {:.4%}".format(k.ljust(30), time_stats[k]/total_time))
