@@ -8,6 +8,7 @@ sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, Equation, FiniteDifferenceEquation
 from bice.time_steppers import RungeKutta4, RungeKuttaFehlberg45, BDF2
 from bice.constraints import TranslationConstraint
+from bice.profiling import Profiler, profile
 
 
 class SwiftHohenbergEquation(Equation):
@@ -31,6 +32,7 @@ class SwiftHohenbergEquation(Equation):
         self.u = np.cos(2 * np.pi * self.x / 10) * np.exp(-0.005 * self.x**2)
 
     # definition of the SHE (right-hand side)
+    @profile
     def rhs(self, u):
         u_k = np.fft.rfft(u)
         return np.fft.irfft((self.r - (self.kc**2 - self.k**2)**2) * u_k) + self.v * u**2 - self.g * u**3
@@ -81,6 +83,7 @@ class SwiftHohenbergProblem(Problem):
         self.continuation_parameter = (self.she, "r")
 
     # set higher modes to null, for numerical stability
+    @profile
     def dealias(self, fraction=1./2.):
         u_k = np.fft.rfft(self.she.u)
         N = len(u_k)
@@ -104,6 +107,7 @@ n = 0
 plotevery = 1000
 dudtnorm = 1
 if not os.path.exists("initial_state.dat"):
+    Profiler.start()
     while dudtnorm > 1e-5:
         # plot
         if n % plotevery == 0:
@@ -124,6 +128,7 @@ if not os.path.exists("initial_state.dat"):
         # catch divergent solutions
         if np.max(problem.u) > 1e12:
             break
+    Profiler.print_summary()
     # save the state, so we can reload it later
     problem.save("initial_state.dat")
 else:
@@ -139,7 +144,8 @@ constraint = TranslationConstraint(problem.she)
 problem.add_equation(constraint)
 
 n = 0
-plotevery = 1
+plotevery = 5
+Profiler.start()
 while problem.she.r > -0.016:
     # perform continuation step
     problem.continuation_step()
@@ -150,7 +156,9 @@ while problem.she.r > -0.016:
         problem.plot(ax)
         fig.savefig("out/img/{:05d}.svg".format(plotID))
         plotID += 1
-
+    if n > 10:
+        break
+Profiler.print_summary()
 
 # load the initial state and add extra dof for translation constraint
 problem.remove_equation(constraint)
