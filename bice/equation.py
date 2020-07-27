@@ -2,6 +2,7 @@ import numpy as np
 import scipy.optimize
 from .profiling import profile
 
+
 class Equation:
     """
     The Equation class holds algebraic (Cauchy) equations of the form
@@ -159,3 +160,28 @@ class FiniteDifferenceEquation(Equation):
         self.laplace += 128*np.roll(I, 3, axis=1)
         self.laplace += -9*np.roll(I, 4, axis=1)
         self.laplace /= dx**2 * 5040
+
+
+class PseudospectralEquation(Equation):
+    """
+    The FiniteDifferenceEquation is a subclass of the general Equation
+    and provides some useful routines that are needed for implementing
+    ODEs/PDEs with a pseudospectral scheme.
+    """
+    def __init__(self,):
+        super().__init__()
+        # the spatial coordinates
+        self.x = None
+        self.k = None
+        raise NotImplementedError(
+            "This class is not yet ready to be used"
+        )
+
+    def build_kvector(self):
+        L = self.x[-1] - self.x[0]
+        N = self.x.size
+        # the fourier space
+        # TODO: fix for higher than 1 dimensions
+        self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
+
+
