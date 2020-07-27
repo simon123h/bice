@@ -1,4 +1,5 @@
 import time
+import numpy as np
 
 """
 This submodule is used for profiling our methods.
@@ -20,11 +21,11 @@ def profile(method):
         ts = time.time()
         result = method(*args, **kw)
         te = time.time()
-        # store cumulative execution time in dictionary
+        # store execution time in dictionary
         name = method.__qualname__
         if name not in Profiler.execution_times:
-            Profiler.execution_times[name] = 0
-        Profiler.execution_times[name] += te - ts
+            Profiler.execution_times[name] = []
+        Profiler.execution_times[name].append(te - ts)
         # return the result of the method
         return result
     return do_profile
@@ -54,7 +55,7 @@ class Profiler:
 
     @staticmethod
     # Print a summary on the execution times of the methods that were decorated with @profile
-    def print_summary(absolute_time=False):
+    def print_summary():
         # check if Profiler is active
         if not Profiler.is_active():
             print("Profiler is inactive.")
@@ -67,15 +68,20 @@ class Profiler:
         total_time = time.time() - Profiler.__start_time
         # sort methods by execution time (descending)
         sorted_method_stats = {k: v for k, v in sorted(
-            Profiler.execution_times.items(), key=lambda item: item[1], reverse=True)}
+            Profiler.execution_times.items(), key=lambda item: sum(item[1]), reverse=True)}
+        # determine the length of the name column
+        column_len = max([len(k) for k in sorted_method_stats])
         # print the stats
-        print("Time used in methods:")
+        print("Profiler results:")
+        print("{} {:>11} {:>11}".format(
+            "method name".ljust(column_len), "total", "relative"))
+        print("-"*60)
         for k in sorted_method_stats:
-            # give time in seconds (absolute)
-            if absolute_time:
-                print(" {:s} :  {:.3}s".format(
-                    k.ljust(30), Profiler.execution_times[k]))
-            else:
-                # or give time in percent (relative)
-                print(" {:s} :  {:.4%}".format(
-                    k.ljust(30), Profiler.execution_times[k]/total_time))
+            # calculate stats
+            data = Profiler.execution_times[k]
+            T_tot = sum(data)
+            T_rel = T_tot / total_time
+            T_rel_stddev = np.std(data) / total_time
+            # give times in seconds (absolute and relative)
+            print("{:s} {:10.3f}s {:11.3%}  ±{:.2%}".format(
+                k.ljust(column_len), T_tot, T_rel, T_rel_stddev))
