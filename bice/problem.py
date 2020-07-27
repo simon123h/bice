@@ -169,8 +169,10 @@ class Problem():
 
     # Calculate the eigenvalues and eigenvectors of the Jacobian
     # optional argument k: number of requested eigenvalues
+    # TODO: k should be a property (neigs?) of the problem
+    # TODO: the shift, sigma, should propably also be a property
     @profile
-    def solve_eigenproblem(self, k=None):
+    def solve_eigenproblem(self, k=20):
         return self.eigen_solver.solve(self.jacobian(self.u), self.mass_matrix(), k)
 
     # Integrate in time with the assigned time-stepper
@@ -267,7 +269,7 @@ class Problem():
         self.bifurcation_diagram.plot(self, ax[0, 1])
         # plot the eigenvalues, if any
         if self.latest_eigenvalues is not None:
-            ev_re = np.real(self.latest_eigenvalues[:20])
+            ev_re = np.real(self.latest_eigenvalues)
             ev_re_n = np.ma.masked_where(
                 ev_re > self.eigval_zero_tolerance, ev_re)
             ev_re_p = np.ma.masked_where(
