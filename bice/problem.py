@@ -24,6 +24,8 @@ class Problem():
         self.u = np.array([])
         # Time variable
         self.time = 0
+        # the list of equations that are part of this problem
+        self.equations = []
         # The time-stepper for integration in time
         self.time_stepper = RungeKutta4(dt=1e-2)
         # The continuation stepper for parameter continuation
@@ -34,18 +36,19 @@ class Problem():
         self.eigen_solver = EigenSolver()
         # The bifurcation diagram of the problem holds all branches and their solutions
         self.bifurcation_diagram = BifurcationDiagram()
-        # how small does an eigenvalue need to be in order to be counted as 'zero'?
-        self.eigval_zero_tolerance = 1e-6
-        # the list of equations that are part of this problem
-        self.equations = []
+        # The continuation parameter is defined by passing an object and the name of the
+        # object's attribute that corresponds to the continuation parameter as a tuple
+        self.continuation_parameter = None
         # storage for the latest eigenvalues that were calculated
         # TODO: what if these become invalid, e.g., due to manual changes to the unknowns?
         self.latest_eigenvalues = None
         # storage for the latest eigenvectors that were calculated
         self.latest_eigenvectors = None
-        # The continuation parameter is defined by passing an object and the name of the
-        # object's attribute that corresponds to the continuation parameter as a tuple
-        self.continuation_parameter = None
+        # how small does an eigenvalue need to be in order to be counted as 'zero'?
+        self.eigval_zero_tolerance = 1e-6
+        # how many eigenvalues should be computed when problem.solve_eigenproblem() is called?
+        # TODO: should have a more verbose name
+        self.neigs = 20
 
     # The dimension of the system
     @property
@@ -168,12 +171,10 @@ class Problem():
         self.u = self.newton_solver.solve(self.rhs, self.u)
 
     # Calculate the eigenvalues and eigenvectors of the Jacobian
-    # optional argument k: number of requested eigenvalues
-    # TODO: k should be a property (neigs?) of the problem
-    # TODO: the shift, sigma, should propably also be a property
+    # The method will only calculate as many eigenvalues as requested with self.neigs
     @profile
-    def solve_eigenproblem(self, k=20):
-        return self.eigen_solver.solve(self.jacobian(self.u), self.mass_matrix(), k)
+    def solve_eigenproblem(self):
+        return self.eigen_solver.solve(self.jacobian(self.u), self.mass_matrix(), k=self.neigs)
 
     # Integrate in time with the assigned time-stepper
     @profile

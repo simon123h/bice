@@ -18,6 +18,12 @@ class NewtonSolver:
 
 class EigenSolver:
 
+    def __init__(self):
+        # The shift used for the shift-invert method in the iterative eigensolver.
+        # If shift != None, the eigensolver will find the eigenvalues near the
+        # value of the shift first
+        self.shift = 1
+
     def solve(self, A, M=None, k=None, sigma=1):
         if k is None:
             # if no number of values was specified, use a direct eigensolver for computing all eigenvalues
@@ -35,7 +41,7 @@ class EigenSolver:
             # For more info, see the documentation:
             # https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigs.html
             eigenvalues, eigenvectors = scipy.sparse.linalg.eigs(
-                A, k=k, M=M, sigma=sigma, which='LM')
+                A, k=k, M=M, sigma=self.shift, which='LM')
         # sort by largest eigenvalue (largest real part) and filter infinite eigenvalues
         idx = np.argsort(eigenvalues)[::-1]
         idx = idx[np.isfinite(eigenvalues[idx])]
