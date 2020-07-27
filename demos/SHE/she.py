@@ -139,6 +139,7 @@ else:
 problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
 problem.continuation_stepper.always_check_eigenvalues = True
+problem.neigs = 20
 
 constraint = TranslationConstraint(problem.she)
 problem.add_equation(constraint)
@@ -156,7 +157,8 @@ while problem.she.r > -0.016:
         problem.plot(ax)
         fig.savefig("out/img/{:05d}.svg".format(plotID))
         plotID += 1
-Profiler.print_summary()
+
+Profiler.print_summary(nested=False)
 
 # load the initial state and add extra dof for translation constraint
 problem.remove_equation(constraint)
