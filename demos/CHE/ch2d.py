@@ -5,13 +5,13 @@ import shutil
 import os
 import sys
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, Equation, FiniteDifferenceEquation
+from bice import Problem, Equation, FiniteDifferenceEquation, PseudospectralEquation
 from bice.time_steppers import RungeKutta4, RungeKuttaFehlberg45, BDF2
 from bice.constraints import TranslationConstraint, VolumeConstraint
 from bice.profiling import profile, Profiler
 
 
-class CahnHilliardEquation(Equation):
+class CahnHilliardEquation(PseudospectralEquation):
     r"""
     Pseudospectral implementation of the 1-dimensional Swift-Hohenberg Equation
     equation, a nonlinear PDE
@@ -23,12 +23,10 @@ class CahnHilliardEquation(Equation):
         # parameters
         self.e = 1
         self.D = 1.2
-        # space and fourier space
-        self.x = np.array([np.linspace(-L/2, L/2, N),
-                           np.linspace(-L/2, L/2, N)])
-        self.kx, self.ky = np.meshgrid(np.fft.fftfreq(
-            N, L/(N*2*np.pi)), np.fft.fftfreq(N, L/(N*2*np.pi)))
-        self.ksquare = self.kx**2 + self.ky**2
+        # list of spatial coordinate. list is important,
+        # to deal with several dimensions with different discretization/lengths
+        self.x = [np.linspace(-L/2, L/2, N), np.linspace(-L/2, L/2, N)]
+        self.build_kvectors()
         # initial condition
         self.u = (np.random.random((N, N))-0.5)*0.02
 
@@ -43,7 +41,7 @@ class CahnHilliardEquation(Equation):
         result_k = (-self.D*self.ksquare*self.ksquare +
                     self.ksquare)*u_k - self.ksquare*u3_k
         result = np.fft.ifft2(result_k).real
-        return result.reshape(u.size)
+        return result.reshape(N0)
 
 
 class CahnHilliardProblem(Problem):
@@ -66,7 +64,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = CahnHilliardProblem(N=128, L=128)
+problem = CahnHilliardProblem(N=64, L=64)
 
 # create figure
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
@@ -88,7 +86,7 @@ if not os.path.exists("initial_state.dat"):
             plt.pcolormesh(mx, my, problem.che.u.reshape(
                 (problem.che.x[0].size, problem.che.x[1].size)), edgecolors='face')
             plt.colorbar()
-            plt.savefig("out/img/{:05d}.svg".format(plotID))
+            plt.savefig("out/img/{:05d}.png".format(plotID))
             plt.close()
             # problem.plot(ax)
             # fig.savefig("out/img/{:05d}.svg".format(plotID))
