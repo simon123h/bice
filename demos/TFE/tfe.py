@@ -28,7 +28,7 @@ class ThinFilmEquation(Equation):
         self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
         # initial condition
         # self.u = np.ones(N) * 3
-        self.u = 2 * np.cos(self.x*2*np.pi/L) + 3
+        self.u = 2 * np.cos(self.x*2*np.pi/L) + 1
         # self.u = np.maximum(10 * np.cos(self.x / 5), 1)
 
     # definition of the equation, using pseudospectral method
@@ -59,6 +59,10 @@ class ThinFilmEquation(Equation):
             return np.fft.irfft(u_k)
         return u_k
 
+    def first_spatial_derivative(self, u):
+        du_dx = 1j*self.k*np.fft.rfft(u)
+        return np.fft.irfft(du_dx)
+
 
 class ThinFilmEquationFD(FiniteDifferenceEquation):
     r"""
@@ -74,13 +78,14 @@ class ThinFilmEquationFD(FiniteDifferenceEquation):
         # parameters: none
 
         # space and fourier space
-        self.x = np.linspace(-L/2, L/2, N)
+        self.x = [np.linspace(-L/2, L/2, N)]
         self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
+        # initial condition
+        self.u = 2 * np.cos(self.x[0] * 2 * np.pi / L) + 3
         # build finite difference matrices
         self.build_FD_matrices()
-        # initial condition
         # self.u = np.ones(N) * 3
-        self.u = 2 * np.cos(self.x*2*np.pi/L) + 3
+        #self.x = self.x[0]
         # self.u = np.maximum(10 * np.cos(self.x / 5), 1)
 
     # definition of the equation, using finite difference method
@@ -97,13 +102,16 @@ class ThinFilmEquationFD(FiniteDifferenceEquation):
     def dealias(self, u, real_space=False, ratio=1./2.):
         return u
 
+    def first_spatial_derivative(self, u):
+        return np.matmul(self.nabla, u)
+
 
 class ThinFilm(Problem):
 
     def __init__(self, N, L):
         super().__init__()
         # Add the Thin-Film equation to the problem
-        # self.tfe = ThinFilmEquation(N, L)
+        #self.tfe = ThinFilmEquation(N, L)
         self.tfe = ThinFilmEquationFD(N, L)
         self.add_equation(self.tfe)
         # Generate the volume constraint
@@ -123,6 +131,9 @@ class ThinFilm(Problem):
     # set higher modes to null, for numerical stability
     def dealias(self, fraction=1./2.):
         self.tfe.u = self.tfe.dealias(self.tfe.u, True)
+
+    def norm(self):
+        return np.trapz(self.tfe.u, self.tfe.x[0])
 
 # create output folder
 shutil.rmtree("out", ignore_errors=True)
@@ -173,10 +184,11 @@ problem.continuation_stepper.ndesired_newton_steps = 3
 problem.continuation_stepper.always_check_eigenvalues = True
 
 # Impose the constraints
-problem.volume_constraint.fixed_volume = np.trapz(problem.tfe.u, problem.tfe.x)
+problem.volume_constraint.fixed_volume = np.trapz(problem.tfe.u, problem.tfe.x[0])
 problem.add_equation(problem.volume_constraint)
 problem.add_equation(problem.translation_constraint)
 
+problem.continuation_stepper.convergence_tolerance = 1e-10
 
 n = 0
 plotevery = 1
@@ -187,6 +199,7 @@ while problem.volume_constraint.fixed_volume < 1000:
     problem.dealias()
     n += 1
     print("step #:", n, " ds:", problem.continuation_stepper.ds)
+    #print('largest EVs: ', problem.latest_eigenvalues[:3])
     # plot
     if n % plotevery == 0:
         problem.plot(ax)

@@ -98,11 +98,11 @@ class Equation:
 
     # plot the solution into a matplotlib axes object
     def plot(self, ax):
-        if self.x.ndim == 1:
+        if len(self.x) == 1:
             ax.set_xlabel("x")
             ax.set_ylabel("solution u(x,t)")
-            ax.plot(self.x, self.u)
-        if self.x.ndim == 2:
+            ax.plot(self.x[0], self.u)
+        if len(self.x) == 2:
             ax.set_xlabel("x")
             ax.set_ylabel("y")
             mx, my = np.meshgrid(self.x[0], self.x[1])
@@ -134,7 +134,7 @@ class FiniteDifferenceEquation(Equation):
         # identity matrix
         I = np.eye(N)
         # spatial increment
-        dx = self.x[1] - self.x[0]
+        dx = self.x[0][1] - self.x[0][0]
 
         # nabla operator: d/dx
         self.nabla = np.zeros((N, N))
@@ -187,7 +187,6 @@ class PseudospectralEquation(Equation):
             Nx = self.x[0].size
             Ly = self.x[1][-1] - self.x[1][0]
             Ny = self.x[1].size
-            print('Lx: ', Lx, 'Ly: ', Ly, 'Nx: ', Nx, 'Ny: ', Ny, sep='\n')
             # the fourier space
             kx = np.fft.fftfreq(Nx, Lx / (2. * Nx * np.pi))
             ky = np.fft.fftfreq(Ny, Ly / (2. * Ny * np.pi))

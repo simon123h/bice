@@ -5,13 +5,13 @@ import shutil
 import os
 import sys
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, Equation, FiniteDifferenceEquation
+from bice import Problem, Equation, FiniteDifferenceEquation, PseudospectralEquation
 from bice.time_steppers import RungeKutta4, RungeKuttaFehlberg45, BDF2
 from bice.constraints import TranslationConstraint
 from bice.profiling import Profiler, profile
 
 
-class SwiftHohenbergEquation(Equation):
+class SwiftHohenbergEquation(PseudospectralEquation):
     r"""
     Pseudospectral implementation of the 1-dimensional Swift-Hohenberg Equation
     equation, a nonlinear PDE
@@ -26,16 +26,16 @@ class SwiftHohenbergEquation(Equation):
         self.v = 0.41
         self.g = 1
         # space and fourier space
-        self.x = np.linspace(-L/2, L/2, N)
-        self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
+        self.x = [np.linspace(-L/2, L/2, N)]
+        self.build_kvectors()
         # initial condition
-        self.u = np.cos(2 * np.pi * self.x / 10) * np.exp(-0.005 * self.x**2)
+        self.u = np.cos(2 * np.pi * self.x[0] / 10) * np.exp(-0.005 * self.x[0]**2)
 
     # definition of the SHE (right-hand side)
     @profile
     def rhs(self, u):
-        u_k = np.fft.rfft(u)
-        return np.fft.irfft((self.r - (self.kc**2 - self.k**2)**2) * u_k) + self.v * u**2 - self.g * u**3
+        u_k = np.fft.fft(u)
+        return np.fft.ifft((self.r - (self.kc**2 - self.k[0]**2)**2) * u_k).real + self.v * u**2 - self.g * u**3
 
 
 class SwiftHohenbergEquationFD(FiniteDifferenceEquation):
@@ -53,14 +53,14 @@ class SwiftHohenbergEquationFD(FiniteDifferenceEquation):
         self.v = 0.41
         self.g = 1
         # space and fourier space
-        self.x = np.linspace(-L/2, L/2, N)
+        self.x = [np.linspace(-L/2, L/2, N)]
         self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
+        # initial condition
+        self.u = np.cos(2 * np.pi * self.x[0] / 10) * np.exp(-0.005 * self.x[0] ** 2)
         # build finite difference matrices
         self.build_FD_matrices()
         self.linear_op = (self.kc**2 + self.laplace)
         self.linear_op = self.r - np.matmul(self.linear_op, self.linear_op)
-        # initial condition
-        self.u = np.cos(2 * np.pi * self.x / 10) * np.exp(-0.005 * self.x**2)
 
     # definition of the SHE (right-hand side)
     def rhs(self, u):
@@ -85,10 +85,11 @@ class SwiftHohenbergProblem(Problem):
     # set higher modes to null, for numerical stability
     @profile
     def dealias(self, fraction=1./2.):
-        u_k = np.fft.rfft(self.she.u)
+        u_k = np.fft.fft(self.she.u)
         N = len(u_k)
-        u_k[-int(N*fraction):] = 0
-        self.she.u = np.fft.irfft(u_k)
+        k = int(N*fraction)
+        u_k[k+1:-k] = 0
+        self.she.u = np.fft.ifft(u_k).real
 
 
 # create output folder
@@ -122,7 +123,7 @@ if not os.path.exists("initial_state.dat"):
         # perform timestep
         problem.time_step()
         # perform dealiasing
-        problem.dealias()
+        #problem.dealias()
         # calculate the new norm
         dudtnorm = np.linalg.norm(problem.rhs(problem.u))
         # catch divergent solutions

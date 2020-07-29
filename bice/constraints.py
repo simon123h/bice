@@ -36,12 +36,12 @@ class VolumeConstraint(Equation):
             # calculate the difference in volumes between current
             # and previous unknowns of the reference equation
             res[self.idx] = np.trapz(u[self.ref_eq.idx] -
-                                     self.ref_eq.u, self.ref_eq.x)
+                                     self.ref_eq.u, self.ref_eq.x[0])
         else:
             # parametric constraint: calculate the difference between current
             # volume and the prescribed fixed_volume parameter
             res[self.idx] = np.trapz(u[self.ref_eq.idx],
-                                     self.ref_eq.x) - self.fixed_volume
+                                     self.ref_eq.x[0]) - self.fixed_volume
         # Add the constraint to the reference equation: unknown influx is the Langrange multiplier
         res[self.ref_eq.idx] = u[self.idx]
         return res
@@ -71,7 +71,7 @@ class TranslationConstraint(Equation):
         self.ref_eq = reference_equation
         # the dimension of this equation is equal to the spatial dimension of the reference eq
         # TODO: fix for higher than 1 dimensions
-        dim = 1
+        dim = len(reference_equation.x)
         # initialize unknowns (velocity vector) to zero
         self.u = np.zeros(dim)
         # the constraint equation couples to some other equation of the problem
@@ -89,11 +89,13 @@ class TranslationConstraint(Equation):
         eq_u_old = eq.u
         velocity = u[self.idx]
         # add constraint to residuals of reference equation (velocity is the langrange multiplier)
-        eq_dudx = np.gradient(eq_u, eq.x)
+        #eq_dudx = np.gradient(eq_u, eq.x[0])
+        eq_dudx = eq.first_spatial_derivative(eq_u)
         res[eq.idx] = velocity * eq_dudx
         # calculate the difference in center of masses between current
         # and previous unknowns of the reference equation
-        res[self.idx] = np.dot(eq.x, eq_u-eq_u_old)
+        #res[self.idx] = np.dot(eq.x, eq_u-eq_u_old)
+        res[self.idx] = np.dot(eq_dudx, eq_u - eq_u_old)
         return res
 
     def mass_matrix(self):
