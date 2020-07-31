@@ -82,7 +82,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
         u = problem.u
         N = u.size
         # save old variables
-        u_old = u[:]
+        u_old = u.copy()
         p_old = p
         if self.tangent is not None:
             # simply get tangent from difference between last steps
