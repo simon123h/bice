@@ -35,8 +35,11 @@ class VolumeConstraint(Equation):
         if self.fixed_volume is None:
             # calculate the difference in volumes between current
             # and previous unknowns of the reference equation
-            res[self.idx] = np.trapz(u[self.ref_eq.idx] -
-                                     self.ref_eq.u, self.ref_eq.x[0])
+            if len(self.ref_eq.x) == 2:
+                res[self.idx] = np.mean(u[self.ref_eq.idx] - self.ref_eq.u)
+            else:
+                res[self.idx] = np.trapz(u[self.ref_eq.idx] -
+                                         self.ref_eq.u, self.ref_eq.x[0])
         else:
             # parametric constraint: calculate the difference between current
             # volume and the prescribed fixed_volume parameter
@@ -70,8 +73,8 @@ class TranslationConstraint(Equation):
         # on which equation/unknowns should the constraint be imposed?
         self.ref_eq = reference_equation
         # the dimension of this equation is equal to the spatial dimension of the reference eq
-        # TODO: fix for higher than 1 dimensions
-        dim = len(reference_equation.x)
+        # TODO: fix for higher than 1 dimensions, i.e. make it possible to chose, which direction to fix. 
+        dim = 1
         # initialize unknowns (velocity vector) to zero
         self.u = np.zeros(dim)
         # the constraint equation couples to some other equation of the problem
@@ -89,8 +92,10 @@ class TranslationConstraint(Equation):
         eq_u_old = eq.u
         velocity = u[self.idx]
         # add constraint to residuals of reference equation (velocity is the langrange multiplier)
-        #eq_dudx = np.gradient(eq_u, eq.x[0])
-        eq_dudx = eq.first_spatial_derivative(eq_u)
+        try: # if method first_spatial_derivative is implemented, use this
+            eq_dudx = eq.first_spatial_derivative(eq_u)
+        except AttributeError:  # if not, get it from the gradient
+            eq_dudx = np.gradient(eq_u, eq.x[0])
         res[eq.idx] = velocity * eq_dudx
         # calculate the difference in center of masses between current
         # and previous unknowns of the reference equation

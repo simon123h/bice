@@ -5,12 +5,12 @@ import shutil
 import os
 import sys
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, Equation, FiniteDifferenceEquation
+from bice import Problem, Equation, FiniteDifferenceEquation, PseudospectralEquation
 from bice.time_steppers import RungeKutta4, RungeKuttaFehlberg45, BDF2
 from bice.constraints import TranslationConstraint, VolumeConstraint
 
 
-class CahnHilliardEquation(Equation):
+class CahnHilliardEquation(PseudospectralEquation):
     r"""
     Pseudospectral implementation of the 1-dimensional Swift-Hohenberg Equation
     equation, a nonlinear PDE
@@ -20,23 +20,27 @@ class CahnHilliardEquation(Equation):
     def __init__(self, N, L):
         super().__init__()
         # parameters
-        self.e = 1
-        self.D = 1
+        self.a = -0.5
+        self.kappa = 1.
         # space and fourier space
-        self.x = np.linspace(-L/2, L/2, N)
-        self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
+        self.x = [np.linspace(-L/2, L/2, N)]
+        self.build_kvectors()
         # initial condition
-        self.u = (np.random.random(N)-0.5)*0.02
+        #self.u = (np.random.random(N)-0.5)*0.02
+        self.u = np.cos(self.x[0]/(L/4)) - 0.1
         # calculate linear part beforehand
-        self.ksquare = self.k**2
 
     # definition of the CHE (right-hand side)
     def rhs(self, u):
-        u_k = np.fft.rfft(u)
-        u3_k = np.fft.rfft(u**3)
-        linear = -self.D * (self.ksquare * self.ksquare +
-                            self.e * self.ksquare)
-        return np.fft.irfft(linear*u_k - self.ksquare*u3_k)
+        u_k = np.fft.fft(u)
+        u3_k = np.fft.fft(u**3)
+        result_k = -self.ksquare*(self.kappa*self.ksquare*u_k + self.a*u_k + u3_k)
+        result = np.fft.ifft(result_k).real
+        return result
+
+    def first_spatial_derivative(self, u):
+        du_dx = 1j*self.k[0]*np.fft.fft(u)
+        return np.fft.ifft(du_dx).real
 
 
 class CahnHilliardProblem(Problem):
@@ -47,18 +51,19 @@ class CahnHilliardProblem(Problem):
         self.che = CahnHilliardEquation(N, L)
         self.add_equation(self.che)
         # initialize time stepper
-        # self.time_stepper = RungeKuttaFehlberg45(dt=1e-3)
+        #self.time_stepper = RungeKuttaFehlberg45(dt=1e-3)
         self.time_stepper.error_tolerance = 1e-7
-        self.time_stepper = RungeKutta4(dt=10e-3)
+        self.time_stepper = RungeKutta4(dt=1e-2)
         # assign the continuation parameter
-        self.continuation_parameter = (self.che, "D")
+        self.continuation_parameter = (self.che, "a")
 
     # set higher modes to null, for numerical stability
     def dealias(self, fraction=1./2.):
-        u_k = np.fft.rfft(self.che.u)
+        u_k = np.fft.fft(self.che.u)
         N = len(u_k)
-        u_k[-int(N*fraction):] = 0
-        self.che.u = np.fft.irfft(u_k)
+        k = int(N * fraction)
+        u_k[k + 1:-k] = 0
+        self.che.u = np.fft.ifft(u_k).real
 
 
 # create output folder
@@ -92,7 +97,7 @@ if not os.path.exists("initial_state.dat"):
         # perform timestep
         problem.time_step()
         # perform dealiasing
-        # problem.dealias()
+        problem.dealias()
         # calculate the new norm
         dudtnorm = np.linalg.norm(problem.rhs(problem.u))
         # catch divergent solutions
@@ -107,16 +112,19 @@ else:
 # start parameter continuation
 problem.continuation_stepper.ds = 1e-3
 problem.continuation_stepper.ndesired_newton_steps = 3
+problem.continuation_stepper.ds_max = 1e0
 problem.continuation_stepper.always_check_eigenvalues = True
-
+problem.neigs = 50
 translation_constraint = TranslationConstraint(problem.che)
 problem.add_equation(translation_constraint)
-volume_constraint = VolumeConstraint(problem.che)
-problem.add_equation(volume_constraint)
+problem.volume_constraint = VolumeConstraint(problem.che)
+problem.add_equation(problem.volume_constraint)
+problem.volume_constraint.fixed_volume = np.trapz(problem.che.u, problem.che.x[0])
+problem.continuation_parameter = (problem.volume_constraint, 'fixed_volume')
 
 n = 0
 plotevery = 1
-while problem.che.D > 0:
+while problem.che.a < 1.:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)

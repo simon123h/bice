@@ -282,5 +282,10 @@ class Problem():
             ax[1, 1].set_ylabel("eigenvalues")
         # plot the eigenvector, if any
         if self.latest_eigenvectors is not None:
-            ax[1, 0].plot(np.real(self.latest_eigenvectors[0]))
-            ax[1, 0].set_ylabel("eigenvector")
+            # TODO: should we write this better?
+            if len(self.equations[0].x) == 1:
+                ax[1, 0].plot(np.real(self.latest_eigenvectors[0]))
+                ax[1, 0].set_ylabel("eigenvector")
+            elif len(self.equations[0].x) == 2:
+                u = self.latest_eigenvectors[0][self.equations[0].idx].real
+                ax[1, 0].pcolormesh(u.reshape((self.equations[0].x[0].size, self.equations[0].x[1].size)))
