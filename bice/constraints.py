@@ -21,6 +21,8 @@ class VolumeConstraint(Equation):
         super().__init__()
         # on which equation/unknowns should the constraint be imposed?
         self.ref_eq = reference_equation
+        # increase number of constraints
+        reference_equation.nr_constraints += 1
         # the constraint equation couples to some other equation of the problem
         self.is_coupled = True
         # this equation brings a single extra degree of freedom (influx Lagrange multiplier)
@@ -72,6 +74,8 @@ class TranslationConstraint(Equation):
         super().__init__()
         # on which equation/unknowns should the constraint be imposed?
         self.ref_eq = reference_equation
+        # increase number of constraints
+        reference_equation.nr_constraints += 1
         # the dimension of this equation is equal to the spatial dimension of the reference eq
         # TODO: fix for higher than 1 dimensions, i.e. make it possible to chose, which direction to fix.
         dim = 1
