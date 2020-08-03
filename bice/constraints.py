@@ -77,7 +77,7 @@ class TranslationConstraint(Equation):
         # increase number of constraints
         reference_equation.nr_constraints += 1
         # the dimension of this equation is equal to the spatial dimension of the reference eq
-        # TODO: fix for higher than 1 dimensions, i.e. make it possible to chose, which direction to fix.
+        # TODO: fix for higher than 1 dimensions, i.e. make it possible to chose, which direction to fix. 
         dim = 1
         # initialize unknowns (velocity vector) to zero
         self.u = np.zeros(dim)
