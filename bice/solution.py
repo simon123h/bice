@@ -177,7 +177,7 @@ class BifurcationDiagram:
 
 
     # plot the bifurcation diagram
-    def plot(self, problem, ax):
+    def plot(self, ax):
         # plot every branch separately
         for branch in self.branches:
             p, norm = branch.data()
@@ -193,8 +193,6 @@ class BifurcationDiagram:
                 s = "+"*s if s > 0 else "-"*(-s)
                 ax.annotate(" "+s, (bif.p, bif.norm))
         ax.plot(np.nan, np.nan, "*", color="C2", label="bifurcations")
-        ax.plot(problem.get_continuation_parameter(), problem.norm(),
-                      "x", label="current point", color="black")
         ax.set_xlabel("continuation parameter")
         ax.set_ylabel("norm")
         ax.legend()

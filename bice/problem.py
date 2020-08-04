@@ -257,35 +257,66 @@ class Problem():
     def load(self, filename):
         self.u = np.loadtxt(filename)
 
-    # plot everything
+    # Plot everything to the given axes.
+    # Axes may be given explicitly of as a list of axes, that is then expanded.
+    # The plot may include the solution of the equations, the bifurcation diagram,
+    # the eigenvalues and the eigenvectors.
     @profile
-    def plot(self, ax):
-        # clear the axes
-        for a in ax.flatten():
-            a.clear()
-        # plot all equations
-        for eq in self.equations:
-            eq.plot(ax[0, 0])
+    def plot(self, sol_ax=None, bifdiag_ax=None, eigval_ax=None, eigvec_ax=None):
+        # check if any axes are given
+        if all(ax is None for ax in [sol_ax, bifdiag_ax, eigval_ax, eigvec_ax]):
+            print("Warning: no axes passed to Problem.plot(<axes>). Plotting nothing.")
+        # check if an array of axes was passed
+        if isinstance(sol_ax, np.ndarray):
+            # flatten the array and pass it to the plot function as arguments
+            self.plot(*sol_ax.flatten())
+            return
+        # plot the solution of the equation(s)
+        if sol_ax is not None:
+            # clear the axes
+            sol_ax.clear()
+            # plot all equation's solutions
+            for eq in self.equations:
+                eq.plot(sol_ax)
         # plot the bifurcation diagram
-        self.bifurcation_diagram.plot(self, ax[0, 1])
-        # plot the eigenvalues, if any
-        if self.latest_eigenvalues is not None:
-            ev_re = np.real(self.latest_eigenvalues)
-            ev_re_n = np.ma.masked_where(
-                ev_re > self.eigval_zero_tolerance, ev_re)
-            ev_re_p = np.ma.masked_where(
-                ev_re <= self.eigval_zero_tolerance, ev_re)
-            ax[1, 1].plot(ev_re_n, "o", color="C0", label="Re < 0")
-            ax[1, 1].plot(ev_re_p, "o", color="C1", label="Re > 0")
-            ax[1, 1].axhline(0, color="gray")
-            ax[1, 1].legend()
-            ax[1, 1].set_ylabel("eigenvalues")
-        # plot the eigenvector, if any
-        if self.latest_eigenvectors is not None:
-            # TODO: should we write this better?
-            if len(self.equations[0].x) == 1:
-                ax[1, 0].plot(np.real(self.latest_eigenvectors[0]))
-                ax[1, 0].set_ylabel("eigenvector")
-            elif len(self.equations[0].x) == 2:
-                u = self.latest_eigenvectors[0][self.equations[0].idx].real
-                ax[1, 0].pcolormesh(u.reshape((self.equations[0].x[0].size, self.equations[0].x[1].size)))
+        if bifdiag_ax is not None:
+            # clear the axes
+            bifdiag_ax.clear()
+            # plot current point
+            bifdiag_ax.plot(self.get_continuation_parameter(), self.norm(),
+                            "x", label="current point", color="black")
+            # plot the rest of the bifurcation diagram
+            self.bifurcation_diagram.plot(bifdiag_ax)
+        if eigval_ax is not None:
+            # clear the axes
+            eigval_ax.clear()
+            # plot the eigenvalues, if any
+            if self.latest_eigenvalues is not None:
+                ev_re = np.real(self.latest_eigenvalues)
+                ev_re_n = np.ma.masked_where(
+                    ev_re > self.eigval_zero_tolerance, ev_re)
+                ev_re_p = np.ma.masked_where(
+                    ev_re <= self.eigval_zero_tolerance, ev_re)
+                eigval_ax.plot(ev_re_n, "o", color="C0", label="Re < 0")
+                eigval_ax.plot(ev_re_p, "o", color="C1", label="Re > 0")
+                eigval_ax.axhline(0, color="gray")
+                eigval_ax.legend()
+                eigval_ax.set_ylabel("eigenvalues")
+            if eigvec_ax is not None:
+                # clear the axes
+                eigvec_ax.clear()
+                # map the eigenvectors onto the equations and plot them
+                if self.latest_eigenvectors is not None:
+                    ev = self.latest_eigenvectors[0]
+                    # backup the unknowns
+                    u_old = self.u.copy()
+                    # overwrite the unknowns with the eigenvalues (or their real part only)
+                    if not np.iscomplexobj(self.u):
+                        self.u = ev.real
+                    else:
+                        self.u = ev
+                    # the equation's own plotting method will know best how to plot it
+                    for eq in self.equations:
+                        eq.plot(eigvec_ax)
+                    # reassign the correct unknowns to the problem
+                    self.u = u_old
