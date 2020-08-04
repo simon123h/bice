@@ -327,5 +327,7 @@ class Problem():
                     # the equation's own plotting method will know best how to plot it
                     for eq in self.equations:
                         eq.plot(eigvec_ax)
+                        # adjust the y-label, TODO: do this only for 1d-equations
+                        eigvec_ax.set_ylabel("eigenvector")
                     # reassign the correct unknowns to the problem
                     self.u = u_old
