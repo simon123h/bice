@@ -271,7 +271,7 @@ class Problem():
     # The plot may include the solution of the equations, the bifurcation diagram,
     # the eigenvalues and the eigenvectors.
     @profile
-    def plot(self, sol_ax=None, bifdiag_ax=None, eigval_ax=None, eigvec_ax=None):
+    def plot(self, sol_ax=None, bifdiag_ax=None, eigvec_ax=None, eigval_ax=None):
         # check if any axes are given
         if all(ax is None for ax in [sol_ax, bifdiag_ax, eigval_ax, eigvec_ax]):
             print("Warning: no axes passed to Problem.plot(<axes>). Plotting nothing.")
