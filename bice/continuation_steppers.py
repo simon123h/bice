@@ -90,7 +90,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
         else:
             # calculate tangent from extended Jacobian in (u, parameter)-space
             jac = problem.jacobian(u)
-            # last column of extended jacobian: d(rhs)/d(parameter), calculate it with FD
+            # last column of u, eigenvectorextended jacobian: d(rhs)/d(parameter), calculate it with FD
             problem.set_continuation_parameter(p - self.fd_epsilon)
             rhs_1 = problem.rhs(u)
             problem.set_continuation_parameter(p + self.fd_epsilon)
