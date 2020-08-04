@@ -22,6 +22,8 @@ class Problem():
         self.eq = []
         # The vector of unknowns (NumPy array)
         self.u = np.array([])
+        # Number of constraints
+        self.nr_constraints = 0
         # Time variable
         self.time = 0
         # the list of equations that are part of this problem
@@ -232,6 +234,13 @@ class Problem():
         # else, assign the new value using the builtin 'setattr'
         obj, attr_name = tuple(self.continuation_parameter)
         setattr(obj, attr_name, val)
+
+    def locate_bifurcation(self):
+        # calculate the size of the extended system, i.e. size of solution*2 + nr of constraints
+        ext_size = (self.dim - self.nr_constraints)*2 + self.nr_constraints
+        u_ext = np.zeros(ext_size)
+
+
 
     # create a new branch in the bifurcation diagram and prepare for a new continuation
 
