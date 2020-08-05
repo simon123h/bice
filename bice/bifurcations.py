@@ -28,3 +28,13 @@ class BifurcationExtension(Equation):
         res1 = np.matmul(self.ref_eq.Gu, u1)
         res2 = np.matmul(u1.T, u1_old) - 1.
         res[self.idx] = np.append(res1, res2)
+
+    def mass_matrix(self):
+        # couples to no time-derivatives
+        return np.zeros(self.problem.dim)
+
+    def plot(self, ax):
+        # nothing to plot
+        # TODO: should we maybe plot the eigenvector from here in case of fooldpointcontinuation?
+        pass
+    
