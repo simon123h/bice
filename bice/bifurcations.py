@@ -23,10 +23,8 @@ class BifurcationExtension(Equation):
         except AttributeError:
             self.ref_eq.Gu = self.ref_eq.jacobian(u[self.ref_eq.idx])
         res = np.zeros((u.size))
-        u = u[self.idx]
-        u1 = u[:-1]
-        u_old = self.u[self.idx]
-        u1_old = u_old[:-1]
+        u1 = u[self.idx][:-1]
+        u1_old = self.u[self.idx][:-1]
         res1 = np.matmul(self.ref_eq.Gu, u1)
         res2 = np.matmul(u1.T, u1_old) - 1.
         res[self.idx] = np.append(res1, res2)
