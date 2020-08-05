@@ -71,6 +71,16 @@ class Problem():
         eq.problem = self
         # redo the mapping from equation to problem variables
         self.assign_equation_numbers()
+        # sort the equations, uncoupled first (for sparsity of Jacobian / efficiency of Newton solver)
+        old_idx = {eq: eq.idx for eq in self.equations}
+        self.equations = [eq for eq in self.equations if not eq.is_coupled] + \
+            [eq for eq in self.equations if eq.is_coupled]
+        # redo the mapping from equation to problem variables
+        self.assign_equation_numbers()
+        # move the unknown values to their new positions
+        old_u = self.u.copy()
+        for eq in old_idx:
+            self.u[eq.idx] = old_u[old_idx[eq]]
 
     # remove an equation from the problem
     def remove_equation(self, eq):
@@ -239,8 +249,6 @@ class Problem():
         # calculate the size of the extended system, i.e. size of solution*2 + nr of constraints
         ext_size = (self.dim - self.nr_constraints)*2 + self.nr_constraints
         u_ext = np.zeros(ext_size)
-
-
 
     # create a new branch in the bifurcation diagram and prepare for a new continuation
 
