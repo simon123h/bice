@@ -147,36 +147,24 @@ problem.neigs = 20
 constraint = TranslationConstraint(problem.she)
 problem.add_equation(constraint)
 
-# continuation until first bifurcation
-n = 0
-plotevery = 1
-while len(problem.bifurcation_diagram.current_branch().bifurcations()) < 1:
-    # perform continuation step
-    problem.continuation_step()
-    n += 1
-    print("step #:", n, " ds:", problem.continuation_stepper.ds)
-    # plot
-    if n % plotevery == 0:
-        problem.plot(ax)
-        fig.savefig("out/img/{:05d}.svg".format(plotID))
-        plotID += 1
+# # continuation until first bifurcation
+# n = 0
+# plotevery = 1
+# while len(problem.bifurcation_diagram.current_branch().bifurcations()) < 1:
+#     # perform continuation step
+#     problem.continuation_step()
+#     n += 1
+#     print("step #:", n, " ds:", problem.continuation_stepper.ds)
+#     # plot
+#     if n % plotevery == 0:
+#         problem.plot(ax)
+#         fig.savefig("out/img/{:05d}.svg".format(plotID))
+#         plotID += 1
 
 
-bifurcation_constraint = BifurcationConstraint(problem.latest_eigenvectors[0].real, problem.continuation_parameter)
-problem.add_equation(bifurcation_constraint)
-
-print("start locating bifurcation point")
-problem.newton_solve()
-# TODO: update internally
-problem.she.r = bifurcation_constraint.u[-1]
-print("successfully located bifurcation point")
-problem.plot(ax)
-fig.savefig("out/img/bif.svg")
-
-
-problem.always_check_eigenvalues = False
-problem.continuation_stepper.factory_reset()
-problem.continuation_parameter = (problem.she, "kc")
+# problem.always_check_eigenvalues = False
+# problem.continuation_stepper.factory_reset()
+# problem.continuation_parameter = (problem.she, "kc")
 
 
 n = 0
