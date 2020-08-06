@@ -253,12 +253,9 @@ class Problem():
         setattr(obj, attr_name, val)
 
     def locate_bifurcation(self):
-        # calculate the size of the extended system, i.e. size of solution*2 + nr of constraints
-        ext_size = (self.dim - self.nr_constraints)*2 + self.nr_constraints
-        u_ext = np.zeros(ext_size)
+        # TODO: implement
 
     # create a new branch in the bifurcation diagram and prepare for a new continuation
-
     def new_branch(self):
         # create a new branch in the bifurcation diagram
         self.bifurcation_diagram.new_branch()
@@ -270,8 +267,8 @@ class Problem():
         # TODO: @simon: if we want to calculate more than one measure,
         #       we could just return an array here, and do the choosing what
         #       to plot in the problem-specific plot function, right?
-        # defaults to the L2-norm
-        return np.linalg.norm(self.u)
+        # defaults to the L2-norm of the first equation
+        return np.linalg.norm(self.equations[0].u)
 
     # save the current solution to disk
     def save(self, filename):
