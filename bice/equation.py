@@ -70,7 +70,7 @@ class Equation:
         # default implementation: calculate Jacobian with finite differences
         eps = 1e-10
         use_central_differences = False
-        N = self.problem.dim if self.is_coupled else self.dim
+        N = u.size
         J = np.zeros((N, N))
         if not use_central_differences:
             f0 = self.rhs(u)

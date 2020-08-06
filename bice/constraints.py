@@ -51,7 +51,7 @@ class VolumeConstraint(Equation):
 
     def mass_matrix(self):
         # couples to no time-derivatives
-        return np.zeros(self.problem.dim)
+        return 0
 
     def plot(self, ax):
         # nothing to plot
@@ -85,7 +85,7 @@ class TranslationConstraint(Equation):
         #  @simon: how about storing x, y, z, ... arrays as list in eq.x and then iterate lines 64-68 over list items
         #  don't know if that works for irregularly spaced grids
         # set up the vector of the residual contributions
-        res = np.zeros(self.problem.dim)
+        res = np.zeros((u.size))
         # define some variables
         eq = self.ref_eq
         eq_u = u[eq.idx]
@@ -105,7 +105,7 @@ class TranslationConstraint(Equation):
 
     def mass_matrix(self):
         # couples to no time-derivatives
-        return np.zeros(self.problem.dim)
+        return 0
 
     def plot(self, ax):
         # nothing to plot
