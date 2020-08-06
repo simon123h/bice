@@ -249,6 +249,7 @@ class Problem():
                 # get the eigenvector that corresponds to the bifurcation
                 # (the one with the smallest abolute real part)
                 unstable_eigval_index = np.argsort(np.abs(eigenvalues.real))[0]
+                # np.seterr('raise')
                 print(unstable_eigval_index)
                 eigenvector = eigenvectors[unstable_eigval_index]
                 # locate the exact bifurcation point
