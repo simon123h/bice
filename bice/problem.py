@@ -71,8 +71,15 @@ class Problem():
         eq.problem = self
         # redo the mapping from equation to problem variables
         self.assign_equation_numbers()
-        # sort the equations, uncoupled first (for sparsity of Jacobian / efficiency of Newton solver)
+        # sort the equations for efficiency
+        self.sort_equations()
+
+    # sort the equations, uncoupled first
+    # (for sparsity of Jacobian / efficiency of Newton solver)
+    def sort_equations(self):
+        # backup the old mapping
         old_idx = {eq: eq.idx for eq in self.equations}
+        # sort: uncoupled equations first, coupled equations last
         self.equations = [eq for eq in self.equations if not eq.is_coupled] + \
             [eq for eq in self.equations if eq.is_coupled]
         # redo the mapping from equation to problem variables
