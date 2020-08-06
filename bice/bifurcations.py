@@ -19,9 +19,9 @@ class BifurcationConstraint(Equation):
         # so we have N + 1 degrees of freedom, where N is the #dofs of the problem
         self.u = np.concatenate((phi, np.array([parameter_value])))
 
-        # the equation can disable itself with this parameter,
+        # the constraint can disable itself with this attribute,
         # so that only the original (unextended) system is obtained,
-        # preventing redundant and recursive calculations in the rhs
+        # preventing redundant, recursive or duplicate calculations
         self.__disabled = False
 
     def rhs(self, u):
@@ -53,7 +53,7 @@ class BifurcationConstraint(Equation):
         res = np.zeros((u.size))
         res1 = np.matmul(Gu, phi)
         res2 = np.dot(phi, phi_old) - 1
-        res[self.idx] = np.append(res1, res2)
+        res[self.idx] = np.concatenate((res1, res2))
         return res
 
     def jacobian(self, u):
@@ -65,8 +65,8 @@ class BifurcationConstraint(Equation):
         setattr(param_obj, param_name, u[self.idx][-1])
         # pass Jacobian calculation to the FD method of the parent Equation class
         J = Equation.jacobian(self, u)
-        # as the default implementation does not respect that the parameter is
-        # an unknown, add the corresponding parameter derivative to the Jacobian
+        # as the default implementation does not respect that the free parameter is
+        # an unknown, add the corresponding parameter derivative to the Jacobian.
         # the constraint's own rhs does respect it, though. --> disable it
         self.__disabled = True
         f0 = self.problem.rhs(u)
