@@ -120,6 +120,10 @@ class Branch:
     def norm_vals(self):
         return [s.norm for s in self.solutions]
 
+    # list all bifurcation points on the branch
+    def bifurcations(self):
+        return [s for s in self.solutions if s.neigenvalues_crossed not in [None, 0]]
+
     # returns the list of parameters and norms of the branch
     # optional argument only (str) may restrict the data to:
     #    - only="stable": stable parts only
