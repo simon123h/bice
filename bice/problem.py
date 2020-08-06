@@ -254,6 +254,12 @@ class Problem():
         obj, attr_name = tuple(self.continuation_parameter)
         setattr(obj, attr_name, val)
 
+    # this method is called after each newton solve
+    def actions_after_newton_solve(self):
+        # pass it to the equations
+        for eq in self.equations:
+            eq.actions_after_newton_solve()
+
     def locate_bifurcation(self):
         # TODO: implement
         pass

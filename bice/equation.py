@@ -96,6 +96,11 @@ class Equation:
         # default case: assume the identity matrix I (--> du/dt = rhs(u))
         return np.eye(self.dim)
 
+    # This method is called after each newton solve and may be
+    # overwritten to do anything specific to the equation
+    def actions_after_newton_solve(self):
+        pass
+
     # plot the solution into a matplotlib axes object
     def plot(self, ax):
         if len(self.x) == 1:
@@ -108,9 +113,6 @@ class Equation:
             mx, my = np.meshgrid(self.x[0], self.x[1])
             u = self.u.reshape((self.x[0].size, self.x[1].size))
             ax.pcolormesh(mx, my, u)
-        # ax.set_xlabel("k")
-        # ax.set_ylabel("fourier spectrum u(k,t)")
-        # ax.plot(self.she.k, np.abs(np.fft.rfft(self.she.u)))
 
 
 class FiniteDifferenceEquation(Equation):

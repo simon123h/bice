@@ -88,6 +88,11 @@ class BifurcationConstraint(Equation):
         # couples to no time-derivatives
         return 0
 
+    def actions_after_newton_solve(self):
+        # write the free parameter back from the unknowns
+        param_obj, param_name = tuple(self.free_parameter)
+        setattr(param_obj, param_name, self.u[-1])
+
     def plot(self, ax):
         # nothing to plot
         # TODO: should we maybe plot the eigenvector from here in case of fold point continuation?
