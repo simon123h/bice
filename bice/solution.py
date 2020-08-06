@@ -70,6 +70,10 @@ class Solution:
         # otherwise, the solution is considered to be stable (or metastable at least)
         return True
 
+    # is the solution point a bifurcation?
+    def is_bifurcation(self):
+        return self.neigenvalues_crossed not in [None, 0]
+
     # get access to the previous solution in the branch
     def get_neighboring_solution(self, distance):
         # if we don't know the branch, there is no neighboring solutions
@@ -112,6 +116,10 @@ class Branch:
         # add solution to list
         self.solutions.append(solution)
 
+    # remove a solution from the branch
+    def remove_solution_point(self, solution):
+        self.solutions.remove(solution)
+
     # list of continuation parameter values along the branch
     def parameter_vals(self):
         return [s.p for s in self.solutions]
@@ -122,7 +130,7 @@ class Branch:
 
     # list all bifurcation points on the branch
     def bifurcations(self):
-        return [s for s in self.solutions if s.neigenvalues_crossed not in [None, 0]]
+        return [s for s in self.solutions if s.is_bifurcation()]
 
     # returns the list of parameters and norms of the branch
     # optional argument only (str) may restrict the data to:
@@ -137,7 +145,7 @@ class Branch:
         elif only == "unstable":
             condition = [s.is_stable() for s in self.solutions]
         elif only == "bifurcations":
-            condition = [s.neigenvalues_crossed in [None, 0] for s in self.solutions]
+            condition = [not s.is_bifurcation() for s in self.solutions]
         # mask lists where condition is met and return
         pvals = np.ma.masked_where(condition, self.parameter_vals())
         nvals = np.ma.masked_where(condition, self.norm_vals())
