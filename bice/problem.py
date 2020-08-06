@@ -220,58 +220,36 @@ class Problem():
         branch = self.bifurcation_diagram.current_branch()
         # if the branch is empty, add initial point
         if branch.is_empty():
-            sol = Solution(self)
-            branch.add_solution_point(sol)
-            # if desired, solve the eigenproblem
-            if self.always_check_eigenvalues:
-                # solve the eigenproblem
-                eigenvalues, eigenvectors = self.solve_eigenproblem()
-                # count number of positive eigenvalues
-                sol.nunstable_eigenvalues = len([ev for ev in np.real(
-                    eigenvalues) if ev > self.eigval_zero_tolerance])
+            sol = self.add_point_to_bifdiag(self.always_check_eigenvalues)
         # perform the step with a continuation stepper
         self.continuation_stepper.step(self)
         # add the solution to the branch
-        sol = Solution(self)
-        branch.add_solution_point(sol)
-        # if desired, solve the eigenproblem
-        if self.always_check_eigenvalues:
-            # call eigensolver
-            eigenvalues, eigenvectors = self.solve_eigenproblem()
-            # count number of positive eigenvalues
-            sol.nunstable_eigenvalues = len([ev for ev in np.real(
-                eigenvalues) if ev > self.eigval_zero_tolerance])
-            # temporarily save eigenvalues and eigenvectors for this step
-            # NOTE: this is currently only needed for plotting
-            self.latest_eigenvalues = eigenvalues
-            self.latest_eigenvectors = eigenvectors
-            # optionally locate bifurcations
-            if self.always_locate_bifurcations and sol.is_bifurcation():
-                # backup the values of u and the continuation parameter
-                u = self.u.copy()
-                p = self.get_continuation_parameter()
-                # get the eigenvector that corresponds to the bifurcation
-                # (the one with the smallest abolute real part)
-                unstable_eigval_index = np.argsort(np.abs(eigenvalues.real))[0]
-                # np.seterr('raise')
-                print(unstable_eigval_index)
-                eigenvector = eigenvectors[unstable_eigval_index]
-                # locate the exact bifurcation point
-                self.locate_bifurcation(eigenvector)
-                # remove the point that we previously thought was the bifurcation
-                branch.remove_solution_point(sol)
-                # add the new solution point
-                new_sol = Solution(self)
-                branch.add_solution_point(new_sol)
-                # we're lazy and adapt the number of unstable eigenvalues from the
-                # point that overshot the bifurcation
-                new_sol.nunstable_eigenvalues = sol.nunstable_eigenvalues
-                # reset the values of u and the continuation parameter
-                self.u = u
-                self.set_continuation_parameter(p)
-                # add the original solution point back to the branch
-                branch.add_solution_point(sol)
-                # TODO: store bifurcation points separately?
+        sol = self.add_point_to_bifdiag(self.always_check_eigenvalues)
+        # optionally locate bifurcations
+        if self.always_locate_bifurcations and sol.is_bifurcation():
+            # backup the values of u and the continuation parameter
+            u = self.u.copy()
+            p = self.get_continuation_parameter()
+            # get the eigenvector that corresponds to the bifurcation
+            # (the one with the smallest abolute real part)
+            unstable_eigval_index = np.argsort(np.abs(self.latest_eigenvalues.real))[0]
+            eigenvector = self.latest_eigenvectors[unstable_eigval_index]
+            # locate the exact bifurcation point
+            self.locate_bifurcation(eigenvector)
+            # remove the point that we previously thought was the bifurcation
+            branch.remove_solution_point(sol)
+            # add the new solution point
+            new_sol = Solution(self)
+            branch.add_solution_point(new_sol)
+            # adapt the number of unstable eigenvalues from the point that
+            # overshot the bifurcation
+            new_sol.nunstable_eigenvalues = sol.nunstable_eigenvalues
+            # TODO: store bifurcation points separately?
+            # reset the values of u and the continuation parameter
+            self.u = u
+            self.set_continuation_parameter(p)
+            # add the original solution point back to the branch
+            branch.add_solution_point(sol)
 
     # return the value of the continuation parameter
     def get_continuation_parameter(self):
@@ -303,6 +281,22 @@ class Problem():
         for eq in self.equations:
             eq.actions_after_newton_solve()
 
+    def add_point_to_bifdiag(self, check_eigenvalues=False):
+        sol = Solution(self)
+        self.bifurcation_diagram.current_branch().add_solution_point(sol)
+        # if desired, solve the eigenproblem
+        if check_eigenvalues:
+            # solve the eigenproblem
+            eigenvalues, eigenvectors = self.solve_eigenproblem()
+            # count number of positive eigenvalues
+            sol.nunstable_eigenvalues = len([ev for ev in np.real(
+                eigenvalues) if ev > self.eigval_zero_tolerance])
+            # temporarily save eigenvalues and eigenvectors for this step
+            # NOTE: this is currently only needed for plotting
+            self.latest_eigenvalues = eigenvalues
+            self.latest_eigenvectors = eigenvectors
+        return sol
+
     # locate the bifurcation of the given eigenvector
     def locate_bifurcation(self, eigenvector):
         # make sure it is real, if self.u is real
@@ -313,9 +307,7 @@ class Problem():
             eigenvector, self.continuation_parameter)
         self.add_equation(bifurcation_constraint)
         # perform a newton solve
-        print("solving")
         self.newton_solve()
-        print("solved")
         # remove the constraint again
         self.remove_equation(bifurcation_constraint)
 
