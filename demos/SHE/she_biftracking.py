@@ -161,11 +161,21 @@ while len(problem.bifurcation_diagram.current_branch().bifurcations()) < 1:
         plotID += 1
 
 
-free_parameter = (problem.she, "kc")
-bifurcation_constraint = BifurcationConstraint(problem.latest_eigenvectors[0], free_parameter)
+bifurcation_constraint = BifurcationConstraint(problem.latest_eigenvectors[0].real, problem.continuation_parameter)
 problem.add_equation(bifurcation_constraint)
+
+print("start locating bifurcation point")
+problem.newton_solve()
+# TODO: update internally
+problem.she.r = bifurcation_constraint.u[-1]
+print("successfully located bifurcation point")
+problem.plot(ax)
+fig.savefig("out/img/bif.svg")
+
+
 problem.continuation_stepper.always_check_eigenvalues = False
 problem.continuation_stepper.factory_reset()
+problem.continuation_parameter = (problem.she, "kc")
 
 
 n = 0
