@@ -254,6 +254,7 @@ class Problem():
 
     def locate_bifurcation(self):
         # TODO: implement
+        pass
 
     # create a new branch in the bifurcation diagram and prepare for a new continuation
     def new_branch(self):
