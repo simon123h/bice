@@ -9,25 +9,23 @@ class MyNewtonSolver:
     def __init__(self):
         self.max_newton_iterations = 30
         self.convergence_tolerance = 1e-8
+        self.iteration_count = 0
 
     def solve(self, f, u, J):
         converged = False
-        count = 0
-        while not converged and count < self.max_newton_iterations:
+        self.iteration_count = 0
+        while not converged and self.iteration_count < self.max_newton_iterations:
             du = np.linalg.solve(J(u), f(u))
             u -= du
             # update counter and check for convergence
-            print(count, np.linalg.norm(du))
-            count += 1
+            self.iteration_count += 1
             converged = np.linalg.norm(du) < self.convergence_tolerance
-
+        # system converged to new solution, return it
         if converged:
-            # system converged to new solution, return it
             return u
-        else:
-            # we didn't converge, throw an error
-            raise np.linalg.LinAlgError(
-                "Newton solver did not converge after", count, "iterations!")
+        # else, we didn't converge, throw an error
+        raise np.linalg.LinAlgError(
+            "Newton solver did not converge after", self.iteration_count, "iterations!")
 
 
 class NewtonSolver:

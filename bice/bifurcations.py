@@ -10,7 +10,6 @@ class BifurcationConstraint(Equation):
         # copy and normalize the null-eigenvector phi
         phi = phi.copy() / np.linalg.norm(phi)
         # store the reference to the free parameter
-        # TODO: rather use the problem's continuation parameter?
         self.free_parameter = free_parameter
         # get the value of the free parameter
         param_obj, param_name = tuple(self.free_parameter)
@@ -136,5 +135,4 @@ class BifurcationConstraint(Equation):
 
     def plot(self, ax):
         # nothing to plot
-        # TODO: should we maybe plot the eigenvector from here in case of fold point continuation?
         pass

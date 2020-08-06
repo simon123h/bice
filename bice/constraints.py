@@ -11,11 +11,6 @@ class VolumeConstraint(Equation):
     The constraint equation comes with an additional (unknown) Lagrange
     multiplier that can be interpreted as an influx into the system.
     """
-    # TODO: is this constraint implemented correctly?
-    #  @simon: should this simply keep the volume constant? then it's correct i guess.
-    #  Should it keep the volume at a value specified by a parameter, i.e. enabling
-    #  continuation in the volume, then rhs should return something like:
-    #  np.trapz(self.ref_eq.u - volume_parameter, self.ref_eq.x)
 
     def __init__(self, reference_equation):
         super().__init__()
@@ -73,7 +68,7 @@ class TranslationConstraint(Equation):
         # on which equation/unknowns should the constraint be imposed?
         self.ref_eq = reference_equation
         # the dimension of this equation is equal to the spatial dimension of the reference eq
-        # TODO: fix for higher than 1 dimensions, i.e. make it possible to chose, which direction to fix. 
+        # TODO: fix for higher than 1 dimensions, i.e. make it possible to chose, which direction to fix.
         dim = 1
         # initialize unknowns (velocity vector) to zero
         self.u = np.zeros(dim)
@@ -92,7 +87,7 @@ class TranslationConstraint(Equation):
         eq_u_old = eq.u
         velocity = u[self.idx]
         # add constraint to residuals of reference equation (velocity is the langrange multiplier)
-        try: # if method first_spatial_derivative is implemented, use this
+        try:  # if method first_spatial_derivative is implemented, use this
             eq_dudx = eq.first_spatial_derivative(eq_u)
         except AttributeError:  # if not, get it from the gradient
             eq_dudx = np.gradient(eq_u, eq.x[0])

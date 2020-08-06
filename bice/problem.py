@@ -47,11 +47,11 @@ class Problem():
         self.latest_eigenvalues = None
         # storage for the latest eigenvectors that were calculated
         self.latest_eigenvectors = None
-        # how small does an eigenvalue need to be in order to be counted as 'zero'?
-        self.eigval_zero_tolerance = 1e-6
         # how many eigenvalues should be computed when problem.solve_eigenproblem() is called?
         # TODO: should have a more verbose name
         self.neigs = 20
+        # how small does an eigenvalue need to be in order to be counted as 'zero'?
+        self.eigval_zero_tolerance = 1e-6
         # should eigenvalues be calculated after each step?
         self.always_check_eigenvalues = False
         # should we always try to locate bifurcations with an augmented system?
@@ -196,7 +196,6 @@ class Problem():
     # Solve the system rhs(u) = 0 for u with Newton's method
     @profile
     def newton_solve(self):
-        # TODO: check for convergence
         self.u = self.newton_solver.solve(self.rhs, self.u, self.jacobian)
         # call the hook
         self.actions_after_newton_solve()

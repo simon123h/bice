@@ -55,9 +55,8 @@ class Solution:
         if index < 0:
             # if there is no previous solution with info on eigenvalues, we have no result
             return None
-        else:
-            # return the difference in unstable eigenvalues to the previous solution
-            return self.nunstable_eigenvalues - bps[index].nunstable_eigenvalues
+        # return the difference in unstable eigenvalues to the previous solution
+        return self.nunstable_eigenvalues - bps[index].nunstable_eigenvalues
 
     # is the solution stable?
     def is_stable(self):
@@ -154,8 +153,8 @@ class Branch:
 
 class BifurcationDiagram:
     """
-    Basically just a list of branches...
-    TODO: longer description needed?
+    Basically just a list of branches and methods to act upon.
+    Also: a fancy plotting method.
     """
 
     def __init__(self):
