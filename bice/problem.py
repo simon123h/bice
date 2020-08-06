@@ -3,6 +3,7 @@ from .time_steppers import RungeKutta4
 from .continuation_steppers import PseudoArclengthContinuation
 from .solvers import NewtonSolver, EigenSolver
 from .solution import Solution, BifurcationDiagram
+from .bifurcations import BifurcationConstraint
 from .profiling import profile
 
 
@@ -51,6 +52,11 @@ class Problem():
         # how many eigenvalues should be computed when problem.solve_eigenproblem() is called?
         # TODO: should have a more verbose name
         self.neigs = 20
+        # should eigenvalues be calculated after each step?
+        self.always_check_eigenvalues = False
+        # should we always try to locate bifurcations with an augmented system?
+        self.always_locate_bifurcations = False
+        # TODO: maybe use some substructure for all the settings (tolerances, neigs, booleans...)
 
     # The dimension of the system
     @property
@@ -211,7 +217,7 @@ class Problem():
             sol = Solution(self)
             branch.add_solution_point(sol)
             # if desired, solve the eigenproblem
-            if self.continuation_stepper.always_check_eigenvalues:
+            if self.always_check_eigenvalues:
                 # solve the eigenproblem
                 eigenvalues, eigenvectors = self.solve_eigenproblem()
                 # count number of positive eigenvalues
@@ -223,7 +229,7 @@ class Problem():
         sol = Solution(self)
         branch.add_solution_point(sol)
         # if desired, solve the eigenproblem
-        if self.continuation_stepper.always_check_eigenvalues:
+        if self.always_check_eigenvalues:
             # call eigensolver
             eigenvalues, eigenvectors = self.solve_eigenproblem()
             # count number of positive eigenvalues
@@ -233,8 +239,11 @@ class Problem():
             # NOTE: this is currently only needed for plotting
             self.latest_eigenvalues = eigenvalues
             self.latest_eigenvectors = eigenvectors
-            # TODO: optionally locate bifurcations
+            # optionally locate bifurcations
+            if self.always_locate_bifurcations:
+                self.locate_bifurcation(self.latest_eigenvectors[0])
             # TODO: maybe do some more postprocessing with hook-methods, that can be overwritten
+            # TODO: "create Solution" hook
 
     # return the value of the continuation parameter
     def get_continuation_parameter(self):
@@ -260,9 +269,18 @@ class Problem():
         for eq in self.equations:
             eq.actions_after_newton_solve()
 
-    def locate_bifurcation(self):
-        # TODO: implement
-        pass
+    # locate the bifurcation of the given eigenvector
+    def locate_bifurcation(self, eigenvector):
+        # make sure it is real, if self.u is real
+        if not np.iscomplexobj(self.u):
+            eigenvector = eigenvector.real
+        # create the bifurcation constraint and add it to the problem
+        bifurcation_constraint = BifurcationConstraint(eigenvector, self.continuation_parameter)
+        self.add_equation(bifurcation_constraint)
+        # perform a newton solve
+        self.newton_solve()
+        # remove the constraint again
+        self.remove_equation(bifurcation_constraint)
 
     # create a new branch in the bifurcation diagram and prepare for a new continuation
     def new_branch(self):
