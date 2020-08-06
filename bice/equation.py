@@ -96,6 +96,11 @@ class Equation:
         # default case: assume the identity matrix I (--> du/dt = rhs(u))
         return np.eye(self.dim)
 
+    # This method is called before each evaluation of the rhs/Jacobian and may be
+    # overwritten to do anything specific to the equation
+    def actions_before_evaluation(self, u):
+        pass
+
     # This method is called after each newton solve and may be
     # overwritten to do anything specific to the equation
     def actions_after_newton_solve(self):
@@ -170,6 +175,7 @@ class PseudospectralEquation(Equation):
     and provides some useful routines that are needed for implementing
     ODEs/PDEs with a pseudospectral scheme.
     """
+
     def __init__(self):
         super().__init__()
         # the spatial coordinates

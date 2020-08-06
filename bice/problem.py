@@ -133,6 +133,8 @@ class Problem():
     # Calculate the right-hand side of the system 0 = rhs(u)
     @profile
     def rhs(self, u):
+        # call the actions_before_evaluation hook
+        self.actions_before_evaluation(u)
         # if there is only one equation, we can return the rhs directly
         if len(self.equations) == 1:
             eq = self.equations[0]
@@ -153,6 +155,8 @@ class Problem():
     # Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u
     @profile
     def jacobian(self, u):
+        # call the actions_before_evaluation hook
+        self.actions_before_evaluation(u)
         # if there is only one equation, we can return the matrix directly
         if len(self.equations) == 1:
             return self.equations[0].jacobian(u)
@@ -193,7 +197,7 @@ class Problem():
     @profile
     def newton_solve(self):
         # TODO: check for convergence
-        self.u = self.newton_solver.solve(self.rhs, self.u)
+        self.u = self.newton_solver.solve(self.rhs, self.u, self.jacobian)
         # call the hook
         self.actions_after_newton_solve()
 
@@ -286,6 +290,12 @@ class Problem():
         # else, assign the new value using the builtin 'setattr'
         obj, attr_name = tuple(self.continuation_parameter)
         setattr(obj, attr_name, val)
+
+    # this method is called before each evaluation of the rhs/jacobian
+    def actions_before_evaluation(self, u):
+        # pass it to the equations
+        for eq in self.equations:
+            eq.actions_before_evaluation(u)
 
     # this method is called after each newton solve
     def actions_after_newton_solve(self):
