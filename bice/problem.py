@@ -194,6 +194,8 @@ class Problem():
     def newton_solve(self):
         # TODO: check for convergence
         self.u = self.newton_solver.solve(self.rhs, self.u)
+        # call the hook
+        self.actions_after_newton_solve()
 
     # Calculate the eigenvalues and eigenvectors of the Jacobian
     # The method will only calculate as many eigenvalues as requested with self.neigs
@@ -240,10 +242,31 @@ class Problem():
             self.latest_eigenvalues = eigenvalues
             self.latest_eigenvectors = eigenvectors
             # optionally locate bifurcations
-            if self.always_locate_bifurcations:
-                self.locate_bifurcation(self.latest_eigenvectors[0])
-            # TODO: maybe do some more postprocessing with hook-methods, that can be overwritten
-            # TODO: "create Solution" hook
+            if self.always_locate_bifurcations and sol.is_bifurcation():
+                # backup the values of u and the continuation parameter
+                u = self.u.copy()
+                p = self.get_continuation_parameter()
+                # get the eigenvector that corresponds to the bifurcation
+                # (the one with the smallest abolute real part)
+                unstable_eigval_index = np.argsort(np.abs(eigenvalues.real))[0]
+                print(unstable_eigval_index)
+                eigenvector = eigenvectors[unstable_eigval_index]
+                # locate the exact bifurcation point
+                self.locate_bifurcation(eigenvector)
+                # remove the point that we previously thought was the bifurcation
+                branch.remove_solution_point(sol)
+                # add the new solution point
+                new_sol = Solution(self)
+                branch.add_solution_point(new_sol)
+                # we're lazy and adapt the number of unstable eigenvalues from the
+                # point that overshot the bifurcation
+                new_sol.nunstable_eigenvalues = sol.nunstable_eigenvalues
+                # reset the values of u and the continuation parameter
+                self.u = u
+                self.set_continuation_parameter(p)
+                # add the original solution point back to the branch
+                branch.add_solution_point(sol)
+                # TODO: store bifurcation points separately?
 
     # return the value of the continuation parameter
     def get_continuation_parameter(self):
@@ -275,10 +298,13 @@ class Problem():
         if not np.iscomplexobj(self.u):
             eigenvector = eigenvector.real
         # create the bifurcation constraint and add it to the problem
-        bifurcation_constraint = BifurcationConstraint(eigenvector, self.continuation_parameter)
+        bifurcation_constraint = BifurcationConstraint(
+            eigenvector, self.continuation_parameter)
         self.add_equation(bifurcation_constraint)
         # perform a newton solve
+        print("solving")
         self.newton_solve()
+        print("solved")
         # remove the constraint again
         self.remove_equation(bifurcation_constraint)
 
