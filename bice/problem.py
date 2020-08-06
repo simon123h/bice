@@ -233,6 +233,8 @@ class Problem():
             # NOTE: this is currently only needed for plotting
             self.latest_eigenvalues = eigenvalues
             self.latest_eigenvectors = eigenvectors
+            # TODO: optionally locate bifurcations
+            # TODO: maybe do some more postprocessing with hook-methods, that can be overwritten
 
     # return the value of the continuation parameter
     def get_continuation_parameter(self):

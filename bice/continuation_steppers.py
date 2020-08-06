@@ -161,6 +161,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
                 "Newton solver did not converge after", count, "iterations!")
 
         # adapt step size
+        # TODO: move stepsize control to postprocessing in problem class?
         if self.adapt_stepsize:
             if count > self.ndesired_newton_steps and abs(self.ds) > self.ds_min:
                 # decrease step size
