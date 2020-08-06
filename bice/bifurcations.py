@@ -30,7 +30,7 @@ class BifurcationConstraint(Equation):
             return 0
         # get the value of the current and the previous null-eigenvector phi
         phi = u[self.idx][:-1]
-        phi_old = self.u[self.idx][:-1]
+        phi_old = self.u[:-1]
         # apply the given value of the free parameter
         param_obj, param_name = tuple(self.free_parameter)
         setattr(param_obj, param_name, u[self.idx][-1])
@@ -48,11 +48,11 @@ class BifurcationConstraint(Equation):
                             "the BifurcationConstraint. Did your problem change "
                             "since you imposed the constraint?")
         # reset the value of the free parameter
-        setattr(param_obj, param_name, self.u[self.idx][-1])
+        setattr(param_obj, param_name, self.u[-1])
         # calculate the residuals
         res = np.zeros((u.size))
         res1 = np.matmul(Gu, phi)
-        res2 = np.dot(phi, phi_old) - 1
+        res2 = np.array([np.dot(phi, phi_old) - 1])
         res[self.idx] = np.concatenate((res1, res2))
         return res
 
@@ -81,7 +81,7 @@ class BifurcationConstraint(Equation):
         # re-enable the constraint
         self.__disabled = False
         # reset the value of the free parameter and return the Jacobian
-        setattr(param_obj, param_name, self.u[self.idx][-1])
+        setattr(param_obj, param_name, self.u[-1])
         return J.T
 
     def mass_matrix(self):
