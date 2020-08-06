@@ -143,6 +143,8 @@ class PseudoArclengthContinuation(ContinuationStepper):
             # system converged to new solution, assign the new values
             problem.u = u
             problem.set_continuation_parameter(p)
+            # call the hook
+            problem.actions_after_newton_solve()
             # approximate tangent for the following step
             self.tangent = np.append(u - u_old, p - p_old)
             self.tangent /= np.linalg.norm(self.tangent)
