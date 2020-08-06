@@ -165,6 +165,7 @@ free_parameter = (problem.she, "kc")
 bifurcation_constraint = BifurcationConstraint(problem.latest_eigenvectors[0], free_parameter)
 problem.add_equation(bifurcation_constraint)
 problem.continuation_stepper.always_check_eigenvalues = False
+problem.continuation_stepper.factory_reset()
 
 
 n = 0
