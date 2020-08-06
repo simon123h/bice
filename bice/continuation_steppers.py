@@ -82,8 +82,8 @@ class PseudoArclengthContinuation(ContinuationStepper):
         # save old variables
         u_old = u.copy()
         p_old = p
-        if self.tangent is not None:
-            # simply get tangent from difference between last steps
+        # if we stored a valid tangent
+        if self.tangent is not None and self.tangent.size == u.size + 1:
             tangent = self.tangent
         else:
             # calculate tangent from extended Jacobian in (u, parameter)-space
