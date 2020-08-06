@@ -140,7 +140,8 @@ else:
 # start parameter continuation
 problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
-problem.continuation_stepper.always_check_eigenvalues = True
+problem.always_check_eigenvalues = True
+problem.always_locate_bifurcations = True
 problem.neigs = 20
 
 constraint = TranslationConstraint(problem.she)
@@ -173,13 +174,13 @@ problem.plot(ax)
 fig.savefig("out/img/bif.svg")
 
 
-problem.continuation_stepper.always_check_eigenvalues = False
+problem.always_check_eigenvalues = False
 problem.continuation_stepper.factory_reset()
 problem.continuation_parameter = (problem.she, "kc")
 
 
 n = 0
-plotevery = 5
+plotevery = 1
 Profiler.start()
 while problem.she.r > -0.016:
     # perform continuation step

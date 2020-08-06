@@ -139,7 +139,7 @@ else:
 # start parameter continuation
 problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
-problem.continuation_stepper.always_check_eigenvalues = True
+problem.always_check_eigenvalues = True
 problem.neigs = 20
 
 constraint = TranslationConstraint(problem.she)
