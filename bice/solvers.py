@@ -33,12 +33,11 @@ class NewtonSolver:
     def __init__(self):
         self.method = "krylov"
 
-    def solve(self, f, u, J):
+    def solve(self, f, u, J=None):
         # TODO: find an optimal solver
-        # TODO: pass the Jacobian
         return scipy.optimize.newton_krylov(f, u)
-        # return scipy.optimize.newton(f, u)
-        # return scipy.optimize.root(f, u, method=self.method)
+        # return scipy.optimize.newton(f, u, J)
+        # return scipy.optimize.root(f, u, method=self.method, jac=J)
 
 
 class EigenSolver:
