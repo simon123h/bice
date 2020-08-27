@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import shutil
 import os
 import sys
-sys.path.append("..")  # noqa, needed for relative import of package
+sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, Equation, PseudospectralEquation
 from bice.time_steppers import RungeKutta4, RungeKuttaFehlberg45, BDF2
 from bice.constraints import TranslationConstraint
@@ -16,23 +16,23 @@ class TobisEquation(Equation):
     def __init__(self):
         super().__init__()
         # parameters
-        self.a = 0.5
-        self.v = 0.41
+        self.a = 0.
+        self.T = 1
         self.minmax = "min"
         # initial condition
-        self.u = np.array([0])
+        self.u = np.array([4])
 
     def f(self, a, b):
-        return a+b
+        return (-self.T/2. + np.sqrt(self.T**2/4. + a))**2
 
     def g(self, a, b):
-        return a*b
+        return self.f(a, b)**2 / b**2
 
     # definition of the right-hand side
     def rhs(self, u):
         if self.minmax == "min":
-            return min(self.f(self.a, u[0]) - self.a, self.g(self.a, u[0]))
-        return max(self.f(self.a, u[0]) - self.a, self.g(self.a, u[0]))
+            return min(self.f(self.a, u[0]), self.g(self.a, u[0])) + self.a
+        return max(self.f(self.a, u[0]), self.g(self.a, u[0])) + self.a
 
     def mass_matrix(self):
         return np.zeros((1, 1))
