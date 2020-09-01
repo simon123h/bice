@@ -219,7 +219,8 @@ class FiniteElementEquation(Equation):
     """
     The FiniteElementEquation is a subclass of the general Equation
     and provides some useful routines that are needed for implementing
-    ODEs/PDEs with a finite difference scheme.
+    ODEs/PDEs in a Finite-Element approach.
+    It defaults to using periodic boundaries.
     """
 
     def __init__(self):
@@ -233,6 +234,7 @@ class FiniteElementEquation(Equation):
         # FEM mass matrix
         self.M = None
 
+    # generate FEM operator matrices for nabla, laplace and mass
     def build_FEM_matrices(self):
         N = self.dim
         xex = np.append(self.x, -self.x[0])
@@ -259,6 +261,7 @@ class FiniteElementEquation(Equation):
         self.M = np.roll(self.M, 1, axis=1)
         np.fill_diagonal(self.M, (dx+np.roll(dx, 1))/3.)
 
+    # FEM matrix for operator nabla c(x) nabla
     def qlmat(self, c):
         N = self.dim
         xex = np.append(self.x, -self.x[0])
