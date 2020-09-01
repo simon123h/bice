@@ -32,8 +32,6 @@ class Equation:
         self.idx = None
         # The equation's storage for the unknowns if it is not currently part of a problem
         self.__u = None
-        # The list of parameter names (list of strings, must match the name of the attributes)
-        self.parameter_names = []
 
     # Getter for the vector of unknowns
     @property
@@ -215,3 +213,61 @@ class PseudospectralEquation(Equation):
             kx, ky, kz = np.meshgrid(kx, ky, kz)
             self.k = [kx, ky, kz]
             self.ksquare = kx**2 + ky**2 + kz**2
+
+
+class FiniteElementEquation(Equation):
+    """
+    The FiniteElementEquation is a subclass of the general Equation
+    and provides some useful routines that are needed for implementing
+    ODEs/PDEs with a finite difference scheme.
+    """
+
+    def __init__(self):
+        super().__init__()
+        # the spatial coordinates
+        self.x = np.linspace(0, 1, 100, endpoint=False)
+        # first order derivative
+        self.nabla = None
+        # second order derivative
+        self.laplace = None
+        # FEM mass matrix
+        self.M = None
+
+    def build_FEM_matrices(self):
+        N = self.dim
+        xex = np.append(self.x, -self.x[0])
+        dx = xex[1:]-xex[:-1]
+
+        # spatial increment
+        dx = self.x[0][1] - self.x[0][0]
+
+        self.laplace = np.zeros((N, N))
+        np.fill_diagonal(self.laplace, -1./np.roll(dx, 1))
+        self.laplace = np.roll(self.laplace, -2, axis=1)
+        np.fill_diagonal(self.laplace, -1./dx)
+        self.laplace = np.roll(self.laplace, 1, axis=1)
+        np.fill_diagonal(self.laplace, 1./dx+1./np.roll(dx, 1))
+        self.laplace = -self.laplace
+
+        self.nabla = 0.5*np.roll(np.eye(N), -1, axis=1)-0.5 * \
+            np.roll(np.eye(N), 1, axis=1)
+
+        self.M = np.eye(N)
+        np.fill_diagonal(self.M, np.roll(dx, 1)/6.)
+        self.M = np.roll(self.M, -2, axis=1)
+        np.fill_diagonal(self.M, dx/6.)
+        self.M = np.roll(self.M, 1, axis=1)
+        np.fill_diagonal(self.M, (dx+np.roll(dx, 1))/3.)
+
+    def qlmat(self, c):
+        N = self.dim
+        xex = np.append(self.x, -self.x[0])
+        dx = xex[1:]-xex[:-1]
+        K = np.zeros((N, N))
+        np.fill_diagonal(K, -0.5*(np.roll(c, 1)+c)/np.roll(dx, 1))
+        K = np.roll(K, -2, axis=1)
+        np.fill_diagonal(K, -0.5*(c+np.roll(c, -1))/dx)
+        K = np.roll(K, 1, axis=1)
+        np.fill_diagonal(K, 0.5*(np.roll(c, -1)+c)/dx+0.5 *
+                         (np.roll(c, 1)+c)/np.roll(dx, 1))
+        return K
