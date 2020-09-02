@@ -9,7 +9,7 @@ from bice import Problem, Equation
 from bice.time_steppers import RungeKuttaFehlberg45, RungeKutta4, BDF2, BDF
 from bice.constraints import *
 from bice.solvers import *
-from bice.fem import FiniteElementEquation, OneDimMesh
+from bice.fem import FiniteElementEquation, TriangleMesh
 
 
 class ThinFilmEquation(FiniteElementEquation):
@@ -26,11 +26,12 @@ class ThinFilmEquation(FiniteElementEquation):
         # parameters: none
         # setup the mesh
         self.L = L
-        self.mesh = OneDimMesh(N, L, -L/2)
+        self.mesh = TriangleMesh(N, N, L, L, -L/2, -L/2)
         # initial condition
         h0 = 5
         a = 3/20. / (h0-1)
-        self.u = np.maximum(-a*self.x[0]*self.x[0] + h0, 1)
+        xsq = self.x[0]**2 + self.x[1]**2
+        self.u = np.maximum(-a*xsq + h0, 1)
         # build finite element matrices
         self.build_FEM_matrices()
 
@@ -42,9 +43,13 @@ class ThinFilmEquation(FiniteElementEquation):
     def djp(self, h):
         return 1./h**6 - 1./h**3
 
-    # no dealiasing for the FD version
-    def dealias(self, u, real_space=False, ratio=1./2.):
-        return u
+    def plot(self, ax):
+        x = self.x[0]
+        y = self.x[1]
+        h = self.u
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.tricontourf(x, y, h, 256, cmap="coolwarm")
 
     def first_spatial_derivative(self, u):
         return np.matmul(self.nabla[0], u)
@@ -58,25 +63,18 @@ class ThinFilm(Problem):
         self.tfe = ThinFilmEquation(N, L)
         self.add_equation(self.tfe)
         # Generate the volume constraint
-        self.volume_constraint = VolumeConstraint(self.tfe)
-        self.volume_constraint.fixed_volume = 0
+        # self.volume_constraint = VolumeConstraint(self.tfe)
+        # self.volume_constraint.fixed_volume = 0
         # Generate the translation constraint
-        self.translation_constraint = TranslationConstraint(self.tfe)
+        # self.translation_constraint = TranslationConstraint(self.tfe)
         # initialize time stepper
         # self.time_stepper = RungeKutta4()
         # self.time_stepper = RungeKuttaFehlberg45()
         # self.time_stepper.error_tolerance = 1e1
         # self.time_stepper.dt = 3e-5
-        self.time_stepper = BDF(self)  # better for FD
+        # self.time_stepper = BDF(self)  # better for FD
         # assign the continuation parameter
-        self.continuation_parameter = (self.volume_constraint, "fixed_volume")
-
-    # set higher modes to null, for numerical stability
-    def dealias(self, fraction=1./2.):
-        self.tfe.u = self.tfe.dealias(self.tfe.u, True)
-
-    def norm(self):
-        return np.trapz(self.tfe.u, self.tfe.x[0])
+        # self.continuation_parameter = (self.volume_constraint, "fixed_volume")
 
 
 # create output folder
@@ -84,23 +82,23 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=120, L=99)
+problem = ThinFilm(N=30, L=99)
 
-# Impose the constraints
-problem.volume_constraint.fixed_volume = np.trapz(
-    problem.tfe.u, problem.tfe.x[0])
-problem.add_equation(problem.volume_constraint)
-problem.add_equation(problem.translation_constraint)
+# # Impose the constraints
+# problem.volume_constraint.fixed_volume = np.trapz(
+#     problem.tfe.u, problem.tfe.x[0])
+# problem.add_equation(problem.volume_constraint)
+# problem.add_equation(problem.translation_constraint)
 
 
 # create figure
-fig, ax = plt.subplots(2, 2, figsize=(16, 9))
+fig, ax = plt.subplots(1, 1, figsize=(9, 9))
 plotID = 0
 
 
 plotID = 0
-problem.plot(ax)
-fig.savefig("out/img/{:05d}.svg".format(plotID))
+problem.tfe.plot(ax)
+fig.savefig("out/img/{:05d}.png".format(plotID))
 plotID += 1
 
 # problem.newton_solver = MyNewtonSolver()
@@ -108,8 +106,8 @@ plotID += 1
 
 problem.newton_solve()
 
-problem.plot(ax)
-fig.savefig("out/img/{:05d}.svg".format(plotID))
+problem.tfe.plot(ax)
+fig.savefig("out/img/{:05d}.png".format(plotID))
 
 exit()
 
@@ -123,7 +121,7 @@ exit()
 #         # plot
 #         if n % plotevery == 0:
 #             problem.plot(ax)
-#             fig.savefig("out/img/{:05d}.svg".format(plotID))
+#             fig.savefig("out/img/{:05d}.png".format(plotID))
 #             plotID += 1
 #             print("step #: {:}".format(n))
 #             print("time:   {:}".format(problem.time))
@@ -171,5 +169,5 @@ exit()
 #     # plot
 #     if n % plotevery == 0:
 #         problem.plot(ax)
-#         fig.savefig("out/img/{:05d}.svg".format(plotID))
+#         fig.savefig("out/img/{:05d}.png".format(plotID))
 #         plotID += 1
