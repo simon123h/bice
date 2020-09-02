@@ -4,7 +4,7 @@ from .equation import Equation
 # isoparametric element formulation with numerical integration
 
 
-class MyFiniteElementEquation(Equation):
+class FiniteElementEquation(Equation):
     """
     The FiniteElementEquation is a subclass of the general Equation
     and provides some useful routines that are needed for implementing
@@ -15,12 +15,8 @@ class MyFiniteElementEquation(Equation):
 
     def __init__(self):
         super().__init__()
-        # space
-        self.x = None
-        # nodes
-        self.nodes = []
-        # elements
-        self.elements = []
+        # the mesh
+        self.mesh = None
         # FEM mass matrix
         self.M = None
         # FEM stiffness matrix
@@ -38,21 +34,13 @@ class MyFiniteElementEquation(Equation):
             dim = 1
         # generate a 1d mesh
         if dim == 1:
-            # generate x
-            self.x = [np.linspace(0, L, N, endpoint=True)]
-            # add equidistant nodes
-            for i in range(N):
-                x = np.array([self.x[0][i]])
-                self.nodes.append(Node(x))
-            # generate the elements
-            for i in range(N-1):
-                nodes = [self.nodes[i], self.nodes[i+1]]
-                self.elements.append(Element1d(nodes))
+            self.mesh = OneDimMesh(N, L)
         # generate a 2d mesh
         elif dim == 2:
-            # generate x
             Nx, Ny = N
             Lx, Ly = L
+            self.mesh = TriangleMesh(Nx, Ny, Lx, Ly)
+            # generate x
             self.x = [np.linspace(0, Lx, Nx, endpoint=True),
                       np.linspace(0, Ly, Ny, endpoint=True)]
             # add equidistant nodes
@@ -75,10 +63,15 @@ class MyFiniteElementEquation(Equation):
             raise AttributeError(
                 "We have no routines for n-dim. meshes with n>2, yet!")
 
+    # return the coordinate vector from the nodes
+    @property
+    def x(self):
+        return np.array([n.x for n in self.mesh.nodes]).T
+
     # assemble the matrices of the FEM operators
     def build_FEM_matrices(self):
         # number of nodes
-        N = len(self.nodes)
+        N = len(self.mesh.nodes)
         # spatial dimension
         dim = len(self.x)
         # mass matrix
@@ -90,10 +83,10 @@ class MyFiniteElementEquation(Equation):
         for d in range(dim):
             self.nabla.append(np.zeros((N, N)))
         # store the global indices of the nodes
-        for i, n in enumerate(self.nodes):
+        for i, n in enumerate(self.mesh.nodes):
             n.index = i
         # for every element
-        for element in self.elements:
+        for element in self.mesh.elements:
             # spatial integration loop
             for x, weight in element.integration_points:
                 # evaluate the shape functions
@@ -116,12 +109,19 @@ class MyFiniteElementEquation(Equation):
 
 
 class Node:
+    """
+    simple node class for nodes in meshes,
+    basically stores a position in space
+    """
 
     def __init__(self, x):
         self.x = x
 
 
 class Element:
+    """
+    base class for all finite elements
+    """
 
     def __init__(self, nodes):
         self.dim = nodes[0].x.size
@@ -143,10 +143,11 @@ class Element:
     def dtest(self, x):
         return self.dshape(x)
 
-# one-dimensional elements with linear shape functions
-
 
 class Element1d(Element):
+    """
+    One-dimensional elements with linear shape functions
+    """
 
     def __init__(self, nodes):
         super().__init__(nodes)
@@ -179,8 +180,10 @@ class Element1d(Element):
         return [[-1, 1]]
 
 
-# two-dimensional triangular elements with linear shape functions
-class TElement2d(Element):
+class TriangleElement2d(Element):
+    """
+    Two-dimensional triangular elements with linear shape functions
+    """
 
     def __init__(self, nodes):
         super().__init__(nodes)
@@ -225,8 +228,11 @@ class TElement2d(Element):
             [-1, 0, 1]
         ]
 
-# two-dimensional rectangular elements with linear shape functions
-class QElement2d(Element):
+
+class RectangleElement2d(Element):
+    """
+    Two-dimensional rectangular elements with linear shape functions
+    """
 
     def __init__(self, nodes):
         super().__init__(nodes)
@@ -267,3 +273,100 @@ class QElement2d(Element):
             [sy-1, -sy, sy, 1-sy],
             [sx-1, 1-sx, sx, -sx]
         ]
+
+
+class Mesh:
+    """
+    Base class for meshes
+    """
+
+    def __init__(self):
+        self.nodes = []
+        self.elements = []
+
+
+class OneDimMesh(Mesh):
+    """
+    One-dimensional mesh from elements with linear shape functions
+    """
+
+    def __init__(self, N, L_end, L_start=0):
+        # call parent constructor
+        super().__init__()
+        # generate x
+        x = np.linspace(L_start, L_end, N, endpoint=True)
+        # add equidistant nodes
+        for i in range(N):
+            pos = np.array([x[i]])
+            self.nodes.append(Node(pos))
+        # generate the elements
+        for i in range(N-1):
+            nodes = [self.nodes[i], self.nodes[i+1]]
+            self.elements.append(Element1d(nodes))
+
+
+class TriangleMesh(Mesh):
+    """
+    Two-dimensional rectangular mesh with
+    triangular elements and linear shape functions
+    """
+
+    def __init__(self, Nx, Ny, Lx, Ly, Lx0=0, Ly0=0):
+        # call parent constructor
+        super().__init__()
+        # generate x,y-space
+        x = np.linspace(Lx0, Lx, Nx, endpoint=True)
+        y = np.linspace(Ly0, Ly, Ny, endpoint=True)
+        # add equidistant nodes
+        for i in range(Nx):
+            for j in range(Ny):
+                pos = np.array([x[i], y[j]])
+                self.nodes.append(Node(pos))
+        # generate the elements
+        for i in range(Nx-1):
+            for j in range(Ny-1):
+                # just like setting up a rectangular mesh, but we
+                # divide each rectangle into two triangular elements
+                # using counter-clockwise order of the nodes
+                nodes = [
+                    self.nodes[i*Nx+j],
+                    self.nodes[(i+1)*Nx+(j+1)],
+                    self.nodes[(i+1)*Nx+j]
+                ]
+                self.elements.append(TriangleElement2d(nodes))
+                nodes = [
+                    self.nodes[i*Nx+j],
+                    self.nodes[i*Nx+(j+1)],
+                    self.nodes[(i+1)*Nx+(j+1)]
+                ]
+                self.elements.append(TriangleElement2d(nodes))
+
+
+class RectangleMesh(Mesh):
+    """
+    Two-dimensional rectangular mesh with
+    rectangular elements and linear shape functions
+    """
+
+    def __init__(self, Nx, Ny, Lx, Ly, Lx0=0, Ly0=0):
+        # call parent constructor
+        super().__init__()
+        # generate x,y-space
+        x = np.linspace(Lx0, Lx, Nx, endpoint=True)
+        y = np.linspace(Ly0, Ly, Ny, endpoint=True)
+        # add equidistant nodes
+        for i in range(Nx):
+            for j in range(Ny):
+                pos = np.array([x[i], y[j]])
+                self.nodes.append(Node(pos))
+        # generate the elements
+        for i in range(Nx-1):
+            for j in range(Ny-1):
+                # using counter-clockwise order of the nodes
+                nodes = [
+                    self.nodes[i*Nx+j],
+                    self.nodes[i*Nx+(j+1)],
+                    self.nodes[(i+1)*Nx+(j+1)],
+                    self.nodes[(i+1)*Nx+j]
+                ]
+                self.elements.append(RectangleElement2d(nodes))

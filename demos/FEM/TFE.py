@@ -5,14 +5,14 @@ import shutil
 import os
 import sys
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, Equation, FiniteElementEquation
+from bice import Problem, Equation
 from bice.time_steppers import RungeKuttaFehlberg45, RungeKutta4, BDF2, BDF
 from bice.constraints import *
 from bice.solvers import *
-from bice.fem import MyFiniteElementEquation
+from bice.fem import FiniteElementEquation, OneDimMesh
 
 
-class ThinFilmEquation(MyFiniteElementEquation):
+class ThinFilmEquation(FiniteElementEquation):
     r"""
      Finite element implementation of the 1-dimensional Thin-Film Equation
      equation
@@ -26,7 +26,7 @@ class ThinFilmEquation(MyFiniteElementEquation):
         # parameters: none
         # setup the mesh
         self.L = L
-        self.setup_mesh(N, L)
+        self.mesh = OneDimMesh(N, L)
         # initial condition
         h0 = 5
         a = 3/20. / (h0-1)
@@ -84,7 +84,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=1024, L=100)
+problem = ThinFilm(N=120, L=99)
 
 # Impose the constraints
 problem.volume_constraint.fixed_volume = np.trapz(
