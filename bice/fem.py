@@ -290,11 +290,11 @@ class OneDimMesh(Mesh):
     One-dimensional mesh from elements with linear shape functions
     """
 
-    def __init__(self, N, L_end, L_start=0):
+    def __init__(self, N, L, L0=0):
         # call parent constructor
         super().__init__()
         # generate x
-        x = np.linspace(L_start, L_end, N, endpoint=True)
+        x = np.linspace(L0, L0+L, N, endpoint=True)
         # add equidistant nodes
         for i in range(N):
             pos = np.array([x[i]])
@@ -315,8 +315,8 @@ class TriangleMesh(Mesh):
         # call parent constructor
         super().__init__()
         # generate x,y-space
-        x = np.linspace(Lx0, Lx, Nx, endpoint=True)
-        y = np.linspace(Ly0, Ly, Ny, endpoint=True)
+        x = np.linspace(Lx0, Lx0+Lx, Nx, endpoint=True)
+        y = np.linspace(Ly0, Lx0+Ly, Ny, endpoint=True)
         # add equidistant nodes
         for i in range(Nx):
             for j in range(Ny):
@@ -352,8 +352,8 @@ class RectangleMesh(Mesh):
         # call parent constructor
         super().__init__()
         # generate x,y-space
-        x = np.linspace(Lx0, Lx, Nx, endpoint=True)
-        y = np.linspace(Ly0, Ly, Ny, endpoint=True)
+        x = np.linspace(Lx0, Lx0+Lx, Nx, endpoint=True)
+        y = np.linspace(Ly0, Lx0+Ly, Ny, endpoint=True)
         # add equidistant nodes
         for i in range(Nx):
             for j in range(Ny):
