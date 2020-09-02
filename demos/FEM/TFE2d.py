@@ -82,7 +82,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=30, L=99)
+problem = ThinFilm(N=40, L=40)
 
 # # Impose the constraints
 # problem.volume_constraint.fixed_volume = np.trapz(
