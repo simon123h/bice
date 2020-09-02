@@ -39,7 +39,7 @@ class MyFiniteElementEquation(Equation):
         # generate a 1d mesh
         if dim == 1:
             # generate x
-            self.x = [np.linspace(0, L, N)]
+            self.x = [np.linspace(0, L, N, endpoint=True)]
             # add equidistant nodes
             for i in range(N):
                 x = np.array([self.x[0][i]])
@@ -53,7 +53,7 @@ class MyFiniteElementEquation(Equation):
             # generate x
             Nx, Ny = N
             Lx, Ly = L
-            self.x = [np.linspace(0, Lx, Nx), np.linspace(0, Ly, Ny)]
+            self.x = [np.linspace(0, Lx, Nx, endpoint=True), np.linspace(0, Ly, Ny, endpoint=True)]
             # add equidistant nodes
             for i in range(Nx):
                 for j in range(Ny):
@@ -108,7 +108,7 @@ class MyFiniteElementEquation(Equation):
                         self.M[ni.index, nj.index] += shape[i] * \
                             test[j] * weight
                         for d in range(dim):
-                            self.laplace[ni.index, nj.index] += dshape[d][i] * \
+                            self.laplace[ni.index, nj.index] -= dshape[d][i] * \
                                 dtest[d][j] * weight
                             self.nabla[d][ni.index, nj.index] += dshape[d][i] * \
                                 test[j] * weight
@@ -153,7 +153,8 @@ class Element1d(Element):
         # see: https://de.wikipedia.org/wiki/Gau%C3%9F-Quadratur#Gau%C3%9F-Legendre-Integration
         a = np.array([(self.x0 + self.x1) / 2])
         b = np.array([np.sqrt(1./3.) * self.dx / 2])
-        self.integration_points = [(a + b, 1), (a - b, 1)]
+        w = self.dx / 2
+        self.integration_points = [(a + b, w), (a - b, w)]
 
     # 1d linear shape functions
     def shape(self, x):
@@ -182,11 +183,12 @@ class Element2d(Element):
         bx = np.sqrt(1./3.) * self.dx / 2
         ay = (self.y0 + self.y1) / 2
         by = np.sqrt(1./3.) * self.dy / 2
+        w = self.dx / 2
         self.integration_points = [
-            (np.array([ax-bx, ay-by]), 1),
-            (np.array([ax+bx, ay-by]), 1),
-            (np.array([ax-bx, ay+by]), 1),
-            (np.array([ax+bx, ay+by]), 1)
+            (np.array([ax-bx, ay-by]), w),
+            (np.array([ax+bx, ay-by]), w),
+            (np.array([ax-bx, ay+by]), w),
+            (np.array([ax+bx, ay+by]), w)
         ]
 
     # 2d linear shape functions

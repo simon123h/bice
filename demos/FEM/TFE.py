@@ -30,7 +30,7 @@ class ThinFilmEquation(MyFiniteElementEquation):
         # initial condition
         h0 = 5
         a = 3/20. / (h0-1)
-        self.u = np.maximum(-a*self.x[0]*self.x[0] + h0, 1)
+        self.u = np.maximum(-a*(self.x[0]-L/2)*(self.x[0]-L/2) + h0, 1)
         # build finite element matrices
         self.build_FEM_matrices()
 
