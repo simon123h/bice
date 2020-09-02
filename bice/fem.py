@@ -24,45 +24,6 @@ class FiniteElementEquation(Equation):
         # FEM first order derivative matrices
         self.nabla = None
 
-    # setup a mesh of size L with N points. N and L can be lists for multi-dimensional meshes
-
-    def setup_mesh(self, N, L):
-        # get dimension of the mesh
-        try:
-            dim = len(N)
-        except TypeError as te:
-            dim = 1
-        # generate a 1d mesh
-        if dim == 1:
-            self.mesh = OneDimMesh(N, L)
-        # generate a 2d mesh
-        elif dim == 2:
-            Nx, Ny = N
-            Lx, Ly = L
-            self.mesh = TriangleMesh(Nx, Ny, Lx, Ly)
-            # generate x
-            self.x = [np.linspace(0, Lx, Nx, endpoint=True),
-                      np.linspace(0, Ly, Ny, endpoint=True)]
-            # add equidistant nodes
-            for i in range(Nx):
-                for j in range(Ny):
-                    x = np.array([self.x[0][i], self.x[1][j]])
-                    self.nodes.append(Node(x))
-            # generate the elements
-            for i in range(Nx-1):
-                for j in range(Ny-1):
-                    # note the counter-clockwise order of the nodes
-                    nodes = [
-                        self.nodes[i*Nx+j],
-                        self.nodes[i*Nx+(j+1)],
-                        self.nodes[(i+1)*Nx+(j+1)],
-                        self.nodes[(i+1)*Nx+j]
-                    ]
-                    self.elements.append(Element2d(nodes))
-        else:
-            raise AttributeError(
-                "We have no routines for n-dim. meshes with n>2, yet!")
-
     # return the coordinate vector from the nodes
     @property
     def x(self):
