@@ -9,9 +9,10 @@ from bice import Problem, Equation, FiniteElementEquation
 from bice.time_steppers import RungeKuttaFehlberg45, RungeKutta4, BDF2, BDF
 from bice.constraints import *
 from bice.solvers import *
+from bice.fem import MyFiniteElementEquation
 
 
-class ThinFilmEquation(FiniteElementEquation):
+class ThinFilmEquation(MyFiniteElementEquation):
     r"""
      Finite element implementation of the 1-dimensional Thin-Film Equation
      equation
@@ -23,11 +24,9 @@ class ThinFilmEquation(FiniteElementEquation):
     def __init__(self, N, L):
         super().__init__()
         # parameters: none
-
-        # space and fourier space
-        self.x = [np.linspace(-L/2, L/2, N, endpoint=False)]
-        self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
+        # setup the mesh
         self.L = L
+        self.setup_mesh(N, L)
         # initial condition
         h0 = 5
         a = 3/20. / (h0-1)
@@ -35,7 +34,7 @@ class ThinFilmEquation(FiniteElementEquation):
         # build finite element matrices
         self.build_FEM_matrices()
 
-    # definition of the equation, using finite difference method
+    # definition of the equation, using finite element method
     def rhs(self, h):
         return -np.matmul(self.laplace, h) - np.matmul(self.M, self.djp(h))
 
@@ -48,7 +47,7 @@ class ThinFilmEquation(FiniteElementEquation):
         return u
 
     def first_spatial_derivative(self, u):
-        return np.matmul(self.nabla, u)
+        return np.matmul(self.nabla[0], u)
 
 
 class ThinFilm(Problem):
