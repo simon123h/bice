@@ -4,35 +4,52 @@ from .equation import Equation
 # isoparametric element formulation with numerical integration
 
 
-# A Finite-Element-Equation relates to a mesh: it has nodes/elements and can build the related matrices
 class MyFiniteElementEquation(Equation):
+    """
+    The FiniteElementEquation is a subclass of the general Equation
+    and provides some useful routines that are needed for implementing
+    ODEs/PDEs in a Finite-Element approach.
+    It defaults to using periodic boundaries.
+    A FiniteElementEquation relates to a mesh: it has nodes/elements and can build the related matrices
+    """
 
     def __init__(self):
-        self.nodes = []
-        self.elements = []
+        super().__init__()
+        # space
         self.x = None
+        # nodes
+        self.nodes = []
+        # elements
+        self.elements = []
+        # FEM mass matrix
+        self.M = None
+        # FEM stiffness matrix
+        self.laplace = None
+        # FEM first order derivative matrices
+        self.nabla = None
 
     # setup a mesh of size L with N points. N and L can be lists for multi-dimensional meshes
+
     def setup_mesh(self, N, L):
         # get dimension of the mesh
-        dim = len(N)
-        # check if discretization and size have the same
-        if len(N) != len(L):
-            raise AttributeError(
-                "Mismatch in dimension! Mesh discretization must have same dimension as Mesh size.")
+        try:
+            dim = len(N)
+        except TypeError as te:
+            dim = 1
         # generate a 1d mesh
         if dim == 1:
             # generate x
             self.x = [np.linspace(0, L, N)]
             # add equidistant nodes
             for i in range(N):
-                self.nodes.append(Node(self.x[i]))
+                x = np.array([self.x[0][i]])
+                self.nodes.append(Node(x))
             # generate the elements
             for i in range(N-1):
                 nodes = [self.nodes[i], self.nodes[i+1]]
                 self.elements.append(Element1d(nodes))
         # generate a 2d mesh
-        if dim == 2:
+        elif dim == 2:
             # generate x
             Nx, Ny = N
             Lx, Ly = L
@@ -59,12 +76,18 @@ class MyFiniteElementEquation(Equation):
 
     # assemble the matrices of the FEM operators
     def build_FEM_matrices(self):
-        # dimension
+        # number of nodes
         N = len(self.nodes)
+        # spatial dimension
+        dim = len(self.x)
         # mass matrix
-        M = np.zeros((N, N))
+        self.M = np.zeros((N, N))
         # stiffness matrix
-        K = np.zeros((N, N))
+        self.laplace = np.zeros((N, N))
+        # first order derivative matrices
+        self.nabla = []
+        for d in range(dim):
+            self.nabla.append(np.zeros((N, N)))
         # store the global indices of the nodes
         for i, n in enumerate(self.nodes):
             n.index = i
@@ -82,11 +105,13 @@ class MyFiniteElementEquation(Equation):
                 for i, ni in enumerate(element.nodes):
                     for j, nj in enumerate(element.nodes):
                         # integral contributions
-                        M[ni.index, nj.index] += shape[i] * test[j] * weight
-                        for d in range(self.dim):
-                            K[ni.index, nj.index] += dshape[i][d] * \
-                                dtest[j][d] * weight
-
+                        self.M[ni.index, nj.index] += shape[i] * \
+                            test[j] * weight
+                        for d in range(dim):
+                            self.laplace[ni.index, nj.index] += dshape[d][i] * \
+                                dtest[d][j] * weight
+                            self.nabla[d][ni.index, nj.index] += dshape[d][i] * \
+                                test[j] * weight
 
 class Node:
 
