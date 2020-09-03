@@ -69,11 +69,7 @@ class FiniteElementEquation(Equation):
                                 test[j] * weight
 
     # adapt the mesh to the variables
-    # TODO: support more than one unknown per node
     def adapt(self):
-        # calculate error estimate
-        # TODO: use something better than curvature
-        error_estimate = self.laplace.dot(self.u)
         # store the unknowns in the nodes
         for node, u in zip(self.mesh.nodes, self.u):
             node.u = u
@@ -82,6 +78,8 @@ class FiniteElementEquation(Equation):
         # equation needs to be removed from the problem so adaption does not break the problem's mapping of the unknowns
         if problem is not None:
             problem.remove_equation(self)
+        # calculate error estimate
+        error_estimate = self.refinement_error_estimate()
         # adapt the mesh
         self.mesh.adapt(error_estimate)
         # restore the unknowns from the (interpolated) node values
@@ -91,6 +89,31 @@ class FiniteElementEquation(Equation):
             problem.add_equation(self)
         # re-build the FEM matrices
         self.build_FEM_matrices()
+
+    # estimate the error made in each node
+    # TODO: support more than one unknown per node
+    def refinement_error_estimate(self):
+        # calculate curvature
+        curvature = self.laplace.dot(self.u)
+        # store curvature in nodes
+        for node, c in zip(self.mesh.nodes, curvature):
+            node.curvature = c
+            node.max_dx = 0
+        # get the maximum dx at the node
+        for element in self.mesh.elements:
+            for node1 in element.nodes:
+                for node2 in element.nodes:
+                    distance = np.linalg.norm(node1.x-node2.x)
+                    node1.max_dx = max(node1.max_dx, distance)
+                    # node1.max_dx += distance
+        # the error per element is maximum of node's errors
+        for element in self.mesh.elements:
+            # the error at the node is curvature * dx
+            node_errors = [abs(node.curvature *
+                               node.max_dx) for node in element.nodes]
+            element.error = max(node_errors)
+        # return the error per element
+        return np.array([e.error for e in self.mesh.elements])
 
 
 class Node:
@@ -304,37 +327,40 @@ class OneDimMesh(Mesh):
             self.elements.append(Element1d(nodes))
 
     def adapt(self, error_estimate):
-        # check the errors at each node and store whether they should be (un)refined
-        for node, error in zip(self.nodes, error_estimate):
-            node.can_be_unrefined = abs(error) < self.min_refinement_error
-            node.can_be_refined = abs(error) > self.max_refinement_error
+        # check the errors for each element and store whether they should be (un)refined
+        for element, error in zip(self.elements, error_estimate):
+            element.can_be_unrefined = abs(error) < self.min_refinement_error
+            element.can_be_refined = abs(error) > self.max_refinement_error
 
         # unrefinement loop
         i = 0
         while i < len(self.elements)-1:
-            node_l = self.elements[i].nodes[0]
-            node_m = self.elements[i].nodes[1]
-            node_r = self.elements[i+1].nodes[1]
-            # unrefine if all three nodes call for unrefinement
-            if node_l.can_be_unrefined and node_m.can_be_unrefined and node_r.can_be_unrefined:
-                # delete node_m
+            # unrefine if both neighbouring elements call for unrefinement
+            if self.elements[i].can_be_unrefined and self.elements[i+1].can_be_unrefined:
+                # store reference to nodes
+                node_l = self.elements[i].nodes[0]
+                node_r = self.elements[i+1].nodes[1]
+                node_m = self.elements[i].nodes[1]
+                # delete middle node
                 self.nodes.remove(node_m)
                 # delete the old elements
                 self.elements.pop(i)
                 self.elements.pop(i)
                 # create new element
                 self.elements.insert(i, Element1d([node_l, node_r]))
-                # this element should not be unrefined any further (for now)
-                node_l.can_be_unrefined = False
+                # this element should not be (un)refined any further (for now)
+                self.elements[i].can_be_refined = False
+                self.elements[i].can_be_unrefined = False
             i += 1
 
         # refinement loop
         i = 0
         while i < len(self.elements):
-            node_l = self.elements[i].nodes[0]
-            node_r = self.elements[i].nodes[1]
-            # refine if any of the nodes calls for a refinement
-            if node_l.can_be_refined or node_r.can_be_refined:
+            # refine if the element was marked for refinement
+            if self.elements[i].can_be_refined:
+                # store reference to the nodes
+                node_l = self.elements[i].nodes[0]
+                node_r = self.elements[i].nodes[1]
                 # check if element has minimal size already
                 if node_r.x[0] - node_l.x[0] <= 2 * self.min_element_dx:
                     break

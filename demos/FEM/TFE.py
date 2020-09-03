@@ -54,6 +54,12 @@ class ThinFilmEquation(FiniteElementEquation):
         ax.set_ylabel("solution h(x,t)")
         ax.plot(self.x[0], self.u, marker="x")
 
+        # estimate error
+        dx = np.diff(problem.tfe.x[0])
+        error_estimate = problem.tfe.laplace.dot(problem.tfe.u)[:-1] * dx
+
+        ax.plot((self.x[0][:-1] + self.x[0][1:])/2, error_estimate)
+
 
 class ThinFilm(Problem):
 
@@ -111,34 +117,7 @@ ax.clear()
 plotID += 1
 
 # newton solve
-problem.newton_solve()
-
-# plot
-problem.tfe.plot(ax)
-fig.savefig("out/img/{:05d}.png".format(plotID))
-ax.clear()
-plotID += 1
-
-# adapt mesh
-problem.tfe.adapt()
-
-# plot
-problem.tfe.plot(ax)
-fig.savefig("out/img/{:05d}.png".format(plotID))
-ax.clear()
-plotID += 1
-
-# adapt mesh
-problem.tfe.adapt()
-
-# plot
-problem.tfe.plot(ax)
-fig.savefig("out/img/{:05d}.png".format(plotID))
-ax.clear()
-plotID += 1
-
-# adapt mesh
-problem.tfe.adapt()
+# problem.newton_solve()
 
 # plot
 problem.tfe.plot(ax)
@@ -147,56 +126,15 @@ ax.clear()
 plotID += 1
 
 
-# adapt mesh
-problem.tfe.adapt()
+for i in range(30):
+    print("solving")
+    problem.newton_solve()
+    print("adapting")
+    # adapt mesh
+    problem.tfe.adapt()
 
-# plot
-problem.tfe.plot(ax)
-fig.savefig("out/img/{:05d}.png".format(plotID))
-ax.clear()
-plotID += 1
-
-# adapt mesh
-problem.tfe.adapt()
-
-# plot
-problem.tfe.plot(ax)
-fig.savefig("out/img/{:05d}.png".format(plotID))
-ax.clear()
-plotID += 1
-
-# adapt mesh
-problem.tfe.adapt()
-
-# plot
-problem.tfe.plot(ax)
-fig.savefig("out/img/{:05d}.png".format(plotID))
-ax.clear()
-plotID += 1
-
-# adapt mesh
-problem.tfe.adapt()
-
-# plot
-problem.tfe.plot(ax)
-fig.savefig("out/img/{:05d}.png".format(plotID))
-ax.clear()
-plotID += 1
-
-# adapt mesh
-problem.tfe.adapt()
-
-# plot
-problem.tfe.plot(ax)
-fig.savefig("out/img/{:05d}.png".format(plotID))
-ax.clear()
-plotID += 1
-
-# adapt mesh
-problem.tfe.adapt()
-
-# plot
-problem.tfe.plot(ax)
-fig.savefig("out/img/{:05d}.png".format(plotID))
-ax.clear()
-plotID += 1
+    # plot
+    problem.tfe.plot(ax)
+    fig.savefig("out/img/{:05d}.png".format(plotID))
+    ax.clear()
+    plotID += 1
