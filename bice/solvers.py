@@ -5,7 +5,6 @@ import scipy.linalg
 
 
 class MyNewtonSolver:
-    # TODO: catch errors, get number of iterations...
     def __init__(self):
         self.max_newton_iterations = 30
         self.convergence_tolerance = 1e-8

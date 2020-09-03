@@ -106,9 +106,10 @@ problem.tfe.plot(ax)
 fig.savefig("out/img/{:05d}.png".format(plotID))
 plotID += 1
 
-# problem.newton_solver = MyNewtonSolver()
-# problem.newton_solver.convergence_tolerance = 1e-6
+problem.newton_solver = MyNewtonSolver()
+problem.newton_solver.convergence_tolerance = 1e-6
 
+# TODO: matrices become VERY large! At this point, we should really switch to using sparse matrices
 problem.newton_solve()
 
 problem.tfe.plot(ax)
