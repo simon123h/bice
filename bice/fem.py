@@ -68,6 +68,29 @@ class FiniteElementEquation(Equation):
                             self.nabla[d][ni.index, nj.index] += dshape[d][i] * \
                                 test[j] * weight
 
+    # adapt the mesh to the variables
+    # TODO: support more than one unknown per node
+    def adapt(self):
+        # calculate error estimate
+        error_estimate = self.laplace.dot(self.u)
+        # store the unknowns in the nodes
+        for node, u in zip(self.mesh.nodes, self.u):
+            node.u = u
+        # store reference to the equation's problem
+        problem = self.problem
+        # equation needs to be removed from the problem so adaption does not break the problem's mapping of the unknowns
+        if problem is not None:
+            problem.remove_equation(self)
+        # adapt the mesh
+        self.mesh.adapt(error_estimate)
+        # restore the unknowns from the (interpolated) node values
+        self.u = np.array([node.u for node in self.mesh.nodes])
+        # re-add the equation to the problem
+        if problem is not None:
+            problem.add_equation(self)
+
+
+
 
 class Node:
     """
@@ -76,7 +99,10 @@ class Node:
     """
 
     def __init__(self, x):
+        # the spatial coordinates
         self.x = x
+        # storage for the unknowns (not always up to date!)
+        self.u = None
 
 
 class Element:
@@ -85,7 +111,9 @@ class Element:
     """
 
     def __init__(self, nodes):
+        # spatial dimension
         self.dim = nodes[0].x.size
+        # the nodes that build the element
         self.nodes = nodes
 
     # returns a list of all shape functions of this element
@@ -244,6 +272,15 @@ class Mesh:
     def __init__(self):
         self.nodes = []
         self.elements = []
+        # error thresholds for refinement
+        self.min_refinement_error = 1e-5
+        self.max_refinement_error = 1e-3
+        # minimal edge length of an element, for mesh adaption
+        self.min_element_dx = 1e-9
+
+    # adapt mesh to the values given by the unknowns u
+    def adapt(self, error_estimate):
+        pass
 
 
 class OneDimMesh(Mesh):
@@ -264,6 +301,56 @@ class OneDimMesh(Mesh):
         for i in range(N-1):
             nodes = [self.nodes[i], self.nodes[i+1]]
             self.elements.append(Element1d(nodes))
+
+    def adapt(self, error_estimate):
+        # check the errors at each node and store whether they should be (un)refined
+        for node, error in zip(self.nodes, error_estimate):
+            node.can_be_unrefined = abs(error) < self.min_refinement_error
+            node.can_be_refined = abs(error) > self.max_refinement_error
+
+        # unrefinement loop
+        i = 0
+        while i < len(self.elements)-1:
+            node_l = self.elements[i].nodes[0]
+            node_m = self.elements[i].nodes[1]
+            node_r = self.elements[i+1].nodes[1]
+            # unrefine if all three nodes call for unrefinement
+            if node_l.can_be_unrefined and node_m.can_be_unrefined and node_r.can_be_unrefined:
+                # delete node_m
+                self.nodes.remove(node_m)
+                # delete the old elements
+                self.elements.pop(i)
+                self.elements.pop(i+1)
+                # create new element
+                self.elements.insert(i, Element([node_l, node_r]))
+                # this element should not be unrefined any further (for now)
+                node_l.can_be_unrefined = False
+            i += 1
+
+        # refinement loop
+        i = 0
+        while i < len(self.elements):
+            node_l = self.elements[i].nodes[0]
+            node_r = self.elements[i].nodes[1]
+            # refine if any of the nodes calls for a refinement
+            if node_l.can_be_refined or node_r.can_be_refined:
+                # check if element has minimal size already
+                if node_r.x[0] - node_l.x[0] <= 2 * self.min_element_dx:
+                    break
+                # generate new node in the middle and insert after node_l
+                node_m = Node((node_l.x+node_r.x)/2)
+                n = self.nodes.index(node_l)
+                self.nodes.insert(n+1, node_l)
+                # interpolate the unknowns
+                node_m.u = (node_l.u + node_r.u)/2
+                # delete old element
+                self.elements.pop(i)
+                # generate two new elements and insert at the position of the old element
+                self.elements.insert(i, Element([node_l, node_m]))
+                self.elements.insert(i+1, Element([node_m, node_r]))
+                # skip refinement of the newly created element
+                i += 1
+            i += 1
 
 
 class TriangleMesh(Mesh):

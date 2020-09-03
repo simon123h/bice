@@ -49,6 +49,11 @@ class ThinFilmEquation(FiniteElementEquation):
     def first_spatial_derivative(self, u, direction=0):
         return np.matmul(self.nabla[direction], u)
 
+    def plot(self, ax):
+        ax.set_xlabel("x")
+        ax.set_ylabel("solution h(x,t)")
+        ax.plot(self.x[0], self.u, marker="x")
+
 
 class ThinFilm(Problem):
 
@@ -92,84 +97,33 @@ problem.volume_constraint.fixed_volume = np.trapz(
 problem.add_equation(problem.volume_constraint)
 problem.add_equation(problem.translation_constraint)
 
-
-# create figure
-fig, ax = plt.subplots(2, 2, figsize=(16, 9))
-plotID = 0
-
-
-plotID = 0
-problem.plot(ax)
-fig.savefig("out/img/{:05d}.svg".format(plotID))
-plotID += 1
-
 # problem.newton_solver = MyNewtonSolver()
 # problem.newton_solver.convergence_tolerance = 1e-6
 
+# create figure
+fig, ax = plt.subplots(1, 1, figsize=(16, 9))
+plotID = 0
+
+# plot
+problem.tfe.plot(ax)
+fig.savefig("out/img/{:05d}.svg".format(plotID))
+ax.clear()
+plotID += 1
+
+# newton solve
 problem.newton_solve()
 
-problem.plot(ax)
+# plot
+problem.tfe.plot(ax)
 fig.savefig("out/img/{:05d}.svg".format(plotID))
+ax.clear()
+plotID += 1
 
-exit()
+# adapt mesh
+problem.tfe.adapt()
 
-
-# # time-stepping
-# n = 0
-# plotevery = 1
-# dudtnorm = 1
-# if not os.path.exists("initial_state.dat"):
-#     while dudtnorm > 1e-8:
-#         # plot
-#         if n % plotevery == 0:
-#             problem.plot(ax)
-#             fig.savefig("out/img/{:05d}.svg".format(plotID))
-#             plotID += 1
-#             print("step #: {:}".format(n))
-#             print("time:   {:}".format(problem.time))
-#             print("dt:     {:}".format(problem.time_stepper.dt))
-#             print("|dudt|: {:}".format(dudtnorm))
-#         n += 1
-#         # perform timestep
-#         problem.time_step()
-#         # perform dealiasing
-#         problem.dealias()
-#         # calculate the new norm
-#         dudtnorm = np.linalg.norm(problem.rhs(problem.u))
-#         # catch divergent solutions
-#         if np.max(problem.u) > 1e12:
-#             print("Aborted.")
-#             break
-#     # save the state, so we can reload it later
-#     problem.save("initial_state.dat")
-# else:
-#     # load the initial state
-#     problem.load("initial_state.dat")
-
-# # start parameter continuation
-# problem.continuation_stepper.ds = 1e-2
-# problem.continuation_stepper.ndesired_newton_steps = 3
-# problem.always_check_eigenvalues = True
-
-# # Impose the constraints
-# problem.volume_constraint.fixed_volume = np.trapz(problem.tfe.u, problem.tfe.x[0])
-# problem.add_equation(problem.volume_constraint)
-# problem.add_equation(problem.translation_constraint)
-
-# problem.continuation_stepper.convergence_tolerance = 1e-10
-
-# n = 0
-# plotevery = 1
-# while problem.volume_constraint.fixed_volume < 1000:
-#     # perform continuation step
-#     problem.continuation_step()
-#     # perform dealiasing
-#     problem.dealias()
-#     n += 1
-#     print("step #:", n, " ds:", problem.continuation_stepper.ds)
-#     #print('largest EVs: ', problem.latest_eigenvalues[:3])
-#     # plot
-#     if n % plotevery == 0:
-#         problem.plot(ax)
-#         fig.savefig("out/img/{:05d}.svg".format(plotID))
-#         plotID += 1
+# plot
+problem.tfe.plot(ax)
+fig.savefig("out/img/{:05d}.svg".format(plotID))
+ax.clear()
+plotID += 1
