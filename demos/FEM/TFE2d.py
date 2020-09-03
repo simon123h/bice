@@ -37,6 +37,9 @@ class ThinFilmEquation(FiniteElementEquation):
 
     # definition of the equation, using finite element method
     def rhs(self, h):
+        # k = 4*np.pi/self.L
+        # sin = np.cos(k*self.x[0])
+        # return -np.matmul(self.laplace, sin) - np.matmul(self.M, h)
         return -np.matmul(self.laplace, h) - np.matmul(self.M, self.djp(h))
 
     # disjoining pressure
@@ -51,8 +54,8 @@ class ThinFilmEquation(FiniteElementEquation):
         ax.set_ylabel("y")
         ax.tricontourf(x, y, h, 256, cmap="coolwarm")
 
-    def first_spatial_derivative(self, u):
-        return np.matmul(self.nabla[0], u)
+    def first_spatial_derivative(self, u, direction=0):
+        return np.matmul(self.nabla[direction], u)
 
 
 class ThinFilm(Problem):
@@ -63,10 +66,11 @@ class ThinFilm(Problem):
         self.tfe = ThinFilmEquation(N, L)
         self.add_equation(self.tfe)
         # Generate the volume constraint
-        # self.volume_constraint = VolumeConstraint(self.tfe)
-        # self.volume_constraint.fixed_volume = 0
-        # Generate the translation constraint
-        # self.translation_constraint = TranslationConstraint(self.tfe)
+        self.volume_constraint = VolumeConstraint(self.tfe)
+        self.volume_constraint.fixed_volume = 0
+        # Generate the translation constraints
+        self.translation_constraint_x = TranslationConstraint(self.tfe, 0)
+        self.translation_constraint_y = TranslationConstraint(self.tfe, 1)
         # initialize time stepper
         # self.time_stepper = RungeKutta4()
         # self.time_stepper = RungeKuttaFehlberg45()
@@ -84,11 +88,12 @@ os.makedirs("out/img", exist_ok=True)
 # create problem
 problem = ThinFilm(N=40, L=40)
 
-# # Impose the constraints
-# problem.volume_constraint.fixed_volume = np.trapz(
-#     problem.tfe.u, problem.tfe.x[0])
-# problem.add_equation(problem.volume_constraint)
-# problem.add_equation(problem.translation_constraint)
+# Impose the constraints
+problem.volume_constraint.fixed_volume = np.trapz(
+    problem.tfe.u, problem.tfe.x[0])
+problem.add_equation(problem.volume_constraint)
+problem.add_equation(problem.translation_constraint_x)
+problem.add_equation(problem.translation_constraint_y)
 
 
 # create figure

@@ -59,7 +59,7 @@ class ThinFilmEquation(Equation):
             return np.fft.irfft(u_k)
         return u_k
 
-    def first_spatial_derivative(self, u):
+    def first_spatial_derivative(self, u, direction=0):
         du_dx = 1j*self.k*np.fft.rfft(u)
         return np.fft.irfft(du_dx)
 
@@ -102,7 +102,7 @@ class ThinFilmEquationFD(FiniteDifferenceEquation):
     def dealias(self, u, real_space=False, ratio=1./2.):
         return u
 
-    def first_spatial_derivative(self, u):
+    def first_spatial_derivative(self, u, direction=0):
         return np.matmul(self.nabla, u)
 
 

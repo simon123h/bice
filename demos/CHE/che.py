@@ -38,8 +38,8 @@ class CahnHilliardEquation(PseudospectralEquation):
         result = np.fft.ifft(result_k).real
         return result
 
-    def first_spatial_derivative(self, u):
-        du_dx = 1j*self.k[0]*np.fft.fft(u)
+    def first_spatial_derivative(self, u, direction=0):
+        du_dx = 1j*self.k[direction]*np.fft.fft(u)
         return np.fft.ifft(du_dx).real
 
 

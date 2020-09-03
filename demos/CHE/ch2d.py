@@ -46,11 +46,10 @@ class CahnHilliardEquation(PseudospectralEquation):
         return result.reshape(N0)
 
     @profile
-    def first_spatial_derivative(self, u):
-        # TODO: include direction
+    def first_spatial_derivative(self, u, direction=0):
         N0 = u.size
         u2 = u.reshape((self.x[0].size, self.x[1].size))
-        du_dx = 1j*self.k[0]*np.fft.fft2(u2)
+        du_dx = 1j*self.k[direction]*np.fft.fft2(u2)
         du_dx = np.fft.ifft2(du_dx).real
         return du_dx.reshape(N0)
 

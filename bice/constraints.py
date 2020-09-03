@@ -62,16 +62,15 @@ class TranslationConstraint(Equation):
     frame (advection term).
     """
 
-    def __init__(self, reference_equation):
+    def __init__(self, reference_equation, direction=0):
         # call parent constructor
         super().__init__()
         # on which equation/unknowns should the constraint be imposed?
         self.ref_eq = reference_equation
-        # the dimension of this equation is equal to the spatial dimension of the reference eq
-        # TODO: fix for higher than 1 dimensions, i.e. make it possible to chose, which direction to fix.
-        dim = 1
+        # which spatial direction (index of [x, y, ...]) should the constraint apply to
+        self.direction = direction
         # initialize unknowns (velocity vector) to zero
-        self.u = np.zeros(dim)
+        self.u = np.zeros(1)
         # the constraint equation couples to some other equation of the problem
         self.is_coupled = True
 
@@ -88,9 +87,9 @@ class TranslationConstraint(Equation):
         velocity = u[self.idx]
         # add constraint to residuals of reference equation (velocity is the langrange multiplier)
         try:  # if method first_spatial_derivative is implemented, use this
-            eq_dudx = eq.first_spatial_derivative(eq_u)
+            eq_dudx = eq.first_spatial_derivative(eq_u, self.direction)
         except AttributeError:  # if not, get it from the gradient
-            eq_dudx = np.gradient(eq_u, eq.x[0])
+            eq_dudx = np.gradient(eq_u, eq.x[self.direction])
         res[eq.idx] = velocity * eq_dudx
         # calculate the difference in center of masses between current
         # and previous unknowns of the reference equation

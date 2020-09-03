@@ -46,8 +46,8 @@ class ThinFilmEquation(FiniteElementEquation):
     def dealias(self, u, real_space=False, ratio=1./2.):
         return u
 
-    def first_spatial_derivative(self, u):
-        return np.matmul(self.nabla[0], u)
+    def first_spatial_derivative(self, u, direction=0):
+        return np.matmul(self.nabla[direction], u)
 
 
 class ThinFilm(Problem):
