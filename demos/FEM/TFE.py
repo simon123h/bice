@@ -28,7 +28,7 @@ class ThinFilmEquation(FiniteElementEquation):
         self.L = L
         self.mesh = OneDimMesh(N, L, -L/2)
         # initial condition
-        h0 = 5
+        h0 = 6
         a = 3/20. / (h0-1)
         self.u = np.maximum(-a*self.x[0]*self.x[0] + h0, 1)
         # build finite element matrices
@@ -104,7 +104,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=100, L=100)
+problem = ThinFilm(N=200, L=100)
 # np.savetxt("laplace.txt", problem.tfe.laplace)
 # np.savetxt("M.txt", problem.tfe.M)
 
@@ -116,7 +116,7 @@ problem.add_equation(problem.translation_constraint)
 
 # refinement thresholds
 problem.tfe.mesh.max_refinement_error = 1e-2
-problem.tfe.mesh.min_refinement_error = 1e-4
+problem.tfe.mesh.min_refinement_error = 1e-3
 # problem.tfe.mesh.min_element_dx = 0.2
 # problem.tfe.mesh.max_element_dx = 2
 
@@ -146,7 +146,7 @@ for i in range(30):
     # adapt
     print("adapting")
     problem.tfe.adapt()
-    # problem.tfe.adapt()
+    problem.tfe.adapt()
     # plot
     problem.tfe.plot(ax)
     fig.savefig("out/img/{:05d}.png".format(plotID))
