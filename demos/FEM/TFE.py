@@ -116,23 +116,14 @@ fig.savefig("out/img/{:05d}.png".format(plotID))
 ax.clear()
 plotID += 1
 
-# newton solve
-# problem.newton_solve()
-
-# plot
-problem.tfe.plot(ax)
-fig.savefig("out/img/{:05d}.png".format(plotID))
-ax.clear()
-plotID += 1
-
-
 for i in range(30):
+
+    # solve
     print("solving")
     problem.newton_solve()
+    # adapt
     print("adapting")
-    # adapt mesh
     problem.tfe.adapt()
-
     # plot
     problem.tfe.plot(ax)
     fig.savefig("out/img/{:05d}.png".format(plotID))
