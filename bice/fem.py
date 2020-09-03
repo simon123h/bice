@@ -178,9 +178,9 @@ class Element1d(Element):
         # exact polynomial integration using Gaussian quadrature
         # see: https://de.wikipedia.org/wiki/Gau%C3%9F-Quadratur#Gau%C3%9F-Legendre-Integration
         # and: https://link.springer.com/content/pdf/bbm%3A978-3-540-32609-0%2F1.pdf
-        a = 1./2.
+        a = 1. / 2.
         b = np.sqrt(1./3.) / 2
-        w = self.transformation_det / 2
+        w = 1. / 2.
         self.integration_points = [
             (np.array([a-b]), w),
             (np.array([a+b]), w)
@@ -223,7 +223,7 @@ class TriangleElement2d(Element):
         # exact polynomial integration using Gaussian quadrature
         # see: https://de.wikipedia.org/wiki/Gau%C3%9F-Quadratur#Gau%C3%9F-Legendre-Integration
         # and: https://link.springer.com/content/pdf/bbm%3A978-3-540-32609-0%2F1.pdf
-        w = self.transformation_det / 6
+        w = 1. / 6.
         self.integration_points = [
             (np.array([0.5, 0.5]), w),
             (np.array([0.0, 0.5]), w),
@@ -266,9 +266,9 @@ class RectangleElement2d(Element):
         # exact polynomial integration using Gaussian quadrature
         # see: https://de.wikipedia.org/wiki/Gau%C3%9F-Quadratur#Gau%C3%9F-Legendre-Integration
         # and: https://link.springer.com/content/pdf/bbm%3A978-3-540-32609-0%2F1.pdf
-        a = 1./2.
+        a = 1. / 2.
         b = np.sqrt(1./3.) / 2
-        w = self.transformation_det / 2
+        w = 1. / 2.
         self.integration_points = [
             (np.array([a-b, a-b]), w),
             (np.array([a+b, a-b]), w),
@@ -304,6 +304,8 @@ class Mesh:
         self.max_refinement_error = 1e-3
         # minimal edge length of an element, for mesh adaption
         self.min_element_dx = 1e-9
+        # maximal edge length of an element, for mesh adaption
+        self.max_element_dx = 1e9
 
     # adapt mesh to the values given by the unknowns u
     def adapt(self, error_estimate):
@@ -342,8 +344,11 @@ class OneDimMesh(Mesh):
             if self.elements[i].can_be_unrefined and self.elements[i+1].can_be_unrefined:
                 # store reference to nodes
                 node_l = self.elements[i].nodes[0]
-                node_r = self.elements[i+1].nodes[1]
                 node_m = self.elements[i].nodes[1]
+                node_r = self.elements[i+1].nodes[1]
+                # check if element has maximum size already
+                if node_r.x[0] - node_l.x[0] >= 0.5 * self.max_element_dx:
+                    break
                 # delete middle node
                 self.nodes.remove(node_m)
                 # delete the old elements
