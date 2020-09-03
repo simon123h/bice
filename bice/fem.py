@@ -72,6 +72,7 @@ class FiniteElementEquation(Equation):
     # TODO: support more than one unknown per node
     def adapt(self):
         # calculate error estimate
+        # TODO: use something better than curvature
         error_estimate = self.laplace.dot(self.u)
         # store the unknowns in the nodes
         for node, u in zip(self.mesh.nodes, self.u):
@@ -88,8 +89,8 @@ class FiniteElementEquation(Equation):
         # re-add the equation to the problem
         if problem is not None:
             problem.add_equation(self)
-
-
+        # re-build the FEM matrices
+        self.build_FEM_matrices()
 
 
 class Node:
@@ -320,9 +321,9 @@ class OneDimMesh(Mesh):
                 self.nodes.remove(node_m)
                 # delete the old elements
                 self.elements.pop(i)
-                self.elements.pop(i+1)
+                self.elements.pop(i)
                 # create new element
-                self.elements.insert(i, Element([node_l, node_r]))
+                self.elements.insert(i, Element1d([node_l, node_r]))
                 # this element should not be unrefined any further (for now)
                 node_l.can_be_unrefined = False
             i += 1
@@ -340,14 +341,14 @@ class OneDimMesh(Mesh):
                 # generate new node in the middle and insert after node_l
                 node_m = Node((node_l.x+node_r.x)/2)
                 n = self.nodes.index(node_l)
-                self.nodes.insert(n+1, node_l)
+                self.nodes.insert(n+1, node_m)
                 # interpolate the unknowns
                 node_m.u = (node_l.u + node_r.u)/2
                 # delete old element
                 self.elements.pop(i)
                 # generate two new elements and insert at the position of the old element
-                self.elements.insert(i, Element([node_l, node_m]))
-                self.elements.insert(i+1, Element([node_m, node_r]))
+                self.elements.insert(i, Element1d([node_l, node_m]))
+                self.elements.insert(i+1, Element1d([node_m, node_r]))
                 # skip refinement of the newly created element
                 i += 1
             i += 1
