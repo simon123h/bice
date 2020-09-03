@@ -109,10 +109,10 @@ class Problem():
         eq.idx = None
         # write the associated unknowns back into the equation
         eq.u = self.u[idx]
-        # remove eq's degrees of freedom from the problem dofs
-        self.u = np.delete(self.u, idx)
         # redo the mapping from equation to problem variables
         self.assign_equation_numbers()
+        # remove eq's degrees of freedom from the problem dofs
+        self.u = np.delete(self.u, idx)
 
     # create the mapping from equation variables to problem variables, in the sense
     # that problem.u[eq.idx] = eq.u where eq.idx is the mapping
