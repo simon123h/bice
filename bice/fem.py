@@ -50,6 +50,9 @@ class FiniteElementEquation(Equation):
         for element in self.mesh.elements:
             # spatial integration loop
             for x, weight in element.integration_points:
+                # premultiply weight with coordinate transformation determinant
+                det = element.transformation_det
+                weight *= det
                 # evaluate the shape functions
                 shape = element.shape(x)
                 dshape = element.dshape(x)
@@ -64,9 +67,9 @@ class FiniteElementEquation(Equation):
                             test[j] * weight
                         for d in range(dim):
                             self.laplace[ni.index, nj.index] -= dshape[d][i] * \
-                                dtest[d][j] * weight
+                                dtest[d][j] * weight / det / det
                             self.nabla[d][ni.index, nj.index] += dshape[d][i] * \
-                                test[j] * weight
+                                test[j] * weight / det
 
     # adapt the mesh to the variables
     def adapt(self):

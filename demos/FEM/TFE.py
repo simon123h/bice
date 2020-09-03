@@ -36,6 +36,9 @@ class ThinFilmEquation(FiniteElementEquation):
 
     # definition of the equation, using finite element method
     def rhs(self, h):
+        # k = 2 * np.pi / self.L
+        # sin = np.cos(k*self.x[0])
+        # return np.matmul(self.laplace, sin) - np.matmul(self.M, h)
         return -np.matmul(self.laplace, h) - np.matmul(self.M, self.djp(h))
 
     # disjoining pressure
@@ -52,13 +55,18 @@ class ThinFilmEquation(FiniteElementEquation):
     def plot(self, ax):
         ax.set_xlabel("x")
         ax.set_ylabel("solution h(x,t)")
-        ax.plot(self.x[0], self.u, marker="x")
+        ax.plot(self.x[0], self.u, marker="x", label="solution")
 
-        # estimate error
-        dx = np.diff(problem.tfe.x[0])
-        error_estimate = problem.tfe.laplace.dot(problem.tfe.u)[:-1] * dx
+        # k = 2 * np.pi / self.L
+        # sin = np.cos(k*self.x[0])
+        # dxx = self.laplace.dot(sin)
+        # dex = -np.cos(k*self.x[0])*k*k
+        # ax.plot(self.x[0], dxx, label="numeric")
+        # ax.plot(self.x[0], dex, label="exact")
+        # error_estimate = problem.tfe.refinement_error_estimate()
+        # ax.plot((self.x[0][:-1] + self.x[0][1:])/2, error_estimate, label="error estimate")
 
-        ax.plot((self.x[0][:-1] + self.x[0][1:])/2, error_estimate)
+        ax.legend()
 
 
 class ThinFilm(Problem):
@@ -95,13 +103,16 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=120, L=99)
+problem = ThinFilm(N=200, L=100)
 
 # Impose the constraints
 problem.volume_constraint.fixed_volume = np.trapz(
     problem.tfe.u, problem.tfe.x[0])
 problem.add_equation(problem.volume_constraint)
 problem.add_equation(problem.translation_constraint)
+
+problem.tfe.mesh.max_refinement_error = 1e-3
+problem.tfe.mesh.min_refinement_error = 1e-5
 
 # problem.newton_solver = MyNewtonSolver()
 # problem.newton_solver.convergence_tolerance = 1e-6
@@ -121,9 +132,15 @@ for i in range(30):
     # solve
     print("solving")
     problem.newton_solve()
+    # plot
+    problem.tfe.plot(ax)
+    fig.savefig("out/img/{:05d}.png".format(plotID))
+    ax.clear()
+    plotID += 1
     # adapt
     print("adapting")
     problem.tfe.adapt()
+    # problem.tfe.adapt()
     # plot
     problem.tfe.plot(ax)
     fig.savefig("out/img/{:05d}.png".format(plotID))
