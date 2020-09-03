@@ -106,7 +106,7 @@ plotID = 0
 
 # plot
 problem.tfe.plot(ax)
-fig.savefig("out/img/{:05d}.svg".format(plotID))
+fig.savefig("out/img/{:05d}.png".format(plotID))
 ax.clear()
 plotID += 1
 
@@ -115,7 +115,7 @@ problem.newton_solve()
 
 # plot
 problem.tfe.plot(ax)
-fig.savefig("out/img/{:05d}.svg".format(plotID))
+fig.savefig("out/img/{:05d}.png".format(plotID))
 ax.clear()
 plotID += 1
 
@@ -124,6 +124,79 @@ problem.tfe.adapt()
 
 # plot
 problem.tfe.plot(ax)
-fig.savefig("out/img/{:05d}.svg".format(plotID))
+fig.savefig("out/img/{:05d}.png".format(plotID))
+ax.clear()
+plotID += 1
+
+# adapt mesh
+problem.tfe.adapt()
+
+# plot
+problem.tfe.plot(ax)
+fig.savefig("out/img/{:05d}.png".format(plotID))
+ax.clear()
+plotID += 1
+
+# adapt mesh
+problem.tfe.adapt()
+
+# plot
+problem.tfe.plot(ax)
+fig.savefig("out/img/{:05d}.png".format(plotID))
+ax.clear()
+plotID += 1
+
+
+# adapt mesh
+problem.tfe.adapt()
+
+# plot
+problem.tfe.plot(ax)
+fig.savefig("out/img/{:05d}.png".format(plotID))
+ax.clear()
+plotID += 1
+
+# adapt mesh
+problem.tfe.adapt()
+
+# plot
+problem.tfe.plot(ax)
+fig.savefig("out/img/{:05d}.png".format(plotID))
+ax.clear()
+plotID += 1
+
+# adapt mesh
+problem.tfe.adapt()
+
+# plot
+problem.tfe.plot(ax)
+fig.savefig("out/img/{:05d}.png".format(plotID))
+ax.clear()
+plotID += 1
+
+# adapt mesh
+problem.tfe.adapt()
+
+# plot
+problem.tfe.plot(ax)
+fig.savefig("out/img/{:05d}.png".format(plotID))
+ax.clear()
+plotID += 1
+
+# adapt mesh
+problem.tfe.adapt()
+
+# plot
+problem.tfe.plot(ax)
+fig.savefig("out/img/{:05d}.png".format(plotID))
+ax.clear()
+plotID += 1
+
+# adapt mesh
+problem.tfe.adapt()
+
+# plot
+problem.tfe.plot(ax)
+fig.savefig("out/img/{:05d}.png".format(plotID))
 ax.clear()
 plotID += 1
