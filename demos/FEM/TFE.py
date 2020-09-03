@@ -59,10 +59,11 @@ class ThinFilmEquation(FiniteElementEquation):
 
         # k = 2 * np.pi / self.L
         # sin = np.cos(k*self.x[0])
-        # dxx = self.laplace.dot(sin)
-        # dex = -np.cos(k*self.x[0])*k*k
+        # dxx = self.laplace.dot(sin) / self.M.dot(np.ones(self.u.size))
+        # dexx = -np.cos(k*self.x[0])*k*k
         # ax.plot(self.x[0], dxx, label="numeric")
-        # ax.plot(self.x[0], dex, label="exact")
+        # ax.plot(self.x[0], dexx, label="exact")
+
         # error_estimate = problem.tfe.refinement_error_estimate()
         # ax.plot((self.x[0][:-1] + self.x[0][1:])/2, error_estimate, label="error estimate")
 
@@ -103,7 +104,9 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=200, L=100)
+problem = ThinFilm(N=100, L=100)
+# np.savetxt("laplace.txt", problem.tfe.laplace)
+# np.savetxt("M.txt", problem.tfe.M)
 
 # Impose the constraints
 problem.volume_constraint.fixed_volume = np.trapz(
@@ -111,8 +114,11 @@ problem.volume_constraint.fixed_volume = np.trapz(
 problem.add_equation(problem.volume_constraint)
 problem.add_equation(problem.translation_constraint)
 
-problem.tfe.mesh.max_refinement_error = 1e-3
-problem.tfe.mesh.min_refinement_error = 1e-5
+# refinement thresholds
+problem.tfe.mesh.max_refinement_error = 1e-2
+problem.tfe.mesh.min_refinement_error = 1e-4
+# problem.tfe.mesh.min_element_dx = 0.2
+# problem.tfe.mesh.max_element_dx = 2
 
 # problem.newton_solver = MyNewtonSolver()
 # problem.newton_solver.convergence_tolerance = 1e-6
