@@ -38,8 +38,8 @@ class ThinFilmEquation(FiniteElementEquation):
     def rhs(self, h):
         # k = 2 * np.pi / self.L
         # sin = np.cos(k*self.x[0])
-        # return np.matmul(self.laplace, sin) - np.matmul(self.M, h)
-        return -np.matmul(self.laplace, h) - np.matmul(self.M, self.djp(h))
+        # return self.laplace.dot(sin) - self.M.dot(h)
+        return -self.laplace.dot(h) - self.M.dot(self.djp(h))
 
     # disjoining pressure
     def djp(self, h):
@@ -50,7 +50,7 @@ class ThinFilmEquation(FiniteElementEquation):
         return u
 
     def first_spatial_derivative(self, u, direction=0):
-        return np.matmul(self.nabla[direction], u)
+        return self.nabla[direction].dot(u)
 
     def plot(self, ax):
         ax.set_xlabel("x")
@@ -87,7 +87,7 @@ class ThinFilm(Problem):
         # self.time_stepper = RungeKuttaFehlberg45()
         # self.time_stepper.error_tolerance = 1e1
         # self.time_stepper.dt = 3e-5
-        self.time_stepper = BDF(self)  # better for FD
+        # self.time_stepper = BDF(self)  # better for FD
         # assign the continuation parameter
         self.continuation_parameter = (self.volume_constraint, "fixed_volume")
 
@@ -107,6 +107,8 @@ os.makedirs("out/img", exist_ok=True)
 problem = ThinFilm(N=200, L=100)
 # np.savetxt("laplace.txt", problem.tfe.laplace)
 # np.savetxt("M.txt", problem.tfe.M)
+
+print(sys.getsizeof(problem.tfe.M))
 
 # Impose the constraints
 problem.volume_constraint.fixed_volume = np.trapz(

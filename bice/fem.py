@@ -1,5 +1,6 @@
 import numpy as np
 from .equation import Equation
+from scipy.sparse import lil_matrix
 
 # isoparametric element formulation with numerical integration
 
@@ -36,13 +37,13 @@ class FiniteElementEquation(Equation):
         # spatial dimension
         dim = len(self.x)
         # mass matrix
-        self.M = np.zeros((N, N))
+        self.M = lil_matrix((N, N))
         # stiffness matrix
-        self.laplace = np.zeros((N, N))
+        self.laplace = lil_matrix((N, N))
         # first order derivative matrices
         self.nabla = []
         for d in range(dim):
-            self.nabla.append(np.zeros((N, N)))
+            self.nabla.append(lil_matrix((N, N)))
         # store the global indices of the nodes
         for i, n in enumerate(self.mesh.nodes):
             n.index = i
@@ -70,6 +71,11 @@ class FiniteElementEquation(Equation):
                                 dtest[d][j] * weight / det / det
                             self.nabla[d][ni.index, nj.index] += dshape[d][i] * \
                                 test[j] * weight / det
+
+        # convert matrices to CSR-format (compressed sparse row) for arithmetic operation efficiency
+        self.M = self.M.tocsr()
+        self.laplace = self.laplace.tocsr()
+        self.nabla = [n.tocsr() for n in self.nabla]
 
     # adapt the mesh to the variables
     def adapt(self):
