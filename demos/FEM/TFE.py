@@ -105,10 +105,6 @@ os.makedirs("out/img", exist_ok=True)
 
 # create problem
 problem = ThinFilm(N=200, L=100)
-# np.savetxt("laplace.txt", problem.tfe.laplace)
-# np.savetxt("M.txt", problem.tfe.M)
-
-print(sys.getsizeof(problem.tfe.M))
 
 # Impose the constraints
 problem.volume_constraint.fixed_volume = np.trapz(
