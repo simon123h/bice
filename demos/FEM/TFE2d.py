@@ -56,6 +56,7 @@ class ThinFilmEquation(FiniteElementEquation):
         ax.set_xlabel("x")
         ax.set_ylabel("y")
         ax.tricontourf(x, y, h, 256, cmap="coolwarm")
+        ax.scatter(x, y, s=0.1, c="black")
 
 
 class ThinFilm(Problem):
@@ -70,14 +71,6 @@ class ThinFilm(Problem):
         # Generate the translation constraints
         self.translation_constraint_x = TranslationConstraint(self.tfe, 0)
         self.translation_constraint_y = TranslationConstraint(self.tfe, 1)
-        # initialize time stepper
-        # self.time_stepper = RungeKutta4()
-        # self.time_stepper = RungeKuttaFehlberg45()
-        # self.time_stepper.error_tolerance = 1e1
-        # self.time_stepper.dt = 3e-5
-        # self.time_stepper = BDF(self)  # better for FD
-        # assign the continuation parameter
-        # self.continuation_parameter = (self.volume_constraint, "fixed_volume")
 
 
 # create output folder
@@ -124,7 +117,6 @@ for i in range(10):
     plotID += 1
     # adapt
     print("adapting")
-    problem.tfe.adapt()
     problem.tfe.adapt()
     # plot
     problem.tfe.plot(ax)
