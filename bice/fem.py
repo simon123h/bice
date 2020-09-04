@@ -108,7 +108,9 @@ class FiniteElementEquation(Equation):
         return np.array([node.error for node in self.mesh.nodes])
 
     # copy the unknowns u to the values in the mesh nodes
-    def copy_unknowns_to_nodal_values(self):
+    def copy_unknowns_to_nodal_values(self, u=None):
+        if u is None:
+            u = self.u
         # loop over the nodes
         i = 0
         for node in self.mesh.nodes:
@@ -120,7 +122,7 @@ class FiniteElementEquation(Equation):
                 # exclude pinned values
                 if n not in node.pinned_values:
                     # write the value to the node and increment counter
-                    node.u[n] = self.u[i]
+                    node.u[n] = u[i]
                     i += 1
 
     # copy the values of the nodes to the equation's unknowns
@@ -129,7 +131,7 @@ class FiniteElementEquation(Equation):
         N = len(self.mesh.nodes) * self.nvalue - \
             sum([len(n.pinned_values) for n in self.mesh.nodes])
         # if the number of unknowns changed...
-        if N != self.u.size:
+        if self.u is None or N != self.u.size:
             # store reference to the equation's problem
             problem = self.problem
             # remove the equation from the problem (if assigned)
