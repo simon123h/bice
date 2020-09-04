@@ -37,14 +37,17 @@ class ThinFilmEquation(FiniteElementEquation):
 
     # definition of the equation, using finite element method
     def rhs(self, h):
-        # k = 4*np.pi/self.L
+        # k = 2 * np.pi / self.L
         # sin = np.cos(k*self.x[0])
-        # return -np.matmul(self.laplace, sin) - np.matmul(self.M, h)
+        # return self.laplace.dot(sin) - self.M.dot(h)
         return -self.laplace.dot(h) - self.M.dot(self.djp(h))
 
     # disjoining pressure
     def djp(self, h):
         return 1./h**6 - 1./h**3
+
+    def first_spatial_derivative(self, u, direction=0):
+        return self.nabla[direction].dot(u)
 
     def plot(self, ax):
         x = self.x[0]
@@ -53,9 +56,6 @@ class ThinFilmEquation(FiniteElementEquation):
         ax.set_xlabel("x")
         ax.set_ylabel("y")
         ax.tricontourf(x, y, h, 256, cmap="coolwarm")
-
-    def first_spatial_derivative(self, u, direction=0):
-        return self.nabla[direction].dot(u)
 
 
 class ThinFilm(Problem):
@@ -67,7 +67,6 @@ class ThinFilm(Problem):
         self.add_equation(self.tfe)
         # Generate the volume constraint
         self.volume_constraint = VolumeConstraint(self.tfe)
-        self.volume_constraint.fixed_volume = 0
         # Generate the translation constraints
         self.translation_constraint_x = TranslationConstraint(self.tfe, 0)
         self.translation_constraint_y = TranslationConstraint(self.tfe, 1)
@@ -86,94 +85,49 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=40, L=40)
+problem = ThinFilm(N=50, L=40)
 
 # Impose the constraints
-problem.volume_constraint.fixed_volume = np.trapz(
-    problem.tfe.u, problem.tfe.x[0])
 problem.add_equation(problem.volume_constraint)
-problem.add_equation(problem.translation_constraint_x)
-problem.add_equation(problem.translation_constraint_y)
+# problem.add_equation(problem.translation_constraint_x)
+# problem.add_equation(problem.translation_constraint_y)
 
+
+# refinement thresholds
+problem.tfe.mesh.max_refinement_error = 1e-2
+problem.tfe.mesh.min_refinement_error = 1e-3
+# problem.tfe.mesh.min_element_dx = 0.2
+# problem.tfe.mesh.max_element_dx = 2
+
+# problem.newton_solver = MyNewtonSolver()
+# problem.newton_solver.convergence_tolerance = 1e-6
 
 # create figure
 fig, ax = plt.subplots(1, 1, figsize=(9, 9))
 plotID = 0
 
-
-plotID = 0
+# plot
 problem.tfe.plot(ax)
 fig.savefig("out/img/{:05d}.png".format(plotID))
+ax.clear()
 plotID += 1
 
-problem.newton_solver = MyNewtonSolver()
-problem.newton_solver.convergence_tolerance = 1e-6
+for i in range(10):
 
-# TODO: matrices become VERY large! At this point, we should really switch to using sparse matrices
-problem.newton_solve()
-
-problem.tfe.plot(ax)
-fig.savefig("out/img/{:05d}.png".format(plotID))
-
-exit()
-
-
-# # time-stepping
-# n = 0
-# plotevery = 1
-# dudtnorm = 1
-# if not os.path.exists("initial_state.dat"):
-#     while dudtnorm > 1e-8:
-#         # plot
-#         if n % plotevery == 0:
-#             problem.plot(ax)
-#             fig.savefig("out/img/{:05d}.png".format(plotID))
-#             plotID += 1
-#             print("step #: {:}".format(n))
-#             print("time:   {:}".format(problem.time))
-#             print("dt:     {:}".format(problem.time_stepper.dt))
-#             print("|dudt|: {:}".format(dudtnorm))
-#         n += 1
-#         # perform timestep
-#         problem.time_step()
-#         # perform dealiasing
-#         problem.dealias()
-#         # calculate the new norm
-#         dudtnorm = np.linalg.norm(problem.rhs(problem.u))
-#         # catch divergent solutions
-#         if np.max(problem.u) > 1e12:
-#             print("Aborted.")
-#             break
-#     # save the state, so we can reload it later
-#     problem.save("initial_state.dat")
-# else:
-#     # load the initial state
-#     problem.load("initial_state.dat")
-
-# # start parameter continuation
-# problem.continuation_stepper.ds = 1e-2
-# problem.continuation_stepper.ndesired_newton_steps = 3
-# problem.always_check_eigenvalues = True
-
-# # Impose the constraints
-# problem.volume_constraint.fixed_volume = np.trapz(problem.tfe.u, problem.tfe.x[0])
-# problem.add_equation(problem.volume_constraint)
-# problem.add_equation(problem.translation_constraint)
-
-# problem.continuation_stepper.convergence_tolerance = 1e-10
-
-# n = 0
-# plotevery = 1
-# while problem.volume_constraint.fixed_volume < 1000:
-#     # perform continuation step
-#     problem.continuation_step()
-#     # perform dealiasing
-#     problem.dealias()
-#     n += 1
-#     print("step #:", n, " ds:", problem.continuation_stepper.ds)
-#     #print('largest EVs: ', problem.latest_eigenvalues[:3])
-#     # plot
-#     if n % plotevery == 0:
-#         problem.plot(ax)
-#         fig.savefig("out/img/{:05d}.png".format(plotID))
-#         plotID += 1
+    # solve
+    print("solving")
+    problem.newton_solve()
+    # plot
+    problem.tfe.plot(ax)
+    fig.savefig("out/img/{:05d}.png".format(plotID))
+    ax.clear()
+    plotID += 1
+    # adapt
+    print("adapting")
+    problem.tfe.adapt()
+    problem.tfe.adapt()
+    # plot
+    problem.tfe.plot(ax)
+    fig.savefig("out/img/{:05d}.png".format(plotID))
+    ax.clear()
+    plotID += 1
