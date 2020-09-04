@@ -75,9 +75,6 @@ class TranslationConstraint(Equation):
         self.is_coupled = True
 
     def rhs(self, u):
-        # TODO: fix for higher than 1 dimensions
-        #  @simon: how about storing x, y, z, ... arrays as list in eq.x and then iterate lines 64-68 over list items
-        #  don't know if that works for irregularly spaced grids
         # set up the vector of the residual contributions
         res = np.zeros((u.size))
         # define some variables
