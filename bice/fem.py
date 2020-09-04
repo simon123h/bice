@@ -18,6 +18,8 @@ class FiniteElementEquation(Equation):
         super().__init__()
         # the mesh
         self.mesh = None
+        # number of values per node in the mesh
+        self.nvalue = 1
         # FEM mass matrix
         self.M = None
         # FEM stiffness matrix
@@ -72,7 +74,8 @@ class FiniteElementEquation(Equation):
                             self.nabla[d][ni.index, nj.index] += dshape[d][i] * \
                                 test[j] * weight / det
 
-        # convert matrices to CSR-format (compressed sparse row) for arithmetic operation efficiency
+        # convert matrices to CSR-format (compressed sparse row)
+        # for efficiency of arithmetic operations
         self.M = self.M.tocsr()
         self.laplace = self.laplace.tocsr()
         self.nabla = [n.tocsr() for n in self.nabla]
@@ -80,30 +83,21 @@ class FiniteElementEquation(Equation):
     # adapt the mesh to the variables
     def adapt(self):
         # store the unknowns in the nodes
-        for node, u in zip(self.mesh.nodes, self.u):
-            node.u = u
-        # store reference to the equation's problem
-        problem = self.problem
-        # equation needs to be removed from the problem so adaption does not break the problem's mapping of the unknowns
-        if problem is not None:
-            problem.remove_equation(self)
+        self.copy_unknowns_to_nodal_values()
         # calculate error estimate
         error_estimate = self.refinement_error_estimate()
         # adapt the mesh
         self.mesh.adapt(error_estimate)
         # restore the unknowns from the (interpolated) node values
-        self.u = np.array([node.u for node in self.mesh.nodes])
-        # re-add the equation to the problem
-        if problem is not None:
-            problem.add_equation(self)
+        self.copy_nodal_values_to_unknowns()
         # re-build the FEM matrices
         self.build_FEM_matrices()
 
     # estimate the error made in each node
-    # TODO: support more than one unknown per node
     def refinement_error_estimate(self):
         # calculate curvature
-        curvature = self.laplace.dot(self.u)
+        # TODO: use weighted curvature of all value indices
+        curvature = self.laplace.dot(self.nodal_values(0))
         # store curvature in nodes
         for node, c in zip(self.mesh.nodes, curvature):
             # get maximal distance to neighbour node
@@ -112,6 +106,58 @@ class FiniteElementEquation(Equation):
             node.error = abs(c * max_dx)
         # return the error per node
         return np.array([node.error for node in self.mesh.nodes])
+
+    # copy the unknowns u to the values in the mesh nodes
+    def copy_unknowns_to_nodal_values(self):
+        # loop over the nodes
+        i = 0
+        for node in self.mesh.nodes:
+            # make sure the node has storage for the unknowns
+            if node.u is None:
+                node.u = np.zeros(self.nvalue)
+            # loop over the number of values per node
+            for n in range(self.nvalue):
+                # exclude pinned values
+                if n not in node.pinned_values:
+                    # write the value to the node and increment counter
+                    node.u[n] = self.u[i]
+                    i += 1
+
+    # copy the values of the nodes to the equation's unknowns
+    def copy_nodal_values_to_unknowns(self):
+        # calculate the number of unknown values / degrees of freedom
+        N = len(self.mesh.nodes) * self.nvalue - \
+            sum([len(n.pinned_values) for n in self.mesh.nodes])
+        # if the number of unknowns changed...
+        if N != self.u.size:
+            # store reference to the equation's problem
+            problem = self.problem
+            # remove the equation from the problem (if assigned)
+            if problem is not None:
+                problem.remove_equation(self)
+            # create a new array of correct size, values will be filled later
+            self.u = np.zeros(N)
+            # re-add the equation to the problem
+            if problem is not None:
+                problem.add_equation(self)
+        # now, we'll fill self.u with the values from the nodes
+        # loop over the nodes
+        i = 0
+        for node in self.mesh.nodes:
+            # make sure the node has storage for the unknowns
+            if node.u is None:
+                node.u = np.zeros(self.nvalue)
+            # loop over the number of values per node
+            for n in range(self.nvalue):
+                # exclude pinned values
+                if n not in node.pinned_values:
+                    # write the value to the equation and increment counter
+                    self.u[i] = node.u[n]
+                    i += 1
+
+    # return the vector of nodal values with specific index
+    def nodal_values(self, index):
+        return np.array([node.u[index] for node in self.mesh.nodes])
 
 
 class Node:
@@ -127,6 +173,12 @@ class Node:
         self.u = None
         # the elements that this node belongs to
         self.elements = []
+        # indices of the values that are pinned (e.g. by a Dirichlet condition)
+        self.pinned_values = set()
+
+    # keep the value at a specific index pinned (remove it from dof)
+    def pin(self, index):
+        self.pinned_values.add(index)
 
 
 class Element:
@@ -309,8 +361,12 @@ class Mesh:
     """
 
     def __init__(self):
+        # storage for the nodes
         self.nodes = []
+        # storage for the elements
         self.elements = []
+        # storage for the values of each node: 2d array of shape (#nodes, nvalue)
+        self.values = None
         # error thresholds for refinement
         self.min_refinement_error = 1e-5
         self.max_refinement_error = 1e-3
