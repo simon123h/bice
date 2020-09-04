@@ -109,12 +109,12 @@ for i in range(10):
 
     # solve
     print("solving")
-    problem.newton_solve()
+    # problem.newton_solve()
     # plot
-    problem.tfe.plot(ax)
-    fig.savefig("out/img/{:05d}.png".format(plotID))
-    ax.clear()
-    plotID += 1
+    # problem.tfe.plot(ax)
+    # fig.savefig("out/img/{:05d}.png".format(plotID))
+    # ax.clear()
+    # plotID += 1
     # adapt
     print("adapting")
     problem.tfe.adapt()

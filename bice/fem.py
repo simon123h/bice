@@ -396,8 +396,11 @@ class OneDimMesh(Mesh):
         x = np.linspace(L0, L0+L, N, endpoint=True)
         # add equidistant nodes
         for i in range(N):
-            pos = np.array([x[i]])
-            self.nodes.append(Node(pos))
+            node = Node(x=np.array([x[i]]))
+            self.nodes.append(node)
+            # mark boundary nodes
+            if i == 0 or i == N-1:
+                node.is_boundary_node = True
         # generate the elements
         for i in range(N-1):
             nodes = [self.nodes[i], self.nodes[i+1]]
@@ -474,8 +477,12 @@ class TriangleMesh(Mesh):
         # add equidistant nodes
         for i in range(Nx):
             for j in range(Ny):
-                pos = np.array([x[i], y[j]])
-                self.nodes.append(Node(pos))
+                node = Node(x=np.array([x[i], y[j]]))
+                self.nodes.append(node)
+                # mark boundary nodes
+                if i == 0 or i == Nx-1 or j == 0 or j == Ny-1:
+                    node.is_boundary_node = True
+
         # generate the elements
         for i in range(Nx-1):
             for j in range(Ny-1):
@@ -505,9 +512,8 @@ class TriangleMesh(Mesh):
         i = 0
         for node_m in self.nodes:
             # TODO: also check neighboring nodes?
-            # TODO: check if it is a boundary node!
             # if the node is marked for unrefinement
-            if node_m.can_be_unrefined:
+            if node_m.can_be_unrefined and not node_m.is_boundary_node:
                 # get neighboring nodes
                 # TODO: make sure they have the correct order!!
                 nnodes = []
@@ -515,6 +521,9 @@ class TriangleMesh(Mesh):
                     for node in element.nodes:
                         if node is not node_m and node not in nnodes:
                             nnodes.append(node)
+                # make sure that we have at least 3 neighboring nodes
+                if len(nnodes) < 3:
+                    break
                 # TODO: check for maximal size
                 # delete the old elements
                 for element in node_m.elements.copy():
@@ -531,7 +540,6 @@ class TriangleMesh(Mesh):
                 # this element should not be unrefined any further (for now)
                 for n in nnodes:
                     n.can_be_unrefined = False
-                # print("unrefined Node ", node_m)
 
         # refinement loop
         i = 0
@@ -561,7 +569,6 @@ class TriangleMesh(Mesh):
                     i+1, TriangleElement2d([node_b, node_c, node_m]))
                 self.elements.insert(
                     i+2, TriangleElement2d([node_c, node_a, node_m]))
-                # print("refined Element #", i)
                 # skip refinement of the newly created elements
                 i += 2
             i += 1
