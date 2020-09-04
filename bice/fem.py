@@ -106,22 +106,13 @@ class FiniteElementEquation(Equation):
         curvature = self.laplace.dot(self.u)
         # store curvature in nodes
         for node, c in zip(self.mesh.nodes, curvature):
-            node.curvature = c
-            node.max_dx = 0
-        # get the maximum dx at the node
-        # TODO: simplify by using element lists in nodes?
-        for element in self.mesh.elements:
-            for node1 in element.nodes:
-                for node2 in element.nodes:
-                    distance = np.linalg.norm(node1.x-node2.x)
-                    node1.max_dx = max(node1.max_dx, distance)
-                    # node1.max_dx += distance
-
-        # the error per node is curvature * dx
-        nodal_errors = np.array([abs(node.curvature *
-                                    node.max_dx) for node in self.mesh.nodes])
+            # get maximal distance to neighbour node
+            max_dx = max([e.max_len for e in node.elements])
+            # the error per node is curvature * max_dx
+            node.error = abs(c * max_dx)
         # return the error per node
-        return nodal_errors
+        return np.array([node.error for node in self.mesh.nodes])
+
 
 class Node:
     """
@@ -151,6 +142,12 @@ class Element:
         # add self to element list in nodes
         for node in self.nodes:
             node.elements.append(self)
+        # maximum distance between two nodes within the element
+        self.max_len = 0
+        for node1 in self.nodes:
+            for node2 in self.nodes:
+                dx = np.linalg.norm(node1.x - node2.x)
+                self.max_len = max(self.max_len, dx)
 
     # called when the element is removed from the mesh
     def purge(self):
@@ -371,7 +368,7 @@ class OneDimMesh(Mesh):
                 self.nodes.remove(node_m)
                 # create new element
                 self.elements.insert(i, Element1d([node_l, node_r]))
-                # this element should not be (un)refined any further (for now)
+                # this element should not be unrefined any further (for now)
                 node_l.should_be_refined = False
             i += 1
 
@@ -437,6 +434,70 @@ class TriangleMesh(Mesh):
                     self.nodes[(i+1)*Nx+(j+1)]
                 ]
                 self.elements.append(TriangleElement2d(nodes))
+
+    def adapt(self, error_estimate):
+        # check the errors for each node and store whether they should be (un)refined
+        for node, error in zip(self.nodes, error_estimate):
+            node.can_be_unrefined = abs(error) < self.min_refinement_error
+            node.should_be_refined = abs(error) > self.max_refinement_error
+
+        # unrefinement loop
+        i = 0
+        for node_m in self.nodes:
+            # if the node is marked for unrefinement
+            # TODO: also check neighboring nodes?
+            # TODO: check if it is a boundary node!
+            if node_m.can_be_unrefined:
+                # get neighboring nodes
+                nnodes = sum([e.nodes for e in node_m.elements], [])
+                # TODO: check for maximal size
+                # delete the old elements
+                for element in node_m.elements:
+                    self.elements.remove(element)
+                    element.purge()
+                # delete middle node
+                self.nodes.remove(node_m)
+                # create new elements
+                i = 0
+                while i < len(nnodes)-2:
+                    self.elements.insert(i, TriangleElement2d(
+                        [nnodes[i], nnodes[i+1], nnodes[i+2]]))
+                    i += 2
+                # this element should not be unrefined any further (for now)
+                for n in nnodes:
+                    n.can_be_unrefined = False
+
+        # refinement loop
+        i = 0
+        while i < len(self.elements):
+            # store reference to the nodes
+            node_a = self.elements[i].nodes[0]
+            node_b = self.elements[i].nodes[1]
+            node_c = self.elements[i].nodes[2]
+            # refine if any of the nodes was marked for refinement
+            if node_a.should_be_refined or node_b.should_be_refined or node_c.should_be_refined:
+                # check if element has minimal size already
+                if self.elements[i].max_len <= 2 * self.min_element_dx:
+                    break
+                # generate new node in the middle and insert after node_b
+                x_m = np.average([node_a.x, node_b.x, node_c.x])
+                node_m = Node(x_m)
+                n = self.nodes.index(node_b)
+                self.nodes.insert(n+1, node_m)
+                # interpolate the unknowns
+                node_m.u = np.average([node_a.u, node_b.u, node_c.u])
+                # delete old element
+                self.elements.pop(i).purge()
+                # generate three new elements and insert at the position of the old element
+                self.elements.insert(
+                    i, TriangleElement2d([node_a, node_b, node_m]))
+                self.elements.insert(
+                    i+1, TriangleElement2d([node_b, node_c, node_m]))
+                self.elements.insert(
+                    i+2, TriangleElement2d([node_c, node_a, node_m]))
+                # skip refinement of the newly created elements
+                i += 2
+            i += 1
 
 
 class RectangleMesh(Mesh):
