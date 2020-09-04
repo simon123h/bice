@@ -136,6 +136,8 @@ class Node:
         self.x = x
         # storage for the unknowns (not always up to date!)
         self.u = None
+        # the elements that this node belongs to
+        self.elements = []
 
 
 class Element:
@@ -148,6 +150,15 @@ class Element:
         self.dim = nodes[0].x.size
         # the nodes that build the element
         self.nodes = nodes
+        # add self to element list in nodes
+        for node in self.nodes:
+            node.elements.append(self)
+    
+    # called when the element is removed from the mesh
+    def purge(self):
+        # remove the element from element list in nodes
+        for node in self.nodes:
+            node.elements.remove(self)
 
     # returns a list of all shape functions of this element
     def shape(self, s):
@@ -355,11 +366,11 @@ class OneDimMesh(Mesh):
                 # check if element has maximum size already
                 if node_r.x[0] - node_l.x[0] >= 0.5 * self.max_element_dx:
                     break
+                # delete the old elements
+                self.elements.pop(i).purge()
+                self.elements.pop(i).purge()
                 # delete middle node
                 self.nodes.remove(node_m)
-                # delete the old elements
-                self.elements.pop(i)
-                self.elements.pop(i)
                 # create new element
                 self.elements.insert(i, Element1d([node_l, node_r]))
                 # this element should not be (un)refined any further (for now)
