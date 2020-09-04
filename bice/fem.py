@@ -508,80 +508,77 @@ class TriangleMesh(Mesh):
             node.can_be_unrefined = abs(error) < self.min_refinement_error
             node.should_be_refined = abs(error) > self.max_refinement_error
 
-        # unrefinement loop
+        # unrefinement loop, using node fusion
         i = 0
-        for node_m in self.nodes:
-            # TODO: also check neighboring nodes?
-            # if the node is marked for unrefinement
-            if node_m.can_be_unrefined and not node_m.is_boundary_node:
-                # get neighboring nodes
-                nnodes = []
-                nelems = node_m.elements.copy()
-                # pick some element that neighbors node_m
-                print("Exp:", len(nelems))
-                nelem = nelems.pop(0)
-                while nelems:
-                    # get the previous node in the element's list of nodes
-                    nnode = [n for n in nelem.nodes if n not in nnodes and n is not node_m][0]
-                    # nnode = nelem.nodes[(nelem.nodes.index(node_m)-1)%3]
-                    # add it to the list of neighboring nodes
-                    nnodes.append(nnode)
-                    print(len(nnodes), len(nelems))
-                    # pick the element, that shares the edge node_m--nnode
-                    nelem = [e for e in nelems if nnode in e.nodes][0]
-                    nelems.remove(nelem)
-                    # ... and re-do the same procedure
-                nnodes.append(nnode)
-                # make sure that we have at least 3 neighboring nodes
-                print("Got:", len(nnodes))
-                if len(nnodes) < 3 or len(nnodes) > 6:
-                    continue
-                # TODO: check for maximal size
-                # save the index of the old elements
-                index = self.elements.index(node_m.elements[0])
-                # delete the old elements
-                for element in node_m.elements.copy():
-                    self.elements.remove(element)
-                    element.purge()
-                # delete middle node
-                self.nodes.remove(node_m)
-                # create new elements
-                if len(nnodes) == 3:
-                    self.elements.insert(index, TriangleElement2d(
-                            [nnodes[0], nnodes[1], nnodes[2]]))
-                elif len(nnodes) == 4:
-                    self.elements.insert(index, TriangleElement2d(
-                            [nnodes[0], nnodes[1], nnodes[2]]))
-                    self.elements.insert(index, TriangleElement2d(
-                            [nnodes[2], nnodes[3], nnodes[0]]))
-                elif len(nnodes) == 5:
-                    self.elements.insert(index, TriangleElement2d(
-                            [nnodes[0], nnodes[1], nnodes[2]]))
-                    self.elements.insert(index, TriangleElement2d(
-                            [nnodes[2], nnodes[3], nnodes[4]]))
-                    self.elements.insert(index, TriangleElement2d(
-                            [nnodes[4], nnodes[0], nnodes[2]]))
-                elif len(nnodes) == 6:
-                    self.elements.insert(index, TriangleElement2d(
-                            [nnodes[0], nnodes[1], nnodes[2]]))
-                    self.elements.insert(index, TriangleElement2d(
-                            [nnodes[2], nnodes[3], nnodes[4]]))
-                    self.elements.insert(index, TriangleElement2d(
-                            [nnodes[4], nnodes[5], nnodes[0]]))
-                    self.elements.insert(index, TriangleElement2d(
-                            [nnodes[0], nnodes[2], nnodes[4]]))
-                # this element should not be unrefined any further (for now)
-                for n in nnodes:
-                    n.can_be_unrefined = False
-
-        # refinement loop
-        i = 0
-        while i < len(self.elements) and False:
+        while i < len(self.elements):
             # store reference to the nodes
             node_a = self.elements[i].nodes[0]
             node_b = self.elements[i].nodes[1]
             node_c = self.elements[i].nodes[2]
-            # refine if any of the nodes was marked for refinement
+            # unrefine if all of the nodes were marked for unrefinement
+            if node_a.can_be_unrefined and node_b.can_be_unrefined and node_c.can_be_unrefined:
+                # find the nodes with smallest distance
+                my_nodes = [node_a, node_b, node_c, node_a]
+                dist = [np.linalg.norm(my_nodes[i+1].x-my_nodes[i].x) for i in range(3)]
+                index = dist.index(min(dist))
+                node_b = my_nodes[index]
+                node_c = my_nodes[index+1]
+                # for now, we assume it is node_b and node_c
+                # check if they're both boundary nodes
+                if node_b.is_boundary_node or node_c.is_boundary_node:
+                    # TODO: we could deal with this case, though...
+                    i += 1
+                    continue
+                # store reference to the current element
+                elem1 = self.elements[i]
+                # find the element that shares the edge: node_b--node_c
+                elem2 = [e for e in node_b.elements if node_c in e.nodes and e is not elem1][0]
+                # generate a new node in the middle
+                x_m = (node_b.x + node_c.x) / 2
+                node_m = Node(x_m)
+                node_m.can_be_unrefined = False
+                node_m.should_be_refined = False
+                # interpolate the unknowns
+                node_m.u = (node_b.u + node_c.u) / 2
+                # and insert after node_b
+                n = self.nodes.index(node_b)
+                self.nodes.insert(n+1, node_m)
+                # we will now join the nodes node_b and node_c,
+                # therefore, destroy the two shared elements
+                self.elements.pop(i).purge() # elem1
+                i2 = self.elements.index(elem2)
+                self.elements.pop(i2).purge() # elem2
+                # all the elements with node_b and node_c will be recreated using node_m
+                for node in [node_b, node_c]:
+                    for element in node.elements.copy():
+                        # replace old node with node_m
+                        new_nodes = [n if n != node else node_m for n in element.nodes]
+                        # for n in new_nodes:
+                        #     n.can_be_unrefined = False
+                        # delete the old element
+                        index = self.elements.index(element)
+                        element.purge()
+                        self.elements[index] = TriangleElement2d(new_nodes)
+                        # self.elements.pop(index).purge()
+                        # add a new element
+                        # self.elements.insert(index, TriangleElement2d(new_nodes))
+                # delete the nodes node_b and node_c
+                self.nodes.remove(node_b)
+                self.nodes.remove(node_c)
+            i += 1
+
+        for node in self.nodes:
+            if len(node.elements) == 0:
+                print("Node at", node.x, "is without elements")
+
+        # refinement loop
+        i = 0
+        while i < len(self.elements):
+            # store reference to the nodes
+            node_a = self.elements[i].nodes[0]
+            node_b = self.elements[i].nodes[1]
+            node_c = self.elements[i].nodes[2]
+            # refine if all of the nodes were marked for refinement
             if node_a.should_be_refined and node_b.should_be_refined and node_c.should_be_refined:
                 # check if element has minimal size already
                 if self.elements[i].max_len <= 2 * self.min_element_dx:
@@ -627,11 +624,6 @@ class TriangleMesh(Mesh):
                         print(neighbor_element)
                         # print(node_a.elements, node_b.elements)
                         # node_m.is_boundary_node = True
-
-
-
-
-
                 # skip refinement of the newly created elements
                 i += 2
             i += 1
