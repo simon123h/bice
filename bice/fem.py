@@ -177,6 +177,8 @@ class Node:
         self.elements = []
         # indices of the values that are pinned (e.g. by a Dirichlet condition)
         self.pinned_values = set()
+        # does the node lie on a boundary?
+        self.is_boundary_node = False
 
     # keep the value at a specific index pinned (remove it from dof)
     def pin(self, index):
@@ -502,15 +504,20 @@ class TriangleMesh(Mesh):
         # unrefinement loop
         i = 0
         for node_m in self.nodes:
-            # if the node is marked for unrefinement
             # TODO: also check neighboring nodes?
             # TODO: check if it is a boundary node!
+            # if the node is marked for unrefinement
             if node_m.can_be_unrefined:
                 # get neighboring nodes
-                nnodes = sum([e.nodes for e in node_m.elements], [])
+                # TODO: make sure they have the correct order!!
+                nnodes = []
+                for element in node_m.elements:
+                    for node in element.nodes:
+                        if node is not node_m and node not in nnodes:
+                            nnodes.append(node)
                 # TODO: check for maximal size
                 # delete the old elements
-                for element in node_m.elements:
+                for element in node_m.elements.copy():
                     self.elements.remove(element)
                     element.purge()
                 # delete middle node
@@ -524,6 +531,7 @@ class TriangleMesh(Mesh):
                 # this element should not be unrefined any further (for now)
                 for n in nnodes:
                     n.can_be_unrefined = False
+                # print("unrefined Node ", node_m)
 
         # refinement loop
         i = 0
@@ -538,12 +546,12 @@ class TriangleMesh(Mesh):
                 if self.elements[i].max_len <= 2 * self.min_element_dx:
                     break
                 # generate new node in the middle and insert after node_b
-                x_m = np.average([node_a.x, node_b.x, node_c.x])
+                x_m = (node_a.x + node_b.x + node_c.x) / 3
                 node_m = Node(x_m)
                 n = self.nodes.index(node_b)
                 self.nodes.insert(n+1, node_m)
                 # interpolate the unknowns
-                node_m.u = np.average([node_a.u, node_b.u, node_c.u])
+                node_m.u = (node_a.u + node_b.u + node_c.u) / 3
                 # delete old element
                 self.elements.pop(i).purge()
                 # generate three new elements and insert at the position of the old element
@@ -553,6 +561,7 @@ class TriangleMesh(Mesh):
                     i+1, TriangleElement2d([node_b, node_c, node_m]))
                 self.elements.insert(
                     i+2, TriangleElement2d([node_c, node_a, node_m]))
+                # print("refined Element #", i)
                 # skip refinement of the newly created elements
                 i += 2
             i += 1
