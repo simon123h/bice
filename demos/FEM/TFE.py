@@ -79,7 +79,6 @@ class ThinFilm(Problem):
         self.add_equation(self.tfe)
         # Generate the volume constraint
         self.volume_constraint = VolumeConstraint(self.tfe)
-        self.volume_constraint.fixed_volume = 0
         # Generate the translation constraint
         self.translation_constraint = TranslationConstraint(self.tfe)
         # initialize time stepper
@@ -107,10 +106,10 @@ os.makedirs("out/img", exist_ok=True)
 problem = ThinFilm(N=200, L=100)
 
 # Impose the constraints
-problem.volume_constraint.fixed_volume = np.trapz(
-    problem.tfe.u, problem.tfe.x[0])
+# problem.volume_constraint.fixed_volume = np.trapz(
+#     problem.tfe.u, problem.tfe.x[0])
 problem.add_equation(problem.volume_constraint)
-problem.add_equation(problem.translation_constraint)
+# problem.add_equation(problem.translation_constraint)
 
 # refinement thresholds
 problem.tfe.mesh.max_refinement_error = 1e-2
