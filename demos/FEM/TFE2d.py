@@ -40,7 +40,7 @@ class ThinFilmEquation(FiniteElementEquation):
         # k = 4*np.pi/self.L
         # sin = np.cos(k*self.x[0])
         # return -np.matmul(self.laplace, sin) - np.matmul(self.M, h)
-        return -np.matmul(self.laplace, h) - np.matmul(self.M, self.djp(h))
+        return -self.laplace.dot(h) - self.M.dot(self.djp(h))
 
     # disjoining pressure
     def djp(self, h):
@@ -55,7 +55,7 @@ class ThinFilmEquation(FiniteElementEquation):
         ax.tricontourf(x, y, h, 256, cmap="coolwarm")
 
     def first_spatial_derivative(self, u, direction=0):
-        return np.matmul(self.nabla[direction], u)
+        return self.nabla[direction].dot(u)
 
 
 class ThinFilm(Problem):
