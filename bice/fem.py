@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from .equation import Equation
 from scipy.sparse import lil_matrix
@@ -312,6 +313,34 @@ class TriangleElement2d(Element):
             [-1, 0, 1]
         ]
 
+    # if the orientation is positive/negative, the triangle is oriented anticlockwise/clockwise
+    def orientation(self):
+        return np.linalg.det(np.array([
+            [self.x0, self.y0, 1],
+            [self.x1, self.y1, 1],
+            [self.x2, self.y2, 1]
+        ]))
+
+    # calculate the area of the triangle
+    def area(self):
+        return abs(0.5*(((self.x1-self.x0)*(self.y2-self.y0))-(
+            (self.x2-self.x0)*(self.y1-self.y0))))
+
+    # calculate the corner angles of the triangle
+    def angles(self):
+        a1 = self.nodes[1].x - self.nodes[0].x
+        a2 = self.nodes[2].x - self.nodes[0].x
+        b1 = self.nodes[0].x - self.nodes[1].x
+        b2 = self.nodes[2].x - self.nodes[1].x
+        ang = [
+            abs(math.acos(np.dot(a1, a2) /
+                          np.linalg.norm(a1)/np.linalg.norm(a2))),
+            abs(math.acos(np.dot(b1, b2) /
+                          np.linalg.norm(b1)/np.linalg.norm(b2)))
+        ]
+        ang.append(180 - ang[0] - ang[1])
+        return ang
+
 
 class RectangleElement2d(Element):
     """
@@ -519,7 +548,8 @@ class TriangleMesh(Mesh):
             if node_a.can_be_unrefined and node_b.can_be_unrefined and node_c.can_be_unrefined:
                 # find the nodes with smallest distance
                 my_nodes = [node_a, node_b, node_c, node_a]
-                dist = [np.linalg.norm(my_nodes[i+1].x-my_nodes[i].x) for i in range(3)]
+                dist = [np.linalg.norm(my_nodes[i+1].x-my_nodes[i].x)
+                        for i in range(3)]
                 index = dist.index(min(dist))
                 node_b = my_nodes[index]
                 node_c = my_nodes[index+1]
@@ -532,7 +562,8 @@ class TriangleMesh(Mesh):
                 # store reference to the current element
                 elem1 = self.elements[i]
                 # find the element that shares the edge: node_b--node_c
-                elem2 = [e for e in node_b.elements if node_c in e.nodes and e is not elem1][0]
+                elem2 = [
+                    e for e in node_b.elements if node_c in e.nodes and e is not elem1][0]
                 # generate a new node in the middle
                 x_m = (node_b.x + node_c.x) / 2
                 node_m = Node(x_m)
@@ -540,36 +571,59 @@ class TriangleMesh(Mesh):
                 node_m.should_be_refined = False
                 # interpolate the unknowns
                 node_m.u = (node_b.u + node_c.u) / 2
-                # and insert after node_b
-                n = self.nodes.index(node_b)
-                self.nodes.insert(n+1, node_m)
-                # we will now join the nodes node_b and node_c,
-                # therefore, destroy the two shared elements
-                self.elements.pop(i).purge() # elem1
-                i2 = self.elements.index(elem2)
-                self.elements.pop(i2).purge() # elem2
+                # we will now join the nodes node_b and node_c
                 # all the elements with node_b and node_c will be recreated using node_m
+                # in order to abort in case of bad mesh quality, we'll save the replacements
+                # to a list first and will (maybe) apply them later
+                replacement_elements = []
+                aborted = False  # flag whether the unrefinement is aborted
+                # for each element that surrounds the pricipal nodes
                 for node in [node_b, node_c]:
-                    for element in node.elements.copy():
-                        # replace old node with node_m
-                        new_nodes = [n if n != node else node_m for n in element.nodes]
-                        # for n in new_nodes:
-                        #     n.can_be_unrefined = False
-                        # delete the old element
-                        index = self.elements.index(element)
-                        element.purge()
-                        self.elements[index] = TriangleElement2d(new_nodes)
-                        # self.elements.pop(index).purge()
-                        # add a new element
-                        # self.elements.insert(index, TriangleElement2d(new_nodes))
-                # delete the nodes node_b and node_c
-                self.nodes.remove(node_b)
-                self.nodes.remove(node_c)
+                    for element in node.elements:
+                        if element in [elem1, elem2]:
+                            continue
+                        # calculate orientation of the old element
+                        orientation_old = element.orientation()
+                        # create the new nodes and element
+                        new_nodes = [
+                            n if n != node else node_m for n in element.nodes]
+                        new_element = TriangleElement2d(new_nodes)
+                        # store the replacement in the replacements-list
+                        replacement_elements.append((element, new_element))
+                        # calculate orientation of the old element
+                        orientation_new = new_element.orientation()
+                        # check whether the orientation of the triangle flipped
+                        if orientation_old * orientation_new < 0:
+                            # if yes, abort the current unrefinement
+                            aborted = True
+                        # check whether the angles would become very small
+                        if min(new_element.angles()) < 0.1:
+                            aborted = True
+                    # break if unrefinement is aborted
+                    if aborted:
+                        break
+                # apply the unrefinement, unless aborted
+                if not aborted:
+                    # destroy the collapsed elements
+                    self.elements.pop(i).purge()  # elem1
+                    i2 = self.elements.index(elem2)
+                    self.elements.pop(i2).purge()  # elem2
+                    # overwrite the surrounding elements
+                    for old_e, new_e in replacement_elements:
+                        index = self.elements.index(old_e)
+                        old_e.purge()
+                        self.elements[index] = new_e
+                    # insert the new middle node
+                    n = self.nodes.index(node_b)
+                    self.nodes.insert(n, node_m)
+                    # delete the nodes node_b and node_c
+                    self.nodes.remove(node_b)
+                    self.nodes.remove(node_c)
+                else:
+                    # purge the new elements
+                    for old_e, new_e in replacement_elements:
+                        new_e.purge()
             i += 1
-
-        for node in self.nodes:
-            if len(node.elements) == 0:
-                print("Node at", node.x, "is without elements")
 
         # refinement loop
         i = 0
@@ -604,11 +658,13 @@ class TriangleMesh(Mesh):
                     node_m.is_boundary_node = True
                 else:
                     # else, find the element, that shares the edge: node_a--node_b
-                    neighbor_element = [e for e in node_a.elements if e in node_b.elements]
+                    neighbor_element = [
+                        e for e in node_a.elements if e in node_b.elements]
                     # if no neighboring element was found, we must be at a border
                     if neighbor_element:
                         neighbor_element = neighbor_element[0]
-                        neighbor_node = [n for n in neighbor_element.nodes if n not in [node_a, node_b]][0]
+                        neighbor_node = [
+                            n for n in neighbor_element.nodes if n not in [node_a, node_b]][0]
                         index = self.elements.index(neighbor_element)
                         # delete old element
                         self.elements.pop(index).purge()
@@ -617,13 +673,6 @@ class TriangleMesh(Mesh):
                             index, TriangleElement2d([neighbor_node, node_a, node_m]))
                         self.elements.insert(
                             index+1, TriangleElement2d([node_b, neighbor_node, node_m]))
-                    else:
-                        print("Err", node_a.is_boundary_node, node_b.is_boundary_node)
-                        print(neighbor_element)
-                        neighbor_element = [e for e in self.elements if node_a in e.nodes and node_b in e.nodes]
-                        print(neighbor_element)
-                        # print(node_a.elements, node_b.elements)
-                        # node_m.is_boundary_node = True
                 # skip refinement of the newly created elements
                 i += 2
             i += 1
