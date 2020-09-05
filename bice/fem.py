@@ -1,6 +1,7 @@
 import math
 import numpy as np
 from .equation import Equation
+from .profiling import profile
 from scipy.sparse import lil_matrix
 
 # isoparametric element formulation with numerical integration
@@ -34,6 +35,7 @@ class FiniteElementEquation(Equation):
         return np.array([n.x for n in self.mesh.nodes]).T
 
     # assemble the matrices of the FEM operators
+    @profile
     def build_FEM_matrices(self):
         # number of nodes
         N = len(self.mesh.nodes)
@@ -82,6 +84,7 @@ class FiniteElementEquation(Equation):
         self.nabla = [n.tocsr() for n in self.nabla]
 
     # adapt the mesh to the variables
+    @profile
     def adapt(self):
         # store the unknowns in the nodes
         self.copy_unknowns_to_nodal_values()
@@ -95,6 +98,7 @@ class FiniteElementEquation(Equation):
         self.build_FEM_matrices()
 
     # estimate the error made in each node
+    @profile
     def refinement_error_estimate(self):
         # calculate curvature
         # TODO: use weighted curvature of all value indices
@@ -109,6 +113,7 @@ class FiniteElementEquation(Equation):
         return np.array([node.error for node in self.mesh.nodes])
 
     # copy the unknowns u to the values in the mesh nodes
+    @profile
     def copy_unknowns_to_nodal_values(self, u=None):
         if u is None:
             u = self.u
@@ -127,6 +132,7 @@ class FiniteElementEquation(Equation):
                     i += 1
 
     # copy the values of the nodes to the equation's unknowns
+    @profile
     def copy_nodal_values_to_unknowns(self):
         # calculate the number of unknown values / degrees of freedom
         N = len(self.mesh.nodes) * self.nvalue - \
@@ -159,6 +165,7 @@ class FiniteElementEquation(Equation):
                     i += 1
 
     # return the vector of nodal values with specific index
+    @profile
     def nodal_values(self, index):
         return np.array([node.u[index] for node in self.mesh.nodes])
 
@@ -270,6 +277,7 @@ class TriangleElement2d(Element):
     Two-dimensional triangular elements with linear shape functions
     """
 
+    @profile
     def __init__(self, nodes):
         super().__init__(nodes)
         # sort so that the longest edge comes first
@@ -435,6 +443,7 @@ class OneDimMesh(Mesh):
             nodes = [self.nodes[i], self.nodes[i+1]]
             self.elements.append(Element1d(nodes))
 
+    @profile
     def adapt(self, error_estimate):
         # check the errors for each node and store whether they should be (un)refined
         for node, error in zip(self.nodes, error_estimate):
@@ -531,6 +540,7 @@ class TriangleMesh(Mesh):
                 ]
                 self.elements.append(TriangleElement2d(nodes))
 
+    @profile
     def adapt(self, error_estimate):
         # check the errors for each node and store whether they should be (un)refined
         for node, error in zip(self.nodes, error_estimate):

@@ -10,6 +10,7 @@ from bice.time_steppers import RungeKuttaFehlberg45, RungeKutta4, BDF2, BDF
 from bice.constraints import *
 from bice.solvers import *
 from bice.fem import FiniteElementEquation, TriangleMesh
+from bice.profiling import Profiler
 
 
 class ThinFilmEquation(FiniteElementEquation):
@@ -57,11 +58,11 @@ class ThinFilmEquation(FiniteElementEquation):
         ax.set_ylabel("y")
         ax.tricontourf(x, y, h, 256, cmap="coolwarm")
 
-        for element in self.mesh.elements:
-            nodes = element.nodes.copy()
-            nodes.append(nodes[0])
-            xs = np.array([node.x for node in nodes]).T
-            ax.plot(xs[0], xs[1], c="black", linewidth=0.2)
+        # for element in self.mesh.elements:
+        #     nodes = element.nodes.copy()
+        #     nodes.append(nodes[0])
+        #     xs = np.array([node.x for node in nodes]).T
+        #     ax.plot(xs[0], xs[1], c="black", linewidth=0.2)
 
         ax.scatter(x, y, s=0.4, c="black")
 
@@ -94,8 +95,8 @@ problem.add_equation(problem.volume_constraint)
 
 
 # refinement thresholds
-problem.tfe.mesh.max_refinement_error = 1e-1
-problem.tfe.mesh.min_refinement_error = 1e-2
+problem.tfe.mesh.max_refinement_error = 1e-2
+problem.tfe.mesh.min_refinement_error = 1e-3
 problem.tfe.mesh.min_element_dx = 0.2
 # problem.tfe.mesh.max_element_dx = 2
 
@@ -113,6 +114,7 @@ fig.savefig("out/img/{:05d}.png".format(plotID))
 ax.clear()
 plotID += 1
 
+Profiler.start()
 for i in range(10):
 
     # # solve
@@ -133,3 +135,5 @@ for i in range(10):
     fig.savefig("out/img/{:05d}.png".format(plotID))
     ax.clear()
     plotID += 1
+
+Profiler.print_summary()
