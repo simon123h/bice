@@ -597,7 +597,7 @@ class TriangleMesh(Mesh):
                             # if yes, abort the current unrefinement
                             aborted = True
                         # check whether the angles would become very small
-                        if min(new_element.angles()) < 0.1:
+                        if min(new_element.angles()) < 0.2:
                             aborted = True
                     # break if unrefinement is aborted
                     if aborted:

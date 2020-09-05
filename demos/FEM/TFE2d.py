@@ -94,9 +94,9 @@ problem.add_equation(problem.volume_constraint)
 
 
 # refinement thresholds
-problem.tfe.mesh.max_refinement_error = 1e-2
-problem.tfe.mesh.min_refinement_error = 1e-3
-# problem.tfe.mesh.min_element_dx = 0.2
+problem.tfe.mesh.max_refinement_error = 1e-1
+problem.tfe.mesh.min_refinement_error = 1e-2
+problem.tfe.mesh.min_element_dx = 0.2
 # problem.tfe.mesh.max_element_dx = 2
 
 # problem.newton_solver = MyNewtonSolver()
@@ -107,6 +107,7 @@ fig, ax = plt.subplots(1, 1, figsize=(9, 9))
 plotID = 0
 
 # plot
+print("plotting")
 problem.tfe.plot(ax)
 fig.savefig("out/img/{:05d}.png".format(plotID))
 ax.clear()
@@ -114,10 +115,11 @@ plotID += 1
 
 for i in range(10):
 
-    # solve
-    print("solving")
+    # # solve
+    # print("solving")
     # problem.newton_solve()
-    # plot
+    # # plot
+    # print("plotting")
     # problem.tfe.plot(ax)
     # fig.savefig("out/img/{:05d}.png".format(plotID))
     # ax.clear()
@@ -126,6 +128,7 @@ for i in range(10):
     print("adapting")
     problem.tfe.adapt()
     # plot
+    print("plotting")
     problem.tfe.plot(ax)
     fig.savefig("out/img/{:05d}.png".format(plotID))
     ax.clear()
