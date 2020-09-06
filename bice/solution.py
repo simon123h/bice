@@ -186,7 +186,6 @@ class BifurcationDiagram:
     def remove_branch_by_ID(self, branch_id):
         self.branches = [b for b in self.branches if b.id != branch_id]
 
-
     # plot the bifurcation diagram
     def plot(self, ax):
         # clear axes first
@@ -200,7 +199,8 @@ class BifurcationDiagram:
             p, norm = branch.data(only="bifurcations")
             ax.plot(p, norm, "*", color="C2")
             # annotate bifurcations with +/- signs corresponding to their null-eigenvalues
-            bifs = [s for s in branch.solutions if s.neigenvalues_crossed not in [None, 0]]
+            bifs = [
+                s for s in branch.solutions if s.neigenvalues_crossed not in [None, 0]]
             for bif in bifs:
                 s = bif.neigenvalues_crossed
                 s = "+"*s if s > 0 else "-"*(-s)

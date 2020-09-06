@@ -32,7 +32,8 @@ class SwiftHohenbergEquation(PseudospectralEquation):
         self.x = [np.linspace(-L/2, L/2, N)]
         self.build_kvectors()
         # initial condition
-        self.u = np.cos(2 * np.pi * self.x[0] / 10) * np.exp(-0.005 * self.x[0]**2)
+        self.u = np.cos(
+            2 * np.pi * self.x[0] / 10) * np.exp(-0.005 * self.x[0]**2)
 
     # definition of the SHE (right-hand side)
     @profile
@@ -59,7 +60,8 @@ class SwiftHohenbergEquationFD(FiniteDifferenceEquation):
         self.x = [np.linspace(-L/2, L/2, N)]
         self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
         # initial condition
-        self.u = np.cos(2 * np.pi * self.x[0] / 10) * np.exp(-0.005 * self.x[0] ** 2)
+        self.u = np.cos(2 * np.pi * self.x[0] / 10) * \
+            np.exp(-0.005 * self.x[0] ** 2)
         # build finite difference matrices
         self.build_FD_matrices()
         self.linear_op = (self.kc**2 + self.laplace)
@@ -126,7 +128,7 @@ if not os.path.exists("initial_state.dat"):
         # perform timestep
         problem.time_step()
         # perform dealiasing
-        #problem.dealias()
+        # problem.dealias()
         # calculate the new norm
         dudtnorm = np.linalg.norm(problem.rhs(problem.u))
         # catch divergent solutions

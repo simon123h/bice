@@ -99,7 +99,7 @@ class MethodProfile:
                 total_time = T_tot
         # if we're showing nested calls or if this is the root call
         if nested or self.name == "":
-            # if not nested, flatten the tree 
+            # if not nested, flatten the tree
             if nested:
                 profs = self.nested_profiles
             else:

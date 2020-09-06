@@ -33,7 +33,6 @@ class CahnHilliardEquation(PseudospectralEquation):
         mx, my = np.meshgrid(*self.x)
         self.u = np.cos(np.sqrt(mx**2 + my**2)/(L/4)) - 0.1
 
-
     # definition of the CHE (right-hand side)
     @profile
     def rhs(self, u):
@@ -42,7 +41,8 @@ class CahnHilliardEquation(PseudospectralEquation):
         u2 = u.reshape((self.x[0].size, self.x[1].size))
         u_k = np.fft.fft2(u2)
         u3_k = np.fft.fft2(u2*u2*u2)
-        result_k = -self.ksquare * (self.kappa * self.ksquare * u_k + self.a * u_k + u3_k)
+        result_k = -self.ksquare * \
+            (self.kappa * self.ksquare * u_k + self.a * u_k + u3_k)
         result = np.fft.ifft2(result_k).real
         return result.reshape(N0)
 

@@ -35,7 +35,8 @@ class CahnHilliardEquation(PseudospectralEquation):
     def rhs(self, u):
         u_k = np.fft.fft(u)
         u3_k = np.fft.fft(u**3)
-        result_k = -self.ksquare*(self.kappa*self.ksquare*u_k + self.a*u_k + u3_k)
+        result_k = -self.ksquare * \
+            (self.kappa*self.ksquare*u_k + self.a*u_k + u3_k)
         result = np.fft.ifft(result_k).real
         return result
 
@@ -120,7 +121,8 @@ translation_constraint = TranslationConstraint(problem.che)
 problem.add_equation(translation_constraint)
 problem.volume_constraint = VolumeConstraint(problem.che)
 problem.add_equation(problem.volume_constraint)
-problem.volume_constraint.fixed_volume = np.trapz(problem.che.u, problem.che.x[0])
+problem.volume_constraint.fixed_volume = np.trapz(
+    problem.che.u, problem.che.x[0])
 problem.continuation_parameter = (problem.volume_constraint, 'fixed_volume')
 
 n = 0

@@ -37,6 +37,7 @@ class LotkaVolterra(Problem):
             (self.d * x - self.c) * y
         ])
 
+
 # create problem
 problem = LotkaVolterra()
 

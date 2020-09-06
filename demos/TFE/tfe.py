@@ -131,7 +131,7 @@ class ThinFilm(Problem):
         # self.time_stepper = RungeKuttaFehlberg45()
         # self.time_stepper.error_tolerance = 1e1
         # self.time_stepper.dt = 3e-5
-        self.time_stepper = BDF(self) # better for FD
+        self.time_stepper = BDF(self)  # better for FD
         # assign the continuation parameter
         self.continuation_parameter = (self.volume_constraint, "fixed_volume")
 
@@ -141,6 +141,7 @@ class ThinFilm(Problem):
 
     def norm(self):
         return np.trapz(self.tfe.u, self.tfe.x[0])
+
 
 # create output folder
 shutil.rmtree("out", ignore_errors=True)
@@ -191,7 +192,8 @@ problem.continuation_stepper.ndesired_newton_steps = 3
 problem.always_check_eigenvalues = True
 
 # Impose the constraints
-problem.volume_constraint.fixed_volume = np.trapz(problem.tfe.u, problem.tfe.x[0])
+problem.volume_constraint.fixed_volume = np.trapz(
+    problem.tfe.u, problem.tfe.x[0])
 problem.add_equation(problem.volume_constraint)
 problem.add_equation(problem.translation_constraint)
 
@@ -212,4 +214,3 @@ while problem.volume_constraint.fixed_volume < 1000:
         problem.plot(ax)
         fig.savefig("out/img/{:05d}.svg".format(plotID))
         plotID += 1
-
