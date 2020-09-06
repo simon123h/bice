@@ -19,7 +19,8 @@ class CahnHilliardEquation(PseudospectralEquation):
     """
 
     def __init__(self, N, L):
-        super().__init__()
+        # the dimension of the 2d equation is N*N and we have a single variable only
+        super().__init__(N*N)
         # parameters
         self.a = -0.5
         self.kappa = 1.

@@ -18,7 +18,8 @@ class CahnHilliardEquation(PseudospectralEquation):
     """
 
     def __init__(self, N, L):
-        super().__init__()
+        # we have only a single variable h, so the shape is just (N,)
+        super().__init__(N)
         # parameters
         self.a = -0.5
         self.kappa = 1.

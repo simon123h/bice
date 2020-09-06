@@ -16,8 +16,8 @@ class FiniteElementEquation(Equation):
     A FiniteElementEquation relates to a mesh: it has nodes/elements and can build the related matrices
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, shape=(1,)):
+        super().__init__(shape)
         # the mesh
         self.mesh = None
         # number of values per node in the mesh
@@ -134,17 +134,20 @@ class FiniteElementEquation(Equation):
     # copy the values of the nodes to the equation's unknowns
     @profile
     def copy_nodal_values_to_unknowns(self):
+        # TODO: adjust using the new self.nvariables
         # calculate the number of unknown values / degrees of freedom
         N = len(self.mesh.nodes) * self.nvalue - \
             sum([len(n.pinned_values) for n in self.mesh.nodes])
+        N = len(self.mesh.nodes)
         # if the number of unknowns changed...
-        if self.u is None or N != self.u.size:
+        if self.u is None or N != self.dim:
             # store reference to the equation's problem
             problem = self.problem
             # remove the equation from the problem (if assigned)
             if problem is not None:
                 problem.remove_equation(self)
             # create a new array of correct size, values will be filled later
+            self.dim = N
             self.u = np.zeros(N)
             # re-add the equation to the problem
             if problem is not None:

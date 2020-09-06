@@ -153,7 +153,7 @@ class Problem():
                 res += eq.rhs(u)
             else:
                 # uncoupled equations simply work on their own variables, so we do the mapping
-                res[eq.idx] += eq.rhs(u[eq.idx].reshape(eq.shape))
+                res[eq.idx] += eq.rhs(u[eq.idx].reshape(eq.shape)).ravel()
         # all residuals assembled, return
         return res
 
@@ -164,10 +164,7 @@ class Problem():
         self.actions_before_evaluation(u)
         # if there is only one equation, we can return the matrix directly
         if len(self.equations) == 1:
-            if self.equations[0].is_coupled:
-                return self.equations[0].jacobian(u)
-            else:
-                return self.equations[0].jacobian(u.reshape(self.equations[0].shape))
+            return self.equations[0].jacobian(u)
         # otherwise, we need to assemble the matrix
         J = np.zeros((self.dim, self.dim))
         # add the Jacobian of each equation

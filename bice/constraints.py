@@ -12,10 +12,12 @@ class VolumeConstraint(Equation):
     multiplier that can be interpreted as an influx into the system.
     """
 
-    def __init__(self, reference_equation):
+    def __init__(self, reference_equation, variable=0):
         super().__init__()
         # on which equation/unknowns should the constraint be imposed?
         self.ref_eq = reference_equation
+        # on which variable (index) of the equation should the constraint be imposed?
+        self.variable = variable
         # the constraint equation couples to some other equation of the problem
         self.is_coupled = True
         # this equation brings a single extra degree of freedom (influx Lagrange multiplier)
@@ -26,22 +28,20 @@ class VolumeConstraint(Equation):
     def rhs(self, u):
         # generate empty vector of residual contributions
         res = np.zeros((u.size))
+        # reference to the indices of the unknowns/equations that we work on
+        ref_idx = self.ref_eq.var_idx[self.variable]
         # employ the constraint equation
         if self.fixed_volume is None:
             # calculate the difference in volumes between current
             # and previous unknowns of the reference equation
-            if len(self.ref_eq.x) == 2:
-                res[self.idx] = np.mean(u[self.ref_eq.idx] - self.ref_eq.u)
-            else:
-                res[self.idx] = np.trapz(u[self.ref_eq.idx] -
-                                         self.ref_eq.u, self.ref_eq.x[0])
+            res[self.idx] = np.mean(u[ref_idx] - self.problem.u[ref_idx])
         else:
             # parametric constraint: calculate the difference between current
             # volume and the prescribed fixed_volume parameter
-            res[self.idx] = np.trapz(u[self.ref_eq.idx],
+            res[self.idx] = np.trapz(u[ref_idx],
                                      self.ref_eq.x[0]) - self.fixed_volume
         # Add the constraint to the reference equation: unknown influx is the Langrange multiplier
-        res[self.ref_eq.idx] = u[self.idx]
+        res[ref_idx] = u[self.idx]
         return res
 
     def mass_matrix(self):
@@ -62,11 +62,13 @@ class TranslationConstraint(Equation):
     frame (advection term).
     """
 
-    def __init__(self, reference_equation, direction=0):
+    def __init__(self, reference_equation, variable=0, direction=0):
         # call parent constructor
         super().__init__()
         # on which equation/unknowns should the constraint be imposed?
         self.ref_eq = reference_equation
+        # on which variable (index) of the equation should the constraint be imposed?
+        self.variable = variable
         # which spatial direction (index of [x, y, ...]) should the constraint apply to
         self.direction = direction
         # initialize unknowns (velocity vector) to zero
@@ -77,17 +79,19 @@ class TranslationConstraint(Equation):
     def rhs(self, u):
         # set up the vector of the residual contributions
         res = np.zeros((u.size))
+        # reference to the indices of the unknowns/equations that we work on
+        eq_idx = self.ref_eq.var_idx[self.variable]
         # define some variables
         eq = self.ref_eq
-        eq_u = u[eq.idx]
-        eq_u_old = eq.u
+        eq_u = u[eq_idx]
+        eq_u_old = self.problem.u[eq_idx]
         velocity = u[self.idx]
         # add constraint to residuals of reference equation (velocity is the langrange multiplier)
         try:  # if method first_spatial_derivative is implemented, use this
             eq_dudx = eq.first_spatial_derivative(eq_u, self.direction)
         except AttributeError:  # if not, get it from the gradient
             eq_dudx = np.gradient(eq_u, eq.x[self.direction])
-        res[eq.idx] = velocity * eq_dudx
+        res[eq_idx] = velocity * eq_dudx
         # calculate the difference in center of masses between current
         # and previous unknowns of the reference equation
         #res[self.idx] = np.dot(eq.x, eq_u-eq_u_old)

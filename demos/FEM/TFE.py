@@ -22,7 +22,7 @@ class ThinFilmEquation(FiniteElementEquation):
      """
 
     def __init__(self, N, L):
-        super().__init__()
+        super().__init__(N)
         # parameters: none
         # setup the mesh
         self.L = L

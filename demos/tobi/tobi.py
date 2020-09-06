@@ -11,6 +11,11 @@ from bice.constraints import TranslationConstraint
 from bice.profiling import Profiler, profile
 
 
+"""
+IMPORTANT NOTE: this code is incomplete and should be removed
+"""
+
+
 class TobisEquation(Equation):
 
     def __init__(self):

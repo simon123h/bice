@@ -25,6 +25,8 @@ class Equation:
         # the shape may either be (N) for a single-variable equation with N values or
         # (nvariables, N) for a multi-variable (e.g. vector-valued) equation with N values
         # per independent variable
+        if isinstance(shape, int):
+            shape = (shape,)
         self.shape = shape
         # Does the equation couple to any other unknowns?
         # If it is coupled, then all unknowns and methods of this equation will have the
@@ -107,15 +109,18 @@ class Equation:
         J = np.zeros((N, N))
         if not use_central_differences:
             f0 = self.rhs(u)
-        u1 = u.copy()
+        u1 = u.copy().ravel()
+        # uncoupled equations require u1 to be reshaped the self.shape before calling rhs(u1)
+        shape = self.shape if not self.is_coupled else u.shape
+        # perturb every degree of freedom and calculate Jacobian using FD
         for i in np.arange(N):
             k = u1[i]
             u1[i] = k + eps
-            f1 = self.rhs(u1)
+            f1 = self.rhs(u1.reshape(shape)).ravel()
             if use_central_differences:
                 # central difference
                 u1[i] = k - eps
-                f2 = self.rhs(u1)
+                f2 = self.rhs(u1.reshape(shape)).ravel()
                 J[i] = (f1 - f2) / (2*eps)
             else:
                 # forward difference
@@ -144,12 +149,23 @@ class Equation:
         if len(self.x) == 1:
             ax.set_xlabel("x")
             ax.set_ylabel("solution u(x,t)")
-            ax.plot(self.x[0], self.u)
+            # deal with the shape of u (1d vs 2d)
+            if len(self.shape) == 1:
+                ax.plot(self.x[0], self.u)
+            else:
+                for n in range(self.nvariables):
+                    ax.plot(self.x[0], self.u[n])
         if len(self.x) == 2:
             ax.set_xlabel("x")
             ax.set_ylabel("y")
             mx, my = np.meshgrid(self.x[0], self.x[1])
-            u = self.u.reshape((self.x[0].size, self.x[1].size))
+            # deal with the shape of u (1d vs 2d)
+            if len(self.shape) == 1:
+                u = self.u
+            else:
+                # plot only the first variable
+                u = self.u[0]
+            u = u.reshape((self.x[0].size, self.x[1].size))
             ax.pcolormesh(mx, my, u)
 
 
