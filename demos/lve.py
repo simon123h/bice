@@ -54,6 +54,6 @@ print("# steps:", len(data))
 print("time   :", end - start)
 
 
-data = np.array(data).T
-plt.plot(data[0], data[1])
+data = np.array(data)
+plt.plot(data[:, 0], data[:, 1])
 plt.show()
