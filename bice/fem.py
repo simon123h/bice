@@ -20,8 +20,6 @@ class FiniteElementEquation(Equation):
         super().__init__(shape)
         # the mesh
         self.mesh = None
-        # number of values per node in the mesh
-        self.nvalue = 1
         # FEM mass matrix
         self.M = None
         # FEM stiffness matrix
@@ -40,14 +38,14 @@ class FiniteElementEquation(Equation):
         # number of nodes
         N = len(self.mesh.nodes)
         # spatial dimension
-        dim = len(self.x)
+        sdim = len(self.x)
         # mass matrix
         self.M = lil_matrix((N, N))
         # stiffness matrix
         self.laplace = lil_matrix((N, N))
         # first order derivative matrices
         self.nabla = []
-        for d in range(dim):
+        for d in range(sdim):
             self.nabla.append(lil_matrix((N, N)))
         # store the global indices of the nodes
         for i, n in enumerate(self.mesh.nodes):
@@ -55,27 +53,31 @@ class FiniteElementEquation(Equation):
         # for every element
         for element in self.mesh.elements:
             # spatial integration loop
-            for x, weight in element.integration_points:
+            for s, weight in element.integration_points:
                 # premultiply weight with coordinate transformation determinant
                 det = element.transformation_det
                 weight *= det
                 # evaluate the shape functions
-                shape = element.shape(x)
-                dshape = element.dshape(x)
+                shape = element.shape(s)
+                dshape = element.dshape(s)
                 # evaluate the test functions
-                test = element.test(x)
-                dtest = element.dtest(x)
+                test = element.test(s)
+                dtest = element.dtest(s)
                 # loop over every node i, j of the element
                 for i, ni in enumerate(element.nodes):
                     for j, nj in enumerate(element.nodes):
                         # integral contributions
+                        # mass matrix
                         self.M[ni.index, nj.index] += shape[i] * \
                             test[j] * weight
-                        for d in range(dim):
+                        for d in range(sdim):
+                            # stiffness matrix
                             self.laplace[ni.index, nj.index] -= dshape[d][i] * \
                                 dtest[d][j] * weight / det / det
+                            # first order derivative matrix
                             self.nabla[d][ni.index, nj.index] += dshape[d][i] * \
                                 test[j] * weight / det
+                            # TODO: also include a matrix for the Dirichlet conditions
 
         # convert matrices to CSR-format (compressed sparse row)
         # for efficiency of arithmetic operations
@@ -142,10 +144,9 @@ class FiniteElementEquation(Equation):
             if problem is not None:
                 problem.add_equation(self)
         # now, we'll fill self.u with the values from the nodes
-        # loop over the nodes
-        i = 0
         # new empty array for the unknowns
         u = np.zeros(self.shape).T
+        # loop over the nodes
         for n, node in enumerate(self.mesh.nodes):
             # make sure the node has storage for the unknowns
             if node.u is None:
@@ -153,18 +154,14 @@ class FiniteElementEquation(Equation):
                     "Node #{:d} at x={} has no unknowns assigned! Unable to copy them to equation.u!".format(n, node.x))
             # store the node's unknowns in the new u
             u[n] = node.u
+        # assign the new unknowns to the equation
         self.u = np.array(u).T
-
-    # return the vector of nodal values with specific index
-    @profile
-    def nodal_values(self, index):
-        return np.array([node.u[index] for node in self.mesh.nodes])
 
 
 class Node:
     """
-    simple node class for nodes in meshes,
-    basically stores a position in space
+    Simple node class for nodes in meshes,
+    stores a position in space, the unknowns, the related elements and more.
     """
 
     def __init__(self, x):
@@ -178,15 +175,18 @@ class Node:
         self.pinned_values = set()
         # does the node lie on a boundary?
         self.is_boundary_node = False
+        # Flags for marking the node for (un)refinement
+        self.can_be_unrefined = False
+        self.should_be_refined = False
 
-    # keep the value at a specific index pinned (remove it from dof)
+    # keep the value at a specific index pinned by a Dirichlet condition
     def pin(self, index):
         self.pinned_values.add(index)
 
 
 class Element:
     """
-    base class for all finite elements
+    Base class for all finite elements
     """
 
     def __init__(self, nodes):
@@ -341,6 +341,8 @@ class TriangleElement2d(Element):
         return ang
 
 
+# TODO: it doesn't seem that we'll be using the RectangleMesh / RectangleElements
+#       due to the hanging nodes problem, remove these related classes therefore?
 class RectangleElement2d(Element):
     """
     Two-dimensional rectangular elements with linear shape functions
@@ -397,8 +399,6 @@ class Mesh:
         self.nodes = []
         # storage for the elements
         self.elements = []
-        # storage for the values of each node: 2d array of shape (#nodes, nvalue)
-        self.values = None
         # error thresholds for refinement
         self.min_refinement_error = 1e-5
         self.max_refinement_error = 1e-3
@@ -427,7 +427,7 @@ class OneDimMesh(Mesh):
             node = Node(x=np.array([x[i]]))
             self.nodes.append(node)
             # mark boundary nodes
-            if i == 0 or i == N-1:
+            if i in [0, N-1]:
                 node.is_boundary_node = True
         # generate the elements
         for i in range(N-1):
@@ -509,7 +509,7 @@ class TriangleMesh(Mesh):
                 node = Node(x=np.array([x[i], y[j]]))
                 self.nodes.append(node)
                 # mark boundary nodes
-                if i == 0 or i == Nx-1 or j == 0 or j == Ny-1:
+                if i in [0, Nx-1] or j in [0, Ny-1]:
                     node.is_boundary_node = True
 
         # generate the elements
