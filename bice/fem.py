@@ -101,8 +101,9 @@ class FiniteElementEquation(Equation):
     @profile
     def refinement_error_estimate(self):
         # calculate curvature
-        # TODO: use weighted curvature of all value indices
-        curvature = self.laplace.dot(self.nodal_values(0))
+        # TODO: use weighted curvature of all variables, not just the 0th
+        u = self.u if len(self.shape) == 1 else self.u[0]
+        curvature = self.laplace.dot(u)
         # store curvature in nodes
         for node, c in zip(self.mesh.nodes, curvature):
             # get maximal distance to neighbour node
@@ -118,28 +119,16 @@ class FiniteElementEquation(Equation):
         if u is None:
             u = self.u
         # loop over the nodes
-        i = 0
-        for node in self.mesh.nodes:
-            # make sure the node has storage for the unknowns
-            if node.u is None:
-                node.u = np.zeros(self.nvalue)
-            # loop over the number of values per node
-            for n in range(self.nvalue):
-                # exclude pinned values
-                if n not in node.pinned_values:
-                    # write the value to the node and increment counter
-                    node.u[n] = u[i]
-                    i += 1
+        for n, node in enumerate(self.mesh.nodes):
+            # assign the unknowns to the node, transpose for correct shape
+            node.u = u.T[n]
 
     # copy the values of the nodes to the equation's unknowns
     @profile
     def copy_nodal_values_to_unknowns(self):
-        # TODO: adjust using the new self.nvariables
-        # calculate the number of unknown values / degrees of freedom
-        N = len(self.mesh.nodes) * self.nvalue - \
-            sum([len(n.pinned_values) for n in self.mesh.nodes])
+        # number of nodes
         N = len(self.mesh.nodes)
-        # if the number of unknowns changed...
+        # if the number of nodes changed...
         if self.u is None or N != self.dim:
             # store reference to the equation's problem
             problem = self.problem
@@ -148,24 +137,23 @@ class FiniteElementEquation(Equation):
                 problem.remove_equation(self)
             # create a new array of correct size, values will be filled later
             self.dim = N
-            self.u = np.zeros(N)
+            self.u = np.zeros(self.shape)
             # re-add the equation to the problem
             if problem is not None:
                 problem.add_equation(self)
         # now, we'll fill self.u with the values from the nodes
         # loop over the nodes
         i = 0
-        for node in self.mesh.nodes:
+        # new empty array for the unknowns
+        u = np.zeros(self.shape).T
+        for n, node in enumerate(self.mesh.nodes):
             # make sure the node has storage for the unknowns
             if node.u is None:
-                node.u = np.zeros(self.nvalue)
-            # loop over the number of values per node
-            for n in range(self.nvalue):
-                # exclude pinned values
-                if n not in node.pinned_values:
-                    # write the value to the equation and increment counter
-                    self.u[i] = node.u[n]
-                    i += 1
+                raise Exception(
+                    "Node #{:d} at x={} has no unknowns assigned! Unable to copy them to equation.u!".format(n, node.x))
+            # store the node's unknowns in the new u
+            u[n] = node.u
+        self.u = np.array(u).T
 
     # return the vector of nodal values with specific index
     @profile
