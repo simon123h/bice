@@ -143,7 +143,8 @@ class Problem():
         # if there is only one equation, we can return the rhs directly
         if len(self.equations) == 1:
             eq = self.equations[0]
-            return self.equations[0].rhs(u)
+            shape = u.shape if eq.is_coupled else eq.shape
+            return eq.rhs(u.reshape(shape)).ravel()
         # otherwise, we need to assemble the vector
         res = np.zeros(self.dim)
         # add the residuals of each equation

@@ -111,7 +111,7 @@ class Equation:
             f0 = self.rhs(u)
         u1 = u.copy().ravel()
         # uncoupled equations require u1 to be reshaped the self.shape before calling rhs(u1)
-        shape = self.shape if not self.is_coupled else u.shape
+        shape = u.shape if self.is_coupled else self.shape
         # perturb every degree of freedom and calculate Jacobian using FD
         for i in np.arange(N):
             k = u1[i]
