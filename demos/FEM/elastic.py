@@ -22,11 +22,10 @@ class ThinFilmEquation(FiniteElementEquation):
      """
 
     def __init__(self, N, L):
-        super().__init__()
+        super().__init__(shape=(2, N))
         # parameters: none
         # setup the mesh
         self.L = L
-        self.nvalue = 2
         self.mesh = OneDimMesh(N, L, -L/2)
         # initial condition
         h0 = 6
@@ -42,14 +41,11 @@ class ThinFilmEquation(FiniteElementEquation):
 
     # definition of the equation, using finite element method
     def rhs(self, u):
-        self.copy_unknowns_to_nodal_values(u)
-        h = self.nodal_values(0)
-        xi = self.nodal_values(1)
-        p = 10
-        r1 = -self.laplace.dot(h+xi) - self.M.dot(self.djp(h)) - p
+        h, xi = u
+        r1 = -self.laplace.dot(h+xi) - self.M.dot(self.djp(h))
         r2 = -self.laplace.dot(h+xi) - 1. * \
             self.laplace.dot(xi) + 1. * self.M.dot(xi)
-        return np.vstack((r1, r2)).T.flatten()
+        return np.array([r1, r2])
 
     # disjoining pressure
     def djp(self, h):
@@ -61,8 +57,7 @@ class ThinFilmEquation(FiniteElementEquation):
     def plot(self, ax):
         ax.set_xlabel("x")
         ax.set_ylabel("solution h(x,t)")
-        h = self.nodal_values(0)
-        xi = self.nodal_values(1)
+        h, xi = self.u
         ax.plot(self.x[0], h+xi, marker="x", label="liquid")
         ax.plot(self.x[0], xi, marker="x", label="substrate")
         ax.legend()
@@ -77,7 +72,6 @@ class ThinFilm(Problem):
         self.add_equation(self.tfe)
         # Generate the volume constraint
         self.volume_constraint = VolumeConstraint(self.tfe)
-        self.volume_constraint.fixed_volume = 0
         # Generate the translation constraint
         self.translation_constraint = TranslationConstraint(self.tfe)
 
@@ -90,10 +84,8 @@ os.makedirs("out/img", exist_ok=True)
 problem = ThinFilm(N=200, L=100)
 
 # Impose the constraints
-# problem.volume_constraint.fixed_volume = np.trapz(
-#     problem.tfe.u, problem.tfe.x[0])
-# problem.add_equation(problem.volume_constraint)
-# problem.add_equation(problem.translation_constraint)
+problem.add_equation(problem.volume_constraint)
+problem.add_equation(problem.translation_constraint)
 
 # refinement thresholds
 problem.tfe.mesh.max_refinement_error = 1e-2
@@ -118,15 +110,16 @@ for i in range(10):
     print("solving")
     problem.newton_solve()
     # plot
-    problem.tfe.plot(ax)
-    fig.savefig("out/img/{:05d}.png".format(plotID))
-    ax.clear()
-    plotID += 1
+    # problem.tfe.plot(ax)
+    # fig.savefig("out/img/{:05d}.png".format(plotID))
+    # ax.clear()
+    # plotID += 1
     # adapt
     print("adapting")
     problem.tfe.adapt()
-    problem.tfe.adapt()
+    # problem.tfe.adapt()
     # plot
+    print("plotting")
     problem.tfe.plot(ax)
     fig.savefig("out/img/{:05d}.png".format(plotID))
     ax.clear()
