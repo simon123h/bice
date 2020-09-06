@@ -59,6 +59,7 @@ class Problem():
         # TODO: maybe use some substructure for all the settings (tolerances, neigs, booleans...)
 
     # The dimension of the system
+    # TODO: rename to 'ndofs' ?
     @property
     def dim(self):
         return self.u.size
@@ -72,7 +73,7 @@ class Problem():
         # append to list of equations
         self.equations.append(eq)
         # append eq's degrees of freedom to the problem dofs
-        self.u = np.append(self.u, eq.u)
+        self.u = np.append(self.u, eq.u.ravel())
         # assign this problem to the equation
         eq.problem = self
         # redo the mapping from equation to problem variables
@@ -108,7 +109,7 @@ class Problem():
         idx = eq.idx
         eq.idx = None
         # write the associated unknowns back into the equation
-        eq.u = self.u[idx]
+        eq.u = self.u[idx].reshape(eq.shape)
         # redo the mapping from equation to problem variables
         self.assign_equation_numbers()
         # remove eq's degrees of freedom from the problem dofs
@@ -126,9 +127,13 @@ class Problem():
             #       not a range or anything else. Slices extract coherent parts
             #       of an array, which goes much much faster than extracting values
             #       from positions given by integer indices.
-            eq.idx = slice(i, i+eq.dim)
-            # increment counter by dimension
-            i += eq.dim
+            # indices of the equation's unknowns in Problem.u
+            eq.idx = slice(i, i+eq.ndofs)
+            # indices of unknowns for each independent variable in Problem.u
+            eq.var_idx = [slice(i+n*eq.dim, i+(n+1)*eq.dim)
+                          for n in range(eq.nvariables)]
+            # increment counter by the equation's number of degrees of freedom
+            i += eq.ndofs
 
     # Calculate the right-hand side of the system 0 = rhs(u)
     @profile
@@ -147,8 +152,8 @@ class Problem():
                 # coupled equations work on the full set of variables
                 res += eq.rhs(u)
             else:
-                # uncoupled equations simply work on their own variables, so we do a mapping
-                res[eq.idx] += eq.rhs(u[eq.idx])
+                # uncoupled equations simply work on their own variables, so we do the mapping
+                res[eq.idx] += eq.rhs(u[eq.idx].reshape(eq.shape))
         # all residuals assembled, return
         return res
 
@@ -159,7 +164,10 @@ class Problem():
         self.actions_before_evaluation(u)
         # if there is only one equation, we can return the matrix directly
         if len(self.equations) == 1:
-            return self.equations[0].jacobian(u)
+            if self.equations[0].is_coupled:
+                return self.equations[0].jacobian(u)
+            else:
+                return self.equations[0].jacobian(u.reshape(self.equations[0].shape))
         # otherwise, we need to assemble the matrix
         J = np.zeros((self.dim, self.dim))
         # add the Jacobian of each equation
@@ -169,7 +177,7 @@ class Problem():
                 J += eq.jacobian(u)
             else:
                 # uncoupled equations simply work on their own variables, so we do a mapping
-                J[eq.idx, eq.idx] += eq.jacobian(u[eq.idx])
+                J[eq.idx, eq.idx] += eq.jacobian(u[eq.idx].reshape(eq.shape))
         # all entries assembled, return
         return J
 
@@ -231,7 +239,8 @@ class Problem():
             p = self.get_continuation_parameter()
             # get the eigenvector that corresponds to the bifurcation
             # (the one with the smallest abolute real part)
-            unstable_eigval_index = np.argsort(np.abs(self.latest_eigenvalues.real))[0]
+            unstable_eigval_index = np.argsort(
+                np.abs(self.latest_eigenvalues.real))[0]
             eigenvector = self.latest_eigenvectors[unstable_eigval_index]
             # locate the exact bifurcation point
             self.locate_bifurcation(eigenvector)

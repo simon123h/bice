@@ -20,7 +20,12 @@ class Equation:
     finite difference schemes or pseudospectral methods.
     """
 
-    def __init__(self):
+    def __init__(self, shape=(1,)):
+        # the shape of the equation's unknowns: self.u.shape = self.shape
+        # the shape may either be (N) for a single-variable equation with N values or
+        # (nvariables, N) for a multi-variable (e.g. vector-valued) equation with N values
+        # per independent variable
+        self.shape = shape
         # Does the equation couple to any other unknowns?
         # If it is coupled, then all unknowns and methods of this equation will have the
         # full dimension of the problem and need to be mapped to the equation's
@@ -30,32 +35,62 @@ class Equation:
         self.problem = None
         # Slice for the mapping from Problem.u to Equation.u: eq.u = problem.u[eq.idx]
         self.idx = None
+        # List of slices for the mapping from Problem.u to unknowns assiociated with each variable in the equation
+        self.var_idx = None
         # The equation's storage for the unknowns if it is not currently part of a problem
-        self.__u = None
+        self.__u = np.zeros(self.shape)
 
     # Getter for the vector of unknowns
     @property
     def u(self):
         if self.idx is None:
             # return the unknowns that are stored in the equation itself
-            return self.__u
+            return self.__u.reshape(self.shape)
         # fetch the unknowns from the problem with the equation mapping
-        return self.problem.u[self.idx]
+        return self.problem.u[self.idx].reshape(self.shape)
 
     # Setter for the vector of unknowns
     @u.setter
     def u(self, v):
         if self.idx is None:
             # update the unknowns stored in the equation itself
-            self.__u = v
+            self.__u = v.reshape(self.shape)
         else:
             # set the unknowns in the problem with the equation mapping
-            self.problem.u[self.idx] = v
+            self.problem.u[self.idx] = v.ravel()
 
-    # The number of unknowns / degrees of freedom of the equation
+    # the number of unknowns per independent variable in the equation
     @property
     def dim(self):
-        return self.u.size
+        if len(self.shape) == 1:
+            return self.shape[0]
+        return self.shape[1]
+
+    @dim.setter
+    def dim(self, d):
+        if len(self.shape) == 1:
+            self.shape = (d,)
+        else:
+            self.shape = (self.shape[0], d)
+
+    # the number of independent variables in the equation (e.g. for vector-valued equations)
+    @property
+    def nvariables(self):
+        if len(self.shape) == 1:
+            return 1
+        return self.shape[0]
+
+    @nvariables.setter
+    def nvariables(self, n):
+        if len(self.shape) == 1 and n == 1:
+            pass
+        else:
+            self.shape[0] = (n, self.dim)
+
+    # The total number of unknowns / degrees of freedom of the equation
+    @property
+    def ndofs(self):
+        return self.nvariables * self.dim
 
     # Calculate the right-hand side of the equation 0 = rhs(u)
     def rhs(self, u):
@@ -125,8 +160,8 @@ class FiniteDifferenceEquation(Equation):
     ODEs/PDEs with a finite difference scheme.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, shape=(1,)):
+        super().__init__(shape)
         # first order derivative
         self.nabla = None
         # second order derivative
@@ -174,8 +209,8 @@ class PseudospectralEquation(Equation):
     ODEs/PDEs with a pseudospectral scheme.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, shape=(1,)):
+        super().__init__(shape)
         # the spatial coordinates
         self.x = None
         self.k = None

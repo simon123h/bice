@@ -20,6 +20,7 @@ class SwiftHohenbergEquation(PseudospectralEquation):
 
     def __init__(self, N, L):
         super().__init__()
+        self.shape = (N,)
         # parameters
         self.r = -0.013
         self.kc = 0.5
