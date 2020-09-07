@@ -55,14 +55,13 @@ class FiniteElementEquation(Equation):
             # spatial integration loop
             for s, weight in element.integration_points:
                 # premultiply weight with coordinate transformation determinant
-                det = element.transformation_det
-                weight *= det
+                weight *= element.transformation_det
                 # evaluate the shape functions
                 shape = element.shape(s)
-                dshape = element.dshape(s)
-                # evaluate the test functions
-                test = element.test(s)
-                dtest = element.dtest(s)
+                dshapedx = element.dshapedx(s)
+                # test functions are identical to shape functions
+                test = shape
+                dtestdx = dshapedx
                 # loop over every node i, j of the element
                 for i, ni in enumerate(element.nodes):
                     for j, nj in enumerate(element.nodes):
@@ -72,11 +71,11 @@ class FiniteElementEquation(Equation):
                             test[j] * weight
                         for d in range(sdim):
                             # stiffness matrix
-                            self.laplace[ni.index, nj.index] -= dshape[d][i] * \
-                                dtest[d][j] * weight / det / det
+                            self.laplace[ni.index, nj.index] -= dshapedx[d][i] * \
+                                dtestdx[d][j] * weight
                             # first order derivative matrix
-                            self.nabla[d][ni.index, nj.index] += dshape[d][i] * \
-                                test[j] * weight / det
+                            self.nabla[d][ni.index, nj.index] += dshapedx[d][i] * \
+                                test[j] * weight
                             # TODO: also include a matrix for the Dirichlet conditions
 
         # convert matrices to CSR-format (compressed sparse row)
@@ -203,6 +202,15 @@ class Element:
             for node2 in self.nodes:
                 dx = np.linalg.norm(node1.x - node2.x)
                 self.max_len = max(self.max_len, dx)
+        # transformation matrix from local coordinates x to local coordinates s: x = T * s
+        # will be overwritten for specific element geometries
+        self.transformation_matrix = np.eye(self.dim)
+        # inverse of the transformation matrix: s = T^-1 * x
+        # will be overwritten for specific element geometries
+        self.transformation_matrix_inv = np.eye(self.dim)
+        # determinant of the transformation matrix:
+        # will be overwritten for specific element geometries
+        self.transformation_det = 1
 
     # called when the element is removed from the mesh
     def purge(self):
@@ -214,17 +222,15 @@ class Element:
     def shape(self, s):
         pass
 
-    # returns a list of all shape function derivatives of this element
+    # returns a list of all shape function derivatives with
+    # respect to the local coordinate s of this element
     def dshape(self, s):
         pass
 
-    # returns a list of all test functions of this element
-    def test(self, x):
-        return self.shape(x)
-
-    # returns a list of all test function derivatives of this element
-    def dtest(self, x):
-        return self.dshape(x)
+    # returns a list of all shape function derivatives with
+    # respect to the global coordinate x of this element
+    def dshapedx(self, s):
+        return self.transformation_matrix_inv.dot(self.dshape(s))
 
 
 class Element1d(Element):
@@ -240,6 +246,8 @@ class Element1d(Element):
         self.transformation_matrix = np.array([
             [self.x1-self.x0]
         ])
+        # inverse of transformation_matrix
+        self.transformation_matrix_inv = 1 / self.transformation_matrix
         # corresponding determinant of transformation
         self.transformation_det = self.x1-self.x0
         # exact polynomial integration using Gaussian quadrature
@@ -288,6 +296,10 @@ class TriangleElement2d(Element):
         # corresponding determinant of transformation
         self.transformation_det = (
             self.x1-self.x0)*(self.y2-self.y0)-(self.x2-self.x0)*(self.y1-self.y0)
+        # calculate invert of transformation matrix
+        self.transformation_matrix_inv = np.array([[self.transformation_matrix[1, 1], -self.transformation_matrix[0, 1]],
+                                                   [-self.transformation_matrix[1, 0], self.transformation_matrix[0, 0]]]) / self.transformation_det
+
         # exact polynomial integration using Gaussian quadrature
         # see: https://de.wikipedia.org/wiki/Gau%C3%9F-Quadratur#Gau%C3%9F-Legendre-Integration
         # and: https://link.springer.com/content/pdf/bbm%3A978-3-540-32609-0%2F1.pdf
@@ -359,6 +371,8 @@ class RectangleElement2d(Element):
             [self.x1-self.x0, 0],
             [0, self.y1-self.y0]
         ])
+        # inverse of transformation matrix
+        self.transformation_matrix_inv = np.linalg.inv(self.transformation_matrix)
         # corresponding determinant of transformation
         self.transformation_det = (self.x1-self.x0)*(self.y1-self.y0)
         # exact polynomial integration using Gaussian quadrature
