@@ -56,16 +56,12 @@ class FiniteElementEquation(Equation):
             for s, weight in element.integration_points:
                 # premultiply weight with coordinate transformation determinant
                 weight *= element.transformation_det
-                # evaluate the shape functions
-                shape = element.shape(s)
-                dshapedx = element.dshapedx(s)
-                # test functions are identical to shape functions
-                test = shape
-                dtestdx = dshapedx
-                # loop over every node i, j of the element
+                # evaluate the shape functions, test functions are identical to shape functions
+                test = shape = element.shape(s)
+                dtestdx = dshapedx = element.dshapedx(s)
+                # loop over every node i, j of the element and add contributions to the integral
                 for i, ni in enumerate(element.nodes):
                     for j, nj in enumerate(element.nodes):
-                        # integral contributions
                         # mass matrix
                         self.M[ni.index, nj.index] += shape[i] * \
                             test[j] * weight
