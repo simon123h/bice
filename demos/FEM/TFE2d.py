@@ -58,11 +58,10 @@ class ThinFilmEquation(FiniteElementEquation):
         ax.set_ylabel("y")
         ax.tricontourf(x, y, h, 256, cmap="coolwarm")
 
-        # for element in self.mesh.elements:
-        #     nodes = element.nodes.copy()
-        #     nodes.append(nodes[0])
-        #     xs = np.array([node.x for node in nodes]).T
-        #     ax.plot(xs[0], xs[1], c="black", linewidth=0.2)
+        for element in self.mesh.elements:
+            nodes = [n for n in element.nodes] + [element.nodes[0]]
+            xs = np.array([node.x for node in nodes]).T
+            ax.plot(xs[0], xs[1], c="black", linewidth=0.2)
 
         ax.scatter(x, y, s=0.4, c="black")
 
