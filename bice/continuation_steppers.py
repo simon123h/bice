@@ -73,6 +73,8 @@ class PseudoArclengthContinuation(ContinuationStepper):
         self.fd_epsilon = 1e-10
         # stores the du-vector of the last step in order to use it as tangent for the next step
         self.tangent = None
+        # should sparse matrices be assumed when solving linear systems?
+        self.use_sparse_matrices = True
 
     # perform continuation step
     def step(self, problem):
@@ -100,7 +102,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
             zero[N] = 1  # for solvability
             jac = np.concatenate((jac, zero.reshape((1, N+1))), axis=0)
             # compute tangent by solving (jac)*tangent=0 and normalize
-            tangent = np.linalg.solve(jac, zero)
+            tangent = self._linear_solve(jac, zero)
             tangent /= np.linalg.norm(tangent)
         # make initial guess: u -> u + ds * tangent
         u = u + self.ds * tangent[:N]
@@ -129,7 +131,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
                 tangent[N] * self.parameter_arc_length_proportion - self.ds
             rhs_ext = np.append(problem.rhs(u), arclength_condition)
             # solving (jac_ext) * du_ext = rhs_ext for du_ext will now give the new solution
-            du_ext = np.linalg.solve(jac_ext, rhs_ext)
+            du_ext = self._linear_solve(jac_ext, rhs_ext)
             u -= du_ext[:N]
             p -= du_ext[N]
             # update counter and check for convergence
@@ -179,3 +181,10 @@ class PseudoArclengthContinuation(ContinuationStepper):
     # switching the principal continuation parameter
     def factory_reset(self):
         self.tangent = None
+
+    # Solve the linear system A*x = b for x and return x
+    def _linear_solve(self, A, b):
+        if self.use_sparse_matrices:
+            return scipy.sparse.linalg.spsolve(scipy.sparse.csr_matrix(A), b)
+        else:
+            return np.linalg.solve(A, b)
