@@ -132,7 +132,7 @@ class Equation:
     # M * du/dt = rhs(u)
     def mass_matrix(self):
         # default case: assume the identity matrix I (--> du/dt = rhs(u))
-        return np.eye(self.dim)
+        return np.eye(self.ndofs)
 
     # This method is called before each evaluation of the rhs/Jacobian and may be
     # overwritten to do anything specific to the equation
