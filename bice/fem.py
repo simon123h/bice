@@ -37,16 +37,12 @@ class FiniteElementEquation(Equation):
     def build_FEM_matrices(self):
         # number of nodes
         N = len(self.mesh.nodes)
-        # spatial dimension
-        sdim = len(self.x)
         # mass matrix
         self.M = np.zeros((N, N))
         # stiffness matrix
         self.laplace = np.zeros((N, N))
         # first order derivative matrices
-        self.nabla = []
-        for d in range(sdim):
-            self.nabla.append(np.zeros((N, N)))
+        self.nabla = [np.zeros((N, N)) for d in range(self.mesh.dim)]
         # store the global indices of the nodes
         for i, n in enumerate(self.mesh.nodes):
             n.index = i
@@ -65,14 +61,14 @@ class FiniteElementEquation(Equation):
                         # mass matrix
                         self.M[ni.index, nj.index] += shape[i] * \
                             test[j] * weight
-                        for d in range(sdim):
+                        for d in range(self.mesh.dim):
                             # stiffness matrix
-                            self.laplace[ni.index, nj.index] -= dshapedx[d][i] * \
-                                dtestdx[d][j] * weight
+                            self.laplace[ni.index, nj.index] -= dshapedx[i][d] * \
+                                dtestdx[j][d] * weight
                             # first order derivative matrix
-                            self.nabla[d][ni.index, nj.index] += dshapedx[d][i] * \
+                            self.nabla[d][ni.index, nj.index] += dshapedx[i][d] * \
                                 test[j] * weight
-                            # TODO: also include a matrix for the Dirichlet conditions
+                            # TODO: also include a matrix for the Dirichlet conditions?
 
         # convert matrices to CSR-format (compressed sparse row)
         # for efficiency of arithmetic operations
@@ -102,15 +98,15 @@ class FiniteElementEquation(Equation):
                 weight *= element.transformation_det
                 # evaluate the shape functions, test functions are identical to shape functions
                 test = shape = element.shape(s)
-                dtestdx = dshapedx = element.dshapedx(s).T
+                dtestdx = dshapedx = element.dshapedx(s)
                 # interpolate...
                 #  ...spatial coordinates
                 x = sum([n.x*s for n, s in zip(element.nodes, shape)])
                 #  ...unknowns
                 u = sum([uT[n.index]*s for n, s in zip(element.nodes, shape)])
-                # ...spatial derivative of unknowns
-                dudx = sum(
-                    [uT[n.index]*ds for n, ds in zip(element.nodes, dshapedx)])
+                # ...spatial derivative of unknowns: dudx = sum_{nodes} u * dshapedx
+                dudx = np.array([sum(
+                    [uT[n.index]*ds[d] for n, ds in zip(element.nodes, dshapedx)]) for d in range(self.mesh.dim)]).T
                 # for every node in the element
                 for i, node in enumerate(element.nodes):
                     # calculate residual contribution
@@ -173,12 +169,12 @@ class FiniteElementEquation(Equation):
         for n in range(self.nvariables):
             u = self.u if len(self.shape) == 1 else self.u[n]
             curvature += np.abs(self.laplace.dot(u))
-        # store curvature in nodes
+        # integrate and store curvature in nodes
         for node, c in zip(self.mesh.nodes, curvature):
-            # get maximal distance to neighbour node
-            max_dx = max([e.max_len for e in node.elements])
-            # the error per node is curvature * max_dx
-            node.error = abs(c * max_dx)
+            # get mean determinant of transformation matrices of neighbour elements
+            mean_det = np.mean([e.transformation_det for e in node.elements])
+            # the error per node is curvature * mean_det
+            node.error = abs(c * mean_det)
         # return the error per node
         return np.array([node.error for node in self.mesh.nodes])
 
@@ -300,7 +296,7 @@ class Element:
     # returns a list of all shape function derivatives with
     # respect to the global coordinate x of this element
     def dshapedx(self, s):
-        return self.transformation_matrix_inv.T.dot(self.dshape(s))
+        return self.dshape(s).dot(self.transformation_matrix_inv)
 
 
 class Element1d(Element):
@@ -334,11 +330,11 @@ class Element1d(Element):
     # 1d linear triangle shape functions
     def shape(self, s):
         s = s[0]
-        return [1-s, s]
+        return np.array([1-s, s])
 
     # 1d linear shape functions within the element
     def dshape(self, s):
-        return [[-1, 1]]
+        return np.array([[-1], [1]])
 
     # returns a list of all shape function derivatives with
     # respect to the global coordinate x of this element
@@ -389,24 +385,26 @@ class TriangleElement2d(Element):
     def shape(self, s):
         sx, sy = s
         # three shape functions, counter-clockwise order of nodes
-        return [1-sx-sy, sx, sy]
+        return np.array([1-sx-sy, sx, sy])
 
     # 2d linear shape functions within the element
     def dshape(self, s):
         # (dshape_dsx, dshape_dsy)
-        return [
-            [-1, 1, 0],
-            [-1, 0, 1]
-        ]
+        return np.array([
+            [-1, -1],
+            [1, 0],
+            [0, 1]
+        ])
 
     # returns a list of all shape function derivatives with
     # respect to the global coordinate x of this element
     # TODO: are these also correct or should we go with the default implementation?
-    def dshapedx(self, s):
-        return np.array([
-            [self.y1-self.y2, self.y2-self.y0, self.y0-self.y1],
-            [self.x2-self.x1, self.x0-self.x2, self.x1-self.x0]
-        ]) / self.transformation_det
+    # def dshapedx(self, s):
+    #     return np.array([
+    #         [self.y1-self.y2, self.x2-self.x1],
+    #         [self.y2-self.y0, self.x0-self.x2],
+    #         [self.y0-self.y1, self.x1-self.x0]
+    #     ]) / self.transformation_det
 
     # if the orientation is positive/negative, the triangle is oriented anticlockwise/clockwise
     def orientation(self):
@@ -443,6 +441,8 @@ class Mesh:
     """
 
     def __init__(self):
+        # spatial dimension of the mesh
+        self.dim = None
         # storage for the nodes
         self.nodes = []
         # storage for the elements
@@ -468,6 +468,8 @@ class OneDimMesh(Mesh):
     def __init__(self, N, L, L0=0):
         # call parent constructor
         super().__init__()
+        # spatial dimension
+        self.dim = 1
         # generate x
         x = np.linspace(L0, L0+L, N, endpoint=True)
         # add equidistant nodes
@@ -548,6 +550,8 @@ class TriangleMesh(Mesh):
     def __init__(self, Nx, Ny, Lx, Ly, Lx0=0, Ly0=0):
         # call parent constructor
         super().__init__()
+        # spatial dimension
+        self.dim = 2
         # generate x,y-space
         x = np.linspace(Lx0, Lx0+Lx, Nx, endpoint=True)
         y = np.linspace(Ly0, Lx0+Ly, Ny, endpoint=True)
