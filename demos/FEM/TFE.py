@@ -6,11 +6,10 @@ import os
 import sys
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, Equation
-from bice.time_steppers import RungeKuttaFehlberg45, RungeKutta4, BDF2, BDF
 from bice.constraints import *
 from bice.solvers import *
 from bice.fem import FiniteElementEquation, OneDimMesh
-
+from bice.profiling import Profiler
 
 class ThinFilmEquation(FiniteElementEquation):
     r"""
@@ -34,12 +33,15 @@ class ThinFilmEquation(FiniteElementEquation):
         # build finite element matrices
         self.build_FEM_matrices()
 
+    # definition of the residual integrand
+    def residual_def(self, x, u, dudx, test, dtestdx):
+        return dudx[0]*dtestdx[0] - self.djp(u)
+
     # definition of the equation, using finite element method
-    def rhs(self, h):
-        # k = 2 * np.pi / self.L
-        # sin = np.cos(k*self.x[0])
-        # return self.laplace.dot(sin) - self.M.dot(h)
-        return -self.laplace.dot(h) - self.M.dot(self.djp(h))
+    def rhs(self, u):
+        # call residual assembly loop
+        # return self.assemble_residuals(self.residual_def, u)
+        return -self.laplace.dot(u) - self.M.dot(self.djp(u))
 
     # disjoining pressure
     def djp(self, h):
@@ -130,7 +132,9 @@ fig.savefig("out/img/{:05d}.png".format(plotID))
 ax.clear()
 plotID += 1
 
-for i in range(30):
+Profiler.start()
+
+for i in range(10):
 
     # solve
     print("solving")
@@ -149,3 +153,6 @@ for i in range(30):
     fig.savefig("out/img/{:05d}.png".format(plotID))
     ax.clear()
     plotID += 1
+
+
+Profiler.print_summary()

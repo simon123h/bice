@@ -80,6 +80,50 @@ class FiniteElementEquation(Equation):
         self.laplace = scipy.sparse.csr_matrix(self.laplace)
         self.nabla = [scipy.sparse.csr_matrix(n) for n in self.nabla]
 
+    # Assemble the residuals from an external definition of the integrand in
+    # res = \int dx residual_definition(x, u dudx, test, dtestdx),
+    # similar to building the matrices
+    # The residuals will have to be assembled using this method if they cannot
+    # be computed with the FEM matrices alone.
+    @profile
+    def assemble_residuals(self, residuals_definition, u):
+        # empty result variable
+        res = np.zeros(self.shape).T
+        # transpose so node index comes first
+        uT = u.T
+        # store the global indices of the nodes
+        for i, n in enumerate(self.mesh.nodes):
+            n.index = i
+        # for every element
+        for element in self.mesh.elements:
+            # spatial integration loop
+            for s, weight in element.integration_points:
+                # premultiply weight with coordinate transformation determinant
+                weight *= element.transformation_det
+                # evaluate the shape functions, test functions are identical to shape functions
+                test = shape = element.shape(s)
+                dtestdx = dshapedx = element.dshapedx(s).T
+                # interpolate...
+                #  ...spatial coordinates
+                x = sum([n.x*s for n, s in zip(element.nodes, shape)])
+                #  ...unknowns
+                u = sum([uT[n.index]*s for n, s in zip(element.nodes, shape)])
+                # ...spatial derivative of unknowns
+                dudx = sum(
+                    [uT[n.index]*ds for n, ds in zip(element.nodes, dshapedx)])
+                # for every node in the element
+                for i, node in enumerate(element.nodes):
+                    # calculate residual contribution
+                    residual_contribution = residuals_definition(
+                        x, u, dudx, test[i], dtestdx[i])
+                    # cancel the contributions of pinned values (Dirichlet conditions)
+                    if node.pinned_values:
+                        residual_contribution[list(node.pinned_values)] = 0
+                    # accumulate the weighted residual contributions to the integral
+                    res[node.index] += residual_contribution * weight
+        # return the result
+        return res.T
+
     # adapt the mesh to the variables
     @profile
     def adapt(self):
@@ -117,10 +161,12 @@ class FiniteElementEquation(Equation):
     def copy_unknowns_to_nodal_values(self, u=None):
         if u is None:
             u = self.u
+        # transpose for correct shape
+        u = u.T
         # loop over the nodes
         for n, node in enumerate(self.mesh.nodes):
             # assign the unknowns to the node, transpose for correct shape
-            node.u = u.T[n]
+            node.u = u[n]
 
     # copy the values of the nodes to the equation's unknowns
     @profile
