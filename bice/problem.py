@@ -402,6 +402,6 @@ class Problem():
                     for eq in self.equations:
                         eq.plot(eigvec_ax)
                         # adjust the y-label, TODO: do this only for 1d-equations
-                        eigvec_ax.set_ylabel("eigenvector")
+                        eigvec_ax.set_ylabel("first eigenvector")
                     # reassign the correct unknowns to the problem
                     self.u = u_old
