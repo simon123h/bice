@@ -124,6 +124,32 @@ class FiniteElementEquation(Equation):
         # return the result
         return res.T
 
+    # evaluate the integral of a given function I = \int f(u) dx on the mesh
+    @profile
+    def integrate(self, f, u):
+        # integral will be accumulated in this variable
+        result = 0
+        # transpose so node index comes first
+        uT = u.T
+        # store the global indices of the nodes
+        for i, n in enumerate(self.mesh.nodes):
+            n.index = i
+        # for every element
+        for element in self.mesh.elements:
+            # spatial integration loop
+            for s, weight in element.integration_points:
+                # premultiply weight with coordinate transformation determinant
+                weight *= element.transformation_det
+                # evaluate the shape functions
+                shape = element.shape(s)
+                # interpolate spatial coordinates and unknowns
+                x = sum([n.x*s for n, s in zip(element.nodes, shape)])
+                u = sum([uT[n.index]*s for n, s in zip(element.nodes, shape)])
+                # accumulate weighted values to the integral
+                result += f(x, u) * weight
+        # return the integral value
+        return result
+
     # adapt the mesh to the variables
     @profile
     def adapt(self):

@@ -72,8 +72,10 @@ class ThinFilm(Problem):
         self.continuation_parameter = (self.tfe, "kappa")
 
     def norm(self):
+        # calculate the L2-norm by integration
         h, xi = self.tfe.u
-        return np.linalg.norm(h)
+        mesh_area = self.tfe.integrate(lambda x, h: 1, h)
+        return self.tfe.integrate(lambda x, h: h**2, h) / mesh_area
 
 
 # create output folder
