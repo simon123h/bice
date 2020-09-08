@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import shutil
 import os
@@ -38,9 +39,6 @@ class ThinFilmEquation(FiniteElementEquation):
 
     # definition of the equation, using finite element method
     def rhs(self, h):
-        # k = 2 * np.pi / self.L
-        # sin = np.cos(k*self.x[0])
-        # return self.laplace.dot(sin) - self.M.dot(h)
         return -self.laplace.dot(h) - self.M.dot(self.djp(h))
 
     # disjoining pressure
@@ -57,13 +55,16 @@ class ThinFilmEquation(FiniteElementEquation):
         ax.set_xlabel("x")
         ax.set_ylabel("y")
         ax.tricontourf(x, y, h, 256, cmap="coolwarm")
-
-        for element in self.mesh.elements:
-            nodes = [n for n in element.nodes] + [element.nodes[0]]
-            xs = np.array([node.x for node in nodes]).T
-            ax.plot(xs[0], xs[1], c="black", linewidth=0.2)
-
         ax.scatter(x, y, s=0.4, c="black")
+
+        # plot the mesh
+        triangles = []
+        for i, n in enumerate(self.mesh.nodes):
+            n.index = i
+        for element in self.mesh.elements:
+            triangles.append([n.index for n in element.nodes])
+        triangulation = matplotlib.tri.Triangulation(self.x[0], self.x[1], triangles)
+        ax.triplot(triangulation, lw=0.2, color='black')
 
 
 class ThinFilm(Problem):
@@ -76,8 +77,8 @@ class ThinFilm(Problem):
         # Generate the volume constraint
         self.volume_constraint = VolumeConstraint(self.tfe)
         # Generate the translation constraints
-        self.translation_constraint_x = TranslationConstraint(self.tfe, 0)
-        self.translation_constraint_y = TranslationConstraint(self.tfe, 1)
+        self.translation_constraint_x = TranslationConstraint(self.tfe, direction=0)
+        self.translation_constraint_y = TranslationConstraint(self.tfe, direction=1)
 
 
 # create output folder
@@ -85,19 +86,19 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=50, L=40)
+problem = ThinFilm(N=60, L=60)
 
 # Impose the constraints
 problem.add_equation(problem.volume_constraint)
-# problem.add_equation(problem.translation_constraint_x)
-# problem.add_equation(problem.translation_constraint_y)
+problem.add_equation(problem.translation_constraint_x)
+problem.add_equation(problem.translation_constraint_y)
 
 
 # refinement thresholds
-problem.tfe.mesh.max_refinement_error = 1e-2
-problem.tfe.mesh.min_refinement_error = 1e-3
-problem.tfe.mesh.min_element_dx = 0.2
-# problem.tfe.mesh.max_element_dx = 2
+problem.tfe.mesh.max_refinement_error = 1e-1
+problem.tfe.mesh.min_refinement_error = 1e-2
+# problem.tfe.mesh.min_element_dx = 0.2
+problem.tfe.mesh.max_element_dx = 1e10
 
 # problem.newton_solver = MyNewtonSolver()
 # problem.newton_solver.convergence_tolerance = 1e-6
@@ -114,7 +115,7 @@ ax.clear()
 plotID += 1
 
 Profiler.start()
-for i in range(10):
+for i in range(30):
 
     # solve
     print("solving")
