@@ -94,7 +94,7 @@ class TranslationConstraint(Equation):
         res[eq_idx] = velocity * eq_dudx
         # calculate the difference in center of masses between current
         # and previous unknowns of the reference equation
-        #res[self.idx] = np.dot(eq.x, eq_u-eq_u_old)
+        # res[self.idx] = np.dot(eq.x[self.direction], eq_u-eq_u_old)
         res[self.idx] = np.dot(eq_dudx, eq_u - eq_u_old)
         return res
 
