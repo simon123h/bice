@@ -5,20 +5,15 @@ import shutil
 import os
 import sys
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, Equation
-from bice.time_steppers import RungeKuttaFehlberg45, RungeKutta4, BDF2, BDF
-from bice.constraints import *
-from bice.solvers import *
+from bice import Problem
 from bice.fem import FiniteElementEquation, OneDimMesh
+from bice.constraints import TranslationConstraint, VolumeConstraint
 
 
 class ThinFilmEquation(FiniteElementEquation):
     r"""
      Finite element implementation of the 1-dimensional Thin-Film Equation
-     equation
-     dh/dt = d/dx (h^3 d/dx ( - d^2/dx^2 h - Pi(h) ))
-     with the disjoining pressure:
-     Pi(h) = 1/h^3 - 1/h^6
+     on an elastic substrate.
      """
 
     def __init__(self, N, L):
@@ -27,25 +22,23 @@ class ThinFilmEquation(FiniteElementEquation):
         self.sigma = 0.1
         self.kappa = -2
         # setup the mesh
-        self.L = L
         self.mesh = OneDimMesh(N, L, -L/2)
         # initial condition
         h0 = 60
         a = 3/20. / (h0-1)
-        for node in self.mesh.nodes:
-            x = node.x[0]
-            xi = 0
-            h = np.maximum(-a*x*x + h0, 1)
-            node.u = np.array([h, xi])
-        self.copy_nodal_values_to_unknowns()
+        x = self.x
+        h = np.maximum(-a*x*x + h0, 1)
+        xi = h*0
+        self.u = np.array([h, xi])
         # build finite element matrices
         self.build_FEM_matrices()
 
     # definition of the equation, using finite element method
-
     def rhs(self, u):
         h, xi = u
+        # h residual
         r1 = -self.laplace.dot(h+xi) - self.M.dot(self.djp(h))
+        # xi residual
         r2 = -self.laplace.dot(h+xi) - self.sigma * \
             self.laplace.dot(xi) + 10**self.kappa * self.M.dot(xi)
         return np.array([r1, r2])
@@ -54,15 +47,12 @@ class ThinFilmEquation(FiniteElementEquation):
     def djp(self, h):
         return 1./h**6 - 1./h**3
 
-    def first_spatial_derivative(self, u, direction=0):
-        return self.nabla[direction].dot(u)
-
     def plot(self, ax):
         ax.set_xlabel("x")
         ax.set_ylabel("solution h(x,t)")
         h, xi = self.u
-        ax.plot(self.x[0], h+xi, label="liquid")
-        ax.plot(self.x[0], xi, label="substrate")
+        ax.plot(self.x[0], h+xi, marker="+", markersize=5, label="liquid")
+        ax.plot(self.x[0], xi, marker="+", markersize=5, label="substrate")
         ax.legend()
 
 
@@ -85,6 +75,7 @@ class ThinFilm(Problem):
         h, xi = self.tfe.u
         return np.linalg.norm(h)
 
+
 # create output folder
 shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
@@ -92,29 +83,28 @@ os.makedirs("out/img", exist_ok=True)
 # create problem
 problem = ThinFilm(N=200, L=1000)
 
-# Impose the constraints
+# impose the constraints
 problem.add_equation(problem.volume_constraint_h)
 problem.add_equation(problem.volume_constraint_xi)
 problem.add_equation(problem.translation_constraint)
 
-# refinement thresholds
-problem.tfe.mesh.max_refinement_error = 1e-3
-problem.tfe.mesh.min_refinement_error = 1e-4
-problem.tfe.mesh.min_element_dx = 1e-12
-
-# problem.newton_solver = MyNewtonSolver()
-# problem.newton_solver.convergence_tolerance = 1e-6
+# mesh refinement settings
+problem.tfe.mesh.max_refinement_error = 1e-1
+problem.tfe.mesh.min_refinement_error = 1e-2
+problem.tfe.mesh.min_element_dx = 1
 
 # create figure
-fig, ax = plt.subplots(2, 2, figsize=(16, 9))
+fig, ax = plt.subplots(1, 1, figsize=(16, 9))
 plotID = 0
 
-# plot
-problem.plot(ax)
+# plot initial condition
+problem.tfe.plot(ax)
 fig.savefig("out/img/{:05d}.png".format(plotID))
+ax.clear()
 plotID += 1
 
-for i in range(1):
+# do some solving
+for i in range(5):
     # solve
     print("solving")
     problem.newton_solve()
@@ -123,28 +113,31 @@ for i in range(1):
     problem.tfe.adapt()
     # plot
     print("plotting")
-    problem.plot(ax)
+    problem.tfe.plot(ax)
     fig.savefig("out/img/{:05d}.png".format(plotID))
+    ax.clear()
     plotID += 1
 
-
+# create new figure
+plt.close(fig)
+fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 
 # start parameter continuation
+print("starting continuation")
 problem.continuation_stepper.ds = -1e-2
-problem.continuation_stepper.ndesired_newton_steps = 3
 problem.always_check_eigenvalues = False
 problem.always_locate_bifurcations = False
 problem.neigs = 0
-
 
 n = 0
 plotevery = 10
 while problem.tfe.kappa < 0:
     # perform continuation step
     problem.continuation_step()
-    # problem.tfe.adapt()
+    problem.tfe.adapt()
     n += 1
-    print("step #:", n, " ds:", problem.continuation_stepper.ds)
+    print("step #:", n, " ds:", problem.continuation_stepper.ds,
+          " kappa:", problem.tfe.kappa)
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
