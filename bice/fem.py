@@ -399,12 +399,12 @@ class TriangleElement2d(Element):
     # returns a list of all shape function derivatives with
     # respect to the global coordinate x of this element
     # TODO: are these also correct or should we go with the default implementation?
-    # def dshapedx(self, s):
-    #     return np.array([
-    #         [self.y1-self.y2, self.x2-self.x1],
-    #         [self.y2-self.y0, self.x0-self.x2],
-    #         [self.y0-self.y1, self.x1-self.x0]
-    #     ]) / self.transformation_det
+    def dshapedx(self, s):
+        return np.array([
+            [self.y1-self.y2, self.x2-self.x1],
+            [self.y2-self.y0, self.x0-self.x2],
+            [self.y0-self.y1, self.x1-self.x0]
+        ]) / self.transformation_det
 
     # if the orientation is positive/negative, the triangle is oriented anticlockwise/clockwise
     def orientation(self):
