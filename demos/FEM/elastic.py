@@ -81,6 +81,9 @@ class ThinFilm(Problem):
         # assign the continuation parameter
         self.continuation_parameter = (self.tfe, "kappa")
 
+    def norm(self):
+        h, xi = self.tfe.u
+        return np.linalg.norm(h)
 
 # create output folder
 shutil.rmtree("out", ignore_errors=True)
@@ -107,32 +110,21 @@ fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 plotID = 0
 
 # plot
-problem.tfe.plot(ax[0, 0])
+problem.plot(ax)
 fig.savefig("out/img/{:05d}.png".format(plotID))
-ax[0, 0].clear()
 plotID += 1
 
 for i in range(1):
-
     # solve
     print("solving")
     problem.newton_solve()
-    # plot
-    # problem.tfe.plot(ax[0,0])
-    # fig.savefig("out/img/{:05d}.png".format(plotID))
-    # ax[0, 0].clear()
-    # plotID += 1
     # adapt
     print("adapting")
     problem.tfe.adapt()
-    # problem.tfe.adapt()
     # plot
     print("plotting")
-    problem.tfe.plot(ax[0, 0])
+    problem.plot(ax)
     fig.savefig("out/img/{:05d}.png".format(plotID))
-    np.savetxt("out/{:05d}.dat".format(plotID),
-               np.concatenate((problem.tfe.x, problem.tfe.u), axis=0).T)
-    ax[0, 0].clear()
     plotID += 1
 
 
@@ -146,13 +138,15 @@ problem.neigs = 0
 
 
 n = 0
+plotevery = 10
 while problem.tfe.kappa < 0:
     # perform continuation step
     problem.continuation_step()
-    problem.tfe.adapt()
+    # problem.tfe.adapt()
     n += 1
     print("step #:", n, " ds:", problem.continuation_stepper.ds)
     # plot
-    problem.plot(ax)
-    fig.savefig("out/img/{:05d}.svg".format(plotID))
-    plotID += 1
+    if n % plotevery == 0:
+        problem.plot(ax)
+        fig.savefig("out/img/{:05d}.svg".format(plotID))
+        plotID += 1
