@@ -228,7 +228,7 @@ class Element:
     # returns a list of all shape function derivatives with
     # respect to the global coordinate x of this element
     def dshapedx(self, s):
-        # TODO: is it correct to use the inverse transformation matrix?
+        # TODO: is it correct to use the transposed inverse transformation matrix?
         return self.transformation_matrix_inv.T.dot(self.dshape(s))
 
 
@@ -679,6 +679,7 @@ class TriangleMesh(Mesh):
                     i+1, TriangleElement2d([node_b, node_c, node_m]))
                 # if both node_a and node_b were at a border, node_m is also at a border
                 if node_a.is_boundary_node and node_b.is_boundary_node:
+                    # TODO: if we don't unrefine boundary nodes, we should not refine them either
                     node_m.is_boundary_node = True
                 else:
                     # else, find the element, that shares the edge: node_a--node_b
