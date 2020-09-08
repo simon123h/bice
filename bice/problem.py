@@ -56,6 +56,8 @@ class Problem():
         self.always_check_eigenvalues = False
         # should we always try to locate bifurcations with an augmented system?
         self.always_locate_bifurcations = False
+        # should sparse matrices be assumed when solving linear systems?
+        self.use_sparse_matrices = True
         # TODO: maybe use some substructure for all the settings (tolerances, neigs, booleans...)
 
     # The dimension of the system
