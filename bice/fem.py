@@ -662,8 +662,14 @@ class TriangleMesh(Mesh):
             node_c = self.elements[i].nodes[2]
             # refine if all of the nodes were marked for refinement
             if node_a.should_be_refined and node_b.should_be_refined and node_c.should_be_refined:
+                # if both node_a and node_b were at a border, node_m is also at a border
+                if node_a.is_boundary_node and node_b.is_boundary_node:
+                    # if we don't unrefine boundary nodes, we should not refine them either
+                    i += 1
+                    continue
                 # check if element has minimal size already
                 if self.elements[i].max_len <= 2 * self.min_element_dx:
+                    i += 1
                     continue
                 # generate new node in the middle of the first two nodes (longest edge)
                 x_m = (node_a.x + node_b.x) / 2
@@ -681,27 +687,22 @@ class TriangleMesh(Mesh):
                     i, TriangleElement2d([node_c, node_a, node_m]))
                 self.elements.insert(
                     i+1, TriangleElement2d([node_b, node_c, node_m]))
-                # if both node_a and node_b were at a border, node_m is also at a border
-                if node_a.is_boundary_node and node_b.is_boundary_node:
-                    # TODO: if we don't unrefine boundary nodes, we should not refine them either
-                    node_m.is_boundary_node = True
-                else:
-                    # else, find the element, that shares the edge: node_a--node_b
-                    neighbor_element = [
-                        e for e in node_a.elements if e in node_b.elements]
-                    # if no neighboring element was found, we must be at a border
-                    if neighbor_element:
-                        neighbor_element = neighbor_element[0]
-                        neighbor_node = [
-                            n for n in neighbor_element.nodes if n not in [node_a, node_b]][0]
-                        index = self.elements.index(neighbor_element)
-                        # delete old element
-                        self.elements.pop(index).purge()
-                        # generate two new elements and insert at the position of the old element
-                        self.elements.insert(
-                            index, TriangleElement2d([neighbor_node, node_m, node_a]))
-                        self.elements.insert(
-                            index+1, TriangleElement2d([node_b, node_m, neighbor_node]))
+                # else, find the element, that shares the edge: node_a--node_b
+                neighbor_element = [
+                    e for e in node_a.elements if e in node_b.elements]
+                # if no neighboring element was found, we must be at a border
+                if neighbor_element:
+                    neighbor_element = neighbor_element[0]
+                    neighbor_node = [
+                        n for n in neighbor_element.nodes if n not in [node_a, node_b]][0]
+                    index = self.elements.index(neighbor_element)
+                    # delete old element
+                    self.elements.pop(index).purge()
+                    # generate two new elements and insert at the position of the old element
+                    self.elements.insert(
+                        index, TriangleElement2d([neighbor_node, node_m, node_a]))
+                    self.elements.insert(
+                        index+1, TriangleElement2d([node_b, node_m, neighbor_node]))
                 # skip refinement of the newly created elements
                 i += 2
             i += 1
