@@ -365,57 +365,6 @@ class TriangleElement2d(Element):
         return ang
 
 
-# TODO: it doesn't seem that we'll be using the RectangleMesh / RectangleElements
-#       due to the hanging nodes problem, remove these related classes therefore?
-class RectangleElement2d(Element):
-    """
-    Two-dimensional rectangular elements with linear shape functions
-    """
-
-    def __init__(self, nodes):
-        super().__init__(nodes)
-        self.x0 = self.nodes[0].x[0]
-        self.y0 = self.nodes[0].x[1]
-        self.x1 = self.nodes[2].x[0]
-        self.y1 = self.nodes[2].x[1]
-        # transformation matrix from local to global coordinates
-        self.transformation_matrix = np.array([
-            [self.x1-self.x0, 0],
-            [0, self.y1-self.y0]
-        ])
-        # inverse of transformation matrix
-        self.transformation_matrix_inv = np.linalg.inv(
-            self.transformation_matrix)
-        # corresponding determinant of transformation
-        self.transformation_det = (self.x1-self.x0)*(self.y1-self.y0)
-        # exact polynomial integration using Gaussian quadrature
-        # see: https://de.wikipedia.org/wiki/Gau%C3%9F-Quadratur#Gau%C3%9F-Legendre-Integration
-        # and: https://link.springer.com/content/pdf/bbm%3A978-3-540-32609-0%2F1.pdf
-        a = 1. / 2.
-        b = np.sqrt(1./3.) / 2
-        w = 1. / 2.
-        self.integration_points = [
-            (np.array([a-b, a-b]), w),
-            (np.array([a+b, a-b]), w),
-            (np.array([a-b, a+b]), w),
-            (np.array([a+b, a+b]), w)
-        ]
-
-    # 2d linear rectangle shape functions
-    def shape(self, s):
-        sx, sy = s
-        # four shape functions, counter-clockwise order of nodes
-        return [(1-sx)*(1-sy), (1-sx)*sy, sx*sy, sx*(1-sy)]
-
-    # 2d linear shape functions within the element
-    def dshape(self, s):
-        sx, sy = s
-        return [
-            [sy-1, -sy, sy, 1-sy],
-            [sx-1, 1-sx, sx, -sx]
-        ]
-
-
 class Mesh:
     """
     Base class for meshes
@@ -706,33 +655,3 @@ class TriangleMesh(Mesh):
                 # skip refinement of the newly created elements
                 i += 2
             i += 1
-
-
-class RectangleMesh(Mesh):
-    """
-    Two-dimensional rectangular mesh with
-    rectangular elements and linear shape functions
-    """
-
-    def __init__(self, Nx, Ny, Lx, Ly, Lx0=0, Ly0=0):
-        # call parent constructor
-        super().__init__()
-        # generate x,y-space
-        x = np.linspace(Lx0, Lx0+Lx, Nx, endpoint=True)
-        y = np.linspace(Ly0, Lx0+Ly, Ny, endpoint=True)
-        # add equidistant nodes
-        for i in range(Nx):
-            for j in range(Ny):
-                pos = np.array([x[i], y[j]])
-                self.nodes.append(Node(pos))
-        # generate the elements
-        for i in range(Nx-1):
-            for j in range(Ny-1):
-                # using counter-clockwise order of the nodes
-                nodes = [
-                    self.nodes[i*Nx+j],
-                    self.nodes[i*Nx+(j+1)],
-                    self.nodes[(i+1)*Nx+(j+1)],
-                    self.nodes[(i+1)*Nx+j]
-                ]
-                self.elements.append(RectangleElement2d(nodes))
