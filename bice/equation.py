@@ -108,7 +108,7 @@ class Equation:
         N = u.size
         J = np.zeros((N, N))
         if not use_central_differences:
-            f0 = self.rhs(u)
+            f0 = self.rhs(u).ravel()
         u1 = u.copy().ravel()
         # uncoupled equations require u1 to be reshaped the self.shape before calling rhs(u1)
         shape = u.shape if self.is_coupled else self.shape
