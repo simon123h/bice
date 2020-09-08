@@ -98,9 +98,11 @@ class FiniteElementEquation(Equation):
     @profile
     def refinement_error_estimate(self):
         # calculate curvature
-        # TODO: use weighted curvature of all variables, not just the 0th
-        u = self.u if len(self.shape) == 1 else self.u[0]
-        curvature = self.laplace.dot(u)
+        # TODO: use weighted curvature of all variables, not just the sum
+        curvature = 0
+        for n in range(self.nvariables):
+            u = self.u if len(self.shape) == 1 else self.u[n]
+            curvature += np.abs(self.laplace.dot(u))
         # store curvature in nodes
         for node, c in zip(self.mesh.nodes, curvature):
             # get maximal distance to neighbour node
@@ -226,7 +228,8 @@ class Element:
     # returns a list of all shape function derivatives with
     # respect to the global coordinate x of this element
     def dshapedx(self, s):
-        return self.transformation_matrix_inv.dot(self.dshape(s))
+        # TODO: is it correct to use the inverse transformation matrix?
+        return self.transformation_matrix_inv.T.dot(self.dshape(s))
 
 
 class Element1d(Element):
@@ -294,7 +297,7 @@ class TriangleElement2d(Element):
             self.x1-self.x0)*(self.y2-self.y0)-(self.x2-self.x0)*(self.y1-self.y0)
         # calculate invert of transformation matrix
         self.transformation_matrix_inv = np.array([[self.transformation_matrix[1, 1], -self.transformation_matrix[0, 1]],
-                                                   [-self.transformation_matrix[1, 0], self.transformation_matrix[0, 0]]]) / self.transformation_det
+                  [-self.transformation_matrix[1, 0], self.transformation_matrix[0, 0]]]) / self.transformation_det
 
         # exact polynomial integration using Gaussian quadrature
         # see: https://de.wikipedia.org/wiki/Gau%C3%9F-Quadratur#Gau%C3%9F-Legendre-Integration
@@ -319,6 +322,15 @@ class TriangleElement2d(Element):
             [-1, 1, 0],
             [-1, 0, 1]
         ]
+
+    # returns a list of all shape function derivatives with
+    # respect to the global coordinate x of this element
+    # def dshapedx(self, s):
+    #     return np.array([
+    #         [self.y1-self.y2, self.y2-self.y0, self.y0-self.y1],
+    #         [self.x2-self.x1, self.x0-self.x2, self.x1-self.x0]
+    #     ]) / self.transformation_det
+
 
     # if the orientation is positive/negative, the triangle is oriented anticlockwise/clockwise
     def orientation(self):
@@ -368,7 +380,8 @@ class RectangleElement2d(Element):
             [0, self.y1-self.y0]
         ])
         # inverse of transformation matrix
-        self.transformation_matrix_inv = np.linalg.inv(self.transformation_matrix)
+        self.transformation_matrix_inv = np.linalg.inv(
+            self.transformation_matrix)
         # corresponding determinant of transformation
         self.transformation_det = (self.x1-self.x0)*(self.y1-self.y0)
         # exact polynomial integration using Gaussian quadrature
@@ -647,7 +660,7 @@ class TriangleMesh(Mesh):
             if node_a.should_be_refined and node_b.should_be_refined and node_c.should_be_refined:
                 # check if element has minimal size already
                 if self.elements[i].max_len <= 2 * self.min_element_dx:
-                    break
+                    continue
                 # generate new node in the middle of the first two nodes (longest edge)
                 x_m = (node_a.x + node_b.x) / 2
                 node_m = Node(x_m)
@@ -681,9 +694,9 @@ class TriangleMesh(Mesh):
                         self.elements.pop(index).purge()
                         # generate two new elements and insert at the position of the old element
                         self.elements.insert(
-                            index, TriangleElement2d([neighbor_node, node_a, node_m]))
+                            index, TriangleElement2d([neighbor_node, node_m, node_a]))
                         self.elements.insert(
-                            index+1, TriangleElement2d([node_b, neighbor_node, node_m]))
+                            index+1, TriangleElement2d([node_b, node_m, neighbor_node]))
                 # skip refinement of the newly created elements
                 i += 2
             i += 1
