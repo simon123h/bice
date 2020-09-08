@@ -23,12 +23,14 @@ class ThinFilmEquation(FiniteElementEquation):
 
     def __init__(self, N, L):
         super().__init__(shape=(2, N))
-        # parameters: none
+        # parameters
+        self.sigma = 0.1
+        self.kappa = -2
         # setup the mesh
         self.L = L
         self.mesh = OneDimMesh(N, L, -L/2)
         # initial condition
-        h0 = 6
+        h0 = 60
         a = 3/20. / (h0-1)
         for node in self.mesh.nodes:
             x = node.x[0]
@@ -40,11 +42,12 @@ class ThinFilmEquation(FiniteElementEquation):
         self.build_FEM_matrices()
 
     # definition of the equation, using finite element method
+
     def rhs(self, u):
         h, xi = u
         r1 = -self.laplace.dot(h+xi) - self.M.dot(self.djp(h))
-        r2 = -self.laplace.dot(h+xi) - 1. * \
-            self.laplace.dot(xi) + 1. * self.M.dot(xi)
+        r2 = -self.laplace.dot(h+xi) - self.sigma * \
+            self.laplace.dot(xi) + 10**self.kappa * self.M.dot(xi)
         return np.array([r1, r2])
 
     # disjoining pressure
@@ -58,8 +61,8 @@ class ThinFilmEquation(FiniteElementEquation):
         ax.set_xlabel("x")
         ax.set_ylabel("solution h(x,t)")
         h, xi = self.u
-        ax.plot(self.x[0], h+xi, marker="x", label="liquid")
-        ax.plot(self.x[0], xi, marker="x", label="substrate")
+        ax.plot(self.x[0], h+xi, label="liquid")
+        ax.plot(self.x[0], xi, label="substrate")
         ax.legend()
 
 
@@ -71,9 +74,12 @@ class ThinFilm(Problem):
         self.tfe = ThinFilmEquation(N, L)
         self.add_equation(self.tfe)
         # Generate the volume constraint
-        self.volume_constraint = VolumeConstraint(self.tfe)
+        self.volume_constraint_h = VolumeConstraint(self.tfe, variable=0)
+        self.volume_constraint_xi = VolumeConstraint(self.tfe, variable=1)
         # Generate the translation constraint
         self.translation_constraint = TranslationConstraint(self.tfe)
+        # assign the continuation parameter
+        self.continuation_parameter = (self.tfe, "kappa")
 
 
 # create output folder
@@ -81,38 +87,40 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=200, L=100)
+problem = ThinFilm(N=200, L=1000)
 
 # Impose the constraints
-problem.add_equation(problem.volume_constraint)
+problem.add_equation(problem.volume_constraint_h)
+problem.add_equation(problem.volume_constraint_xi)
 problem.add_equation(problem.translation_constraint)
 
 # refinement thresholds
-problem.tfe.mesh.max_refinement_error = 1e-2
-problem.tfe.mesh.min_refinement_error = 1e-3
+problem.tfe.mesh.max_refinement_error = 1e-3
+problem.tfe.mesh.min_refinement_error = 1e-4
+problem.tfe.mesh.min_element_dx = 1e-12
 
 # problem.newton_solver = MyNewtonSolver()
 # problem.newton_solver.convergence_tolerance = 1e-6
 
 # create figure
-fig, ax = plt.subplots(1, 1, figsize=(16, 9))
+fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 plotID = 0
 
 # plot
-problem.tfe.plot(ax)
+problem.tfe.plot(ax[0, 0])
 fig.savefig("out/img/{:05d}.png".format(plotID))
-ax.clear()
+ax[0, 0].clear()
 plotID += 1
 
-for i in range(10):
+for i in range(1):
 
     # solve
     print("solving")
     problem.newton_solve()
     # plot
-    # problem.tfe.plot(ax)
+    # problem.tfe.plot(ax[0,0])
     # fig.savefig("out/img/{:05d}.png".format(plotID))
-    # ax.clear()
+    # ax[0, 0].clear()
     # plotID += 1
     # adapt
     print("adapting")
@@ -120,7 +128,31 @@ for i in range(10):
     # problem.tfe.adapt()
     # plot
     print("plotting")
-    problem.tfe.plot(ax)
+    problem.tfe.plot(ax[0, 0])
     fig.savefig("out/img/{:05d}.png".format(plotID))
-    ax.clear()
+    np.savetxt("out/{:05d}.dat".format(plotID),
+               np.concatenate((problem.tfe.x, problem.tfe.u), axis=0).T)
+    ax[0, 0].clear()
+    plotID += 1
+
+
+
+# start parameter continuation
+problem.continuation_stepper.ds = -1e-2
+problem.continuation_stepper.ndesired_newton_steps = 3
+problem.always_check_eigenvalues = False
+problem.always_locate_bifurcations = False
+problem.neigs = 0
+
+
+n = 0
+while problem.tfe.kappa < 0:
+    # perform continuation step
+    problem.continuation_step()
+    problem.tfe.adapt()
+    n += 1
+    print("step #:", n, " ds:", problem.continuation_stepper.ds)
+    # plot
+    problem.plot(ax)
+    fig.savefig("out/img/{:05d}.svg".format(plotID))
     plotID += 1
