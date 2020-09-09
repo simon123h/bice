@@ -262,12 +262,6 @@ class Element:
         # add self to element list in nodes
         for node in self.nodes:
             node.elements.append(self)
-        # maximum distance between two nodes within the element
-        self.max_len = 0
-        for node1 in self.nodes:
-            for node2 in self.nodes:
-                dx = np.linalg.norm(node1.x - node2.x)
-                self.max_len = max(self.max_len, dx)
         # transformation matrix from local coordinates x to local coordinates s: x = T * s
         # will be overwritten for specific element geometries
         self.transformation_matrix = np.eye(self.dim)
@@ -349,10 +343,16 @@ class TriangleElement2d(Element):
 
     @profile
     def __init__(self, nodes):
+        # calculate edge lengths of the triangle
+        edge_lengths = [np.linalg.norm(
+            nodes[(i+1) % 3].x-nodes[i].x) for i in range(3)]
+        # sort nodes so that the longest edge comes first
+        max_index = edge_lengths.index(max(edge_lengths))
+        nodes = nodes[max_index:] + nodes[:max_index]
+        self.edge_lengths = edge_lengths[max_index:] + edge_lengths[:max_index]
+        # call parent constructor
         super().__init__(nodes)
-        # sort so that the longest edge comes first
-        while np.linalg.norm(nodes[1].x-nodes[0].x) < np.linalg.norm(nodes[2].x-nodes[1].x) or np.linalg.norm(nodes[1].x-nodes[0].x) < np.linalg.norm(nodes[0].x-nodes[2].x):
-            nodes.append(nodes.pop(0))
+        # abbreviations for the coordinates
         self.x0 = nodes[0].x[0]
         self.y0 = nodes[0].x[1]
         self.x1 = nodes[1].x[0]
@@ -593,27 +593,23 @@ class TriangleMesh(Mesh):
         # unrefinement loop, using node fusion
         i = 0
         while i < len(self.elements):
+            # store reference to the current element
+            elem1 = self.elements[i]
             # store reference to the nodes
-            node_a = self.elements[i].nodes[0]
-            node_b = self.elements[i].nodes[1]
-            node_c = self.elements[i].nodes[2]
+            node_a = elem1.nodes[0]
+            node_b = elem1.nodes[1]
+            node_c = elem1.nodes[2]
             # unrefine if all of the nodes were marked for unrefinement
             if node_a.can_be_unrefined and node_b.can_be_unrefined and node_c.can_be_unrefined:
                 # find the nodes with smallest distance
-                my_nodes = [node_a, node_b, node_c, node_a]
-                dist = [np.linalg.norm(my_nodes[i+1].x-my_nodes[i].x)
-                        for i in range(3)]
-                index = dist.index(min(dist))
-                node_b = my_nodes[index]
-                node_c = my_nodes[index+1]
-                # for now, we assume it is node_b and node_c
+                min_index = elem1.edge_lengths.index(min(elem1.edge_lengths))
+                node_b = elem1.nodes[min_index]
+                node_c = elem1.nodes[(min_index+1) % 3]
                 # check if they're both boundary nodes
                 if node_b.is_boundary_node or node_c.is_boundary_node:
                     # TODO: we could deal with this case, though...
                     i += 1
                     continue
-                # store reference to the current element
-                elem1 = self.elements[i]
                 # find the element that shares the edge: node_b--node_c
                 elem2 = [
                     e for e in node_b.elements if node_c in e.nodes and e is not elem1][0]
@@ -693,7 +689,7 @@ class TriangleMesh(Mesh):
                     i += 1
                     continue
                 # check if element has minimal size already
-                if self.elements[i].max_len <= 2 * self.min_element_dx:
+                if np.linalg.norm(node_a.x - node_b.x) <= 2 * self.min_element_dx:
                     i += 1
                     continue
                 # generate new node in the middle of the first two nodes (longest edge)
