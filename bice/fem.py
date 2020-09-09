@@ -626,7 +626,7 @@ class TriangleMesh(Mesh):
                 # to a list first and will (maybe) apply them later
                 replacement_elements = []
                 aborted = False  # flag whether the unrefinement is aborted
-                # for each element that surrounds the pricipal nodes
+                # for each element that surrounds the principal nodes
                 for node in [node_b, node_c]:
                     for element in node.elements:
                         if element in [elem1, elem2]:
