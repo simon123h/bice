@@ -54,6 +54,10 @@ class ThinFilmEquation(FiniteElementEquation):
         h = self.u
         ax.set_xlabel("x")
         ax.set_ylabel("y")
+        # e = self.refinement_error_estimate()
+        # e = np.minimum(e, self.mesh.max_refinement_error)
+        # e = np.maximum(e, self.mesh.min_refinement_error)
+        # ax.tricontourf(x, y, e, levels=np.linspace(0, 1.1*self.mesh.max_refinement_error, 256, endpoint=True), cmap="Reds")
         ax.tricontourf(x, y, h, 256, cmap="coolwarm")
         ax.scatter(x, y, s=0.4, c="black")
 
@@ -95,9 +99,9 @@ problem.add_equation(problem.translation_constraint_y)
 
 
 # refinement thresholds
-problem.tfe.mesh.max_refinement_error = 1e-1
-problem.tfe.mesh.min_refinement_error = 1e-2
-# problem.tfe.mesh.min_element_dx = 0.2
+problem.tfe.mesh.max_refinement_error = 0.2
+problem.tfe.mesh.min_refinement_error = 0.07
+problem.tfe.mesh.min_element_dx = 0.5
 problem.tfe.mesh.max_element_dx = 1e10
 
 # problem.newton_solver = MyNewtonSolver()

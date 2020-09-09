@@ -566,16 +566,16 @@ class TriangleMesh(Mesh):
                 # using counter-clockwise order of the nodes
                 nodes = [
                     self.nodes[i*Nx+j],
-                    self.nodes[(i+1)*Nx+(j+1)],
-                    self.nodes[(i+1)*Nx+j]
-                ]
-                self.elements.append(TriangleElement2d(nodes))
-                nodes = [
-                    self.nodes[i*Nx+j],
+                    self.nodes[(i+1)*Nx+j],
                     self.nodes[i*Nx+(j+1)],
-                    self.nodes[(i+1)*Nx+(j+1)]
+                    self.nodes[(i+1)*Nx+(j+1)],
+                    self.nodes[i*Nx+j]
                 ]
-                self.elements.append(TriangleElement2d(nodes))
+                offs = (i+j)%2
+                nodes_a = [nodes[i] for i in (0, 1, 2+offs)]
+                nodes_b = [nodes[i] for i in (1-offs, 3, 2)]
+                self.elements.append(TriangleElement2d(nodes_a))
+                self.elements.append(TriangleElement2d(nodes_b))
 
     @profile
     def adapt(self, error_estimate):
