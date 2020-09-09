@@ -163,21 +163,15 @@ class FiniteElementEquation(Equation):
     # estimate the error made in each node
     @profile
     def refinement_error_estimate(self):
-        # calculate curvature
+        # calculate integral of curvature:
+        # error = | \int d^2 u / dx^2 * test(x) dx | 
         # TODO: use weighted curvature of all variables, not just the sum
         curvature = 0
         for n in range(self.nvariables):
             u = self.u if len(self.shape) == 1 else self.u[n]
             curvature += np.abs(self.laplace.dot(u))
-        # integrate and store curvature in nodes
-        for node, c in zip(self.mesh.nodes, curvature):
-            # get mean determinant of transformation matrices of neighbour elements
-            mean_det = np.mean([e.transformation_det for e in node.elements])
-            # the error per node is curvature * mean_det
-            node.error = abs(c * mean_det)
-        # return the error per node
-        return np.array([node.error for node in self.mesh.nodes])
-
+        return curvature
+ 
     # copy the unknowns u to the values in the mesh nodes
     @profile
     def copy_unknowns_to_nodal_values(self, u=None):
