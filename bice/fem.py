@@ -61,14 +61,14 @@ class FiniteElementEquation(Equation):
                         # mass matrix
                         self.M[ni.index, nj.index] += shape[i] * \
                             test[j] * weight
+                        # stiffness matrix
+                        self.laplace[ni.index,
+                                     nj.index] -= dshapedx[i].dot(dtestdx[j]) * weight
+                        # first order derivative matrices
                         for d in range(self.mesh.dim):
-                            # stiffness matrix
-                            self.laplace[ni.index, nj.index] -= dshapedx[i][d] * \
-                                dtestdx[j][d] * weight
-                            # first order derivative matrix
                             self.nabla[d][ni.index, nj.index] += dshapedx[i][d] * \
                                 test[j] * weight
-                            # TODO: also include a matrix for the Dirichlet conditions?
+                        # TODO: also include a matrix for the Dirichlet conditions?
 
         # convert matrices to CSR-format (compressed sparse row)
         # for efficiency of arithmetic operations
