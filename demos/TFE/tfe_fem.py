@@ -70,8 +70,7 @@ class ThinFilmEquation(FiniteElementEquation):
     def mass_matrix(self):
         dynamics = np.eye(self.nvariables)
         dynamics[1, 1] = 0
-        # TODO: can M possibly remain a sparse matrix?
-        return np.kron(dynamics, self.M.todense())
+        return scipy.sparse.kron(dynamics, self.M)
 
 
 class ThinFilm(Problem):
@@ -90,7 +89,7 @@ class ThinFilm(Problem):
         # self.time_stepper = RungeKuttaFehlberg45()
         # self.time_stepper.error_tolerance = 1e1
         # self.time_stepper.dt = 3e-5
-        self.time_stepper = BDF2(dt=1e-3)
+        self.time_stepper = BDF2(dt=1e-1)
         # self.time_stepper = BDF(self)
         # assign the continuation parameter
         self.continuation_parameter = (self.volume_constraint, "fixed_volume")
