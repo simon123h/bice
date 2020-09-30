@@ -22,7 +22,7 @@ class TimePeriodicOrbitHandler(Equation):
         # the list of considered points in time (normalized time t' = t / T)
         self.ts = np.linspace(0, 1, Nt, endpoint=False)
         # the vector of unknowns: unknowns of the reference equation for every timestep
-        u1 = np.repeat(self.ref_eq.u, Nt)
+        u1 = np.tile(self.ref_eq.u, Nt)
         # the period is also an unknown, append it to u
         # TODO: a good guess for T is 2pi / Im(lambda), with the unstable eigenvalue lambda
         self.u = np.append(u1, T)
