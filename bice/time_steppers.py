@@ -42,14 +42,17 @@ class ImplicitEuler(TimeStepper):
     def step(self, problem):
         # advance in time
         problem.time += self.dt
-
+        # obtain the mass matrix
+        M = problem.mass_matrix()
         def f(u):
             # assemble the system
-            M = problem.mass_matrix()
             return problem.rhs(u) - M.dot(u - problem.u) / self.dt
+        def J(u):
+            # Jacobian of the system
+            return problem.jacobian(u) - M / self.dt
         # solve it with a Newton solver
         # TODO: detect if Newton solver failed and reject step
-        problem.u = problem.newton_solver.solve(f, problem.u)
+        problem.u = problem.newton_solver.solve(f, problem.u, J)
 
 
 class RungeKutta4(TimeStepper):
@@ -192,13 +195,17 @@ class BDF2(TimeStepper):
         # recover the history (impulsive start, if history is missing)
         u_1 = problem.u
         u_2 = self.history[1] if len(self.history) > 1 else u_1
+        # obtain the problem's mass matrix
+        M = problem.mass_matrix()
 
         def f(u):
             # assemble the system
-            M = problem.mass_matrix()
             return self.dt * problem.rhs(u) - M.dot(3*u - 4*u_1 + u_2)
+        def J(u):
+            # Jacobian of the system
+            return self.dt * problem.jacobian(u) - 3*M
         # solve it with a Newton solver
-        problem.u = problem.newton_solver.solve(f, problem.u)
+        problem.u = problem.newton_solver.solve(f, problem.u, J)
         # update history
         self.history = [problem.u] + self.history[:self.order]
 

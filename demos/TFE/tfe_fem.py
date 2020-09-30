@@ -85,10 +85,9 @@ class ThinFilm(Problem):
         # Generate the translation constraint
         self.translation_constraint = TranslationConstraint(self.tfe)
         # initialize time stepper
-        # self.time_stepper = RungeKutta4()
-        # self.time_stepper = RungeKuttaFehlberg45()
         # self.time_stepper.error_tolerance = 1e1
         # self.time_stepper.dt = 3e-5
+        # self.time_stepper = ImplicitEuler(dt=1e-1)
         self.time_stepper = BDF2(dt=1e-1)
         # self.time_stepper = BDF(self)
         # assign the continuation parameter
