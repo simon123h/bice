@@ -12,6 +12,7 @@ from bice.time_steppers import *
 from bice.fem import FiniteElementEquation, OneDimMesh
 from bice.profiling import Profiler
 
+
 class ThinFilmEquation(FiniteElementEquation):
     r"""
      Finite element implementation of the 1-dimensional Thin-Film Equation
@@ -38,12 +39,12 @@ class ThinFilmEquation(FiniteElementEquation):
     def residual_def(self, x, u, dudx, test, dtestdx):
         h, dFdh = u
         r1 = 0
-        r2 = (self.djp(h) - dFdh)*test
+        r2 = (-self.djp(h) - dFdh)*test
         for d in range(self.mesh.dim):
             # TODO: check signs
             r1 += -h**3 * dudx[1, d] * dtestdx[d]
-            r2 += -dudx[0, d] * dtestdx[d]
-        return np.array([r2, r1])
+            r2 += dudx[0, d] * dtestdx[d]
+        return np.array([r1, r2])
 
     # definition of the equation, using finite element method
     def rhs(self, u):
@@ -63,7 +64,14 @@ class ThinFilmEquation(FiniteElementEquation):
         ax.set_ylabel("solution h(x,t)")
         h, dFdh = self.u
         ax.plot(self.x[0], h, marker="x", label="solution")
+        ax.plot(self.x[0], dFdh, marker="x", label="dFdh")
         ax.legend()
+
+    def mass_matrix(self):
+        dynamics = np.eye(self.nvariables)
+        dynamics[1, 1] = 0
+        # TODO: can M possibly remain a sparse matrix?
+        return np.kron(dynamics, self.M.todense())
 
 
 class ThinFilm(Problem):
@@ -82,7 +90,7 @@ class ThinFilm(Problem):
         # self.time_stepper = RungeKuttaFehlberg45()
         # self.time_stepper.error_tolerance = 1e1
         # self.time_stepper.dt = 3e-5
-        self.time_stepper = BDF2(dt=1e-1)
+        self.time_stepper = BDF2(dt=1e-3)
         # self.time_stepper = BDF(self)
         # assign the continuation parameter
         self.continuation_parameter = (self.volume_constraint, "fixed_volume")
