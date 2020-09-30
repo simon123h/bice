@@ -103,6 +103,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
             tangent = self._linear_solve(
                 jac, zero, problem.use_sparse_matrices)
             tangent /= np.linalg.norm(tangent)
+        # TODO: make sure that ds is going in the expected direction
         # make initial guess: u -> u + ds * tangent
         u = u + self.ds * tangent[:N]
         p = p + self.ds * tangent[N]
