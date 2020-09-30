@@ -132,6 +132,7 @@ class Equation:
     # M * du/dt = rhs(u)
     def mass_matrix(self):
         # default case: assume the identity matrix I (--> du/dt = rhs(u))
+        # TODO: should be a sparse matrix
         return np.eye(self.ndofs)
 
     # This method is called before each evaluation of the rhs/Jacobian and may be
