@@ -45,7 +45,8 @@ class ImplicitEuler(TimeStepper):
 
         def f(u):
             # assemble the system
-            return problem.rhs(u) - (u - problem.u) / self.dt
+            M = problem.mass_matrix()
+            return problem.rhs(u) - M.dot(u - problem.u) / self.dt
         # solve it with a Newton solver
         # TODO: detect if Newton solver failed and reject step
         problem.u = problem.newton_solver.solve(f, problem.u)
@@ -194,7 +195,8 @@ class BDF2(TimeStepper):
 
         def f(u):
             # assemble the system
-            return self.dt * problem.rhs(u) - (3*u - 4*u_1 + u_2)
+            M = problem.mass_matrix()
+            return self.dt * problem.rhs(u) - M.dot(3*u - 4*u_1 + u_2)
         # solve it with a Newton solver
         problem.u = problem.newton_solver.solve(f, problem.u)
         # update history
