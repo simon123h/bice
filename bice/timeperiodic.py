@@ -2,7 +2,7 @@ from .equation import Equation
 import numpy as np
 
 # TODO: make this work for multiple variables, regarding ref_eq.shape
-
+# TODO: maybe use (Nt, N) as the shape
 
 
 class TimePeriodicOrbitHandler(Equation):
@@ -16,16 +16,16 @@ class TimePeriodicOrbitHandler(Equation):
 
     # reference equation, initial guess for period length, initial number of points in time
     def __init__(self, reference_equation, T, Nt):
-        super().__init__()
+        super().__init__(shape=(Nt*reference_equation.u.size+1))
         # which equation to treat?
         self.ref_eq = reference_equation
         # the list of considered points in time (normalized time t' = t / T)
         self.ts = np.linspace(0, 1, Nt, endpoint=False)
         # the vector of unknowns: unknowns of the reference equation for every timestep
-        self.u = np.repeat(self.ref_eq.u, Nt)
+        u1 = np.repeat(self.ref_eq.u, Nt)
         # the period is also an unknown, append it to u
         # TODO: a good guess for T is 2pi / Im(lambda), with the unstable eigenvalue lambda
-        self.u = np.append(self.u, T)
+        self.u = np.append(u1, T)
 
     # access the period length
     def T(self):
@@ -33,7 +33,9 @@ class TimePeriodicOrbitHandler(Equation):
 
     # return the time derivative for a given list u's at each timestep using central differences
     def dudt(self, eq_u):
-        return (np.roll(eq_u, 1) - np.roll(eq_u, -1)) / (np.roll(self.ts, 1) - np.roll(self.ts, -1))
+        du = (np.roll(eq_u, 1) - np.roll(eq_u, -1))
+        dt = (np.roll(self.ts, 1) - np.roll(self.ts, -1))
+        return (du.T / dt).T
 
     # calculate the rhs of the full system of equations
     def rhs(self, u):
