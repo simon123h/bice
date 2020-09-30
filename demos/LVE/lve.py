@@ -66,8 +66,8 @@ data = np.array(data)
 plt.plot(data[:, 0], data[:, 1])
 # plt.show()
 
-T = 6.4
-Nt = 20
+T = 6.38
+Nt = 100
 
 problem.time_stepper.dt = T / Nt
 print(problem.time_stepper.dt)
@@ -87,10 +87,13 @@ problem.add_equation(tpoh)
 
 
 print("newton solve")
+x, y = tpoh.u[:-1].reshape((Nt, 2)).T
+plt.plot(y, x, "x", color="green")
+r = problem.rhs(problem.u)
+print(r)
 problem.newton_solve()
 T = tpoh.u[-1]
 print("T =", T)
-u = tpoh.u[:-1]
-x, y = u.reshape((Nt, 2)).T
-plt.plot(y, x, "x")
+x, y = tpoh.u[:-1].reshape((Nt, 2)).T
+plt.plot(y, x, "x", color="orange")
 plt.show()

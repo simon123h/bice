@@ -19,8 +19,8 @@ class TimePeriodicOrbitHandler(Equation):
         super().__init__(shape=(Nt*reference_equation.u.size+1))
         # which equation to treat?
         self.ref_eq = reference_equation
-        # the list of considered points in time (normalized time t' = t / T)
-        self.ts = np.linspace(0, 1, Nt, endpoint=False)
+        # the list of considered timesteps (in normalized time t' = t / T)
+        self.dt = np.repeat(1./Nt, Nt)
         # the vector of unknowns: unknowns of the reference equation for every timestep
         u1 = np.tile(self.ref_eq.u, Nt)
         # the period is also an unknown, append it to u
@@ -33,16 +33,15 @@ class TimePeriodicOrbitHandler(Equation):
 
     # return the time derivative for a given list u's at each timestep using central differences
     def dudt(self, eq_u):
-        du = (np.roll(eq_u, 1) - np.roll(eq_u, -1))
-        dt = (np.roll(self.ts, 1) - np.roll(self.ts, -1))
-        return (du.T / dt).T
+        du = (np.roll(eq_u, 1) - np.roll(eq_u, -1)) * 0.5
+        return (du.T / self.dt).T
 
     # calculate the rhs of the full system of equations
     def rhs(self, u):
         # dimension of a single equation
         N = self.ref_eq.dim
         # number of timesteps
-        Nt = len(self.ts)
+        Nt = len(self.dt)
         # split the unknowns into:
         # ... period length
         T = u[-1]
@@ -64,7 +63,6 @@ class TimePeriodicOrbitHandler(Equation):
             res[i*N:(i+1)*N] = self.ref_eq.rhs(u[i]) - M.dot(dudt[i])
             # phase condition: \int_0^1 dt <u, dudt_old> = 0
             # TODO: use a better approximation for dt in integral?
-            res[-1] += np.dot(u[i], dudt_old[i]) * \
-                (self.ts[(i+1) % Nt] - self.ts[i])
+            res[-1] += np.dot(u[i], dudt_old[i]) * self.dt[i]
         # return the result
         return res
