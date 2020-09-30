@@ -548,7 +548,7 @@ class TriangleMesh(Mesh):
         self.dim = 2
         # generate x,y-space
         x = np.linspace(Lx0, Lx0+Lx, Nx, endpoint=True)
-        y = np.linspace(Ly0, Lx0+Ly, Ny, endpoint=True)
+        y = np.linspace(Ly0, Ly0+Ly, Ny, endpoint=True)
         # add equidistant nodes
         for i in range(Nx):
             for j in range(Ny):
