@@ -62,7 +62,7 @@ class TimePeriodicOrbitHandler(Equation):
             res[i*N:(i+1)*N] = self.ref_eq.rhs(u[i]) - M.dot(dudt[i])
             # phase condition: \int_0^1 dt <u, dudt_old> = 0
             # TODO: use a better approximation for dt in integral?
-            res[-1] += np.dot(u[i], dudt[i]) * \
+            res[-1] += np.dot(u[i], dudt_old[i]) * \
                 (self.ts[(i+1) % Nt] - self.ts[i])
         # return the result
         return res
