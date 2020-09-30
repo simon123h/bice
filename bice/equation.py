@@ -107,11 +107,12 @@ class Equation:
         use_central_differences = False
         N = u.size
         J = np.zeros((N, N))
-        if not use_central_differences:
-            f0 = self.rhs(u).ravel()
-        u1 = u.copy().ravel()
-        # uncoupled equations require u1 to be reshaped the self.shape before calling rhs(u1)
+        # uncoupled equations require u to be reshaped the self.shape before calling rhs(u)
         shape = u.shape if self.is_coupled else self.shape
+        # reference rhs without central differences
+        if not use_central_differences:
+            f0 = self.rhs(u.reshape(shape)).ravel()
+        u1 = u.copy().ravel()
         # perturb every degree of freedom and calculate Jacobian using FD
         for i in np.arange(N):
             k = u1[i]
