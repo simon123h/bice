@@ -7,7 +7,6 @@ import os
 import sys
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, Equation
-from bice.time_steppers import RungeKuttaFehlberg45, RungeKutta4, BDF2, BDF
 from bice.constraints import *
 from bice.solvers import *
 from bice.fem import FiniteElementEquation, TriangleMesh
