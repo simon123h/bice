@@ -37,20 +37,19 @@ class ThinFilmEquation(FiniteElementEquation):
 
     # definition of the residual integrand
     def residual_def(self, x, u, dudx, test, dtestdx):
-        h, dFdh = u
-        r1 = 0
-        r2 = (-self.djp(h) - dFdh)*test
+        h = u[0]
+        dFdh = u[1]
+        res = np.zeros(2)
+        res[1] = (-1./h**6 + 1./h**3 - dFdh)*test
         for d in range(self.mesh.dim):
-            # TODO: check signs
-            r1 += -h**3 * dudx[1, d] * dtestdx[d]
-            r2 += dudx[0, d] * dtestdx[d]
-        return np.array([r1, r2])
+            res[0] += -h**3 * dudx[1, d] * dtestdx[d]
+            res[1] += dudx[0, d] * dtestdx[d]
+        return res
 
     # definition of the equation, using finite element method
     def rhs(self, u):
         # call residual assembly loop
         return self.assemble_residuals(self.residual_def, u)
-        # return -self.laplace.dot(u) - self.M.dot(self.djp(u))
 
     # disjoining pressure
     def djp(self, h):
@@ -102,7 +101,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=200, L=100)
+problem = ThinFilm(N=100, L=100)
 
 # Impose the constraints
 # problem.volume_constraint.fixed_volume = np.trapz(
@@ -139,7 +138,8 @@ Profiler.start()
 dudtnorm = 999
 n = 0
 plotevery = 1
-while dudtnorm > 1e-8:
+while n < 5:
+# while dudtnorm > 1e-8:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)

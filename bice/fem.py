@@ -164,14 +164,14 @@ class FiniteElementEquation(Equation):
     @profile
     def refinement_error_estimate(self):
         # calculate integral of curvature:
-        # error = | \int d^2 u / dx^2 * test(x) dx | 
+        # error = | \int d^2 u / dx^2 * test(x) dx |
         # TODO: use weighted curvature of all variables, not just the sum
         curvature = 0
         for n in range(self.nvariables):
             u = self.u if len(self.shape) == 1 else self.u[n]
             curvature += np.abs(self.laplace.dot(u))
         return curvature
- 
+
     # copy the unknowns u to the values in the mesh nodes
     @profile
     def copy_unknowns_to_nodal_values(self, u=None):
@@ -571,7 +571,7 @@ class TriangleMesh(Mesh):
                     self.nodes[(i+1)*Nx+(j+1)],
                     self.nodes[i*Nx+j]
                 ]
-                offs = (i+j)%2
+                offs = (i+j) % 2
                 nodes_a = [nodes[i] for i in (0, 1, 2+offs)]
                 nodes_b = [nodes[i] for i in (1-offs, 3, 2)]
                 self.elements.append(TriangleElement2d(nodes_a))
