@@ -13,9 +13,10 @@ from bice.profiling import Profiler
 
 class ThinFilmEquation(FiniteElementEquation):
     r"""
-     Finite element implementation of the 1-dimensional Thin-Film Equation
+     Finite element implementation of the (steady) 1-dimensional Thin-Film Equation
      equation
      dh/dt = d/dx (h^3 d/dx ( - d^2/dx^2 h - Pi(h) ))
+     with dh/dt = 0 and integrated twice.
      with the disjoining pressure:
      Pi(h) = 1/h^3 - 1/h^6
      """
