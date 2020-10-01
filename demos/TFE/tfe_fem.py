@@ -101,7 +101,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=100, L=100)
+problem = ThinFilm(N=200, L=100)
 
 # Impose the constraints
 # problem.volume_constraint.fixed_volume = np.trapz(
@@ -138,8 +138,7 @@ Profiler.start()
 dudtnorm = 999
 n = 0
 plotevery = 1
-while n < 5:
-# while dudtnorm > 1e-8:
+while dudtnorm > 1e-8:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
