@@ -96,6 +96,10 @@ while n < 20:
     # problem.lve.a += 0.05
     problem.lve.b += 0.05
     n += 1
+    # NOTE: timestep adaption does not work well in this demo, because the solution is not unique
+    # the LVE have a (complicated) conserved quantity, that we do not conserve, i.e., there is an
+    # invariance to the solution. In timestep adaption, we easily shift to other solutions of the
+    # solution family. We should really impose a constraint...
     # orbitHandler.adapt(1.3, 1.6, min_steps=30)
 
 
