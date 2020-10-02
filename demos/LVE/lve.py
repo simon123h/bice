@@ -67,7 +67,7 @@ plt.plot(data[:, 0], data[:, 1], label="time-stepping solution")
 
 # period length and number of timesteps
 T = 6.34
-Nt = 40
+Nt = 60
 
 # create TimePeriodicOrbitHandler
 orbitHandler = TimePeriodicOrbitHandler(problem.lve, T, Nt)
@@ -96,6 +96,7 @@ while n < 20:
     # problem.lve.a += 0.05
     problem.lve.b += 0.05
     n += 1
+    # orbitHandler.adapt(1.3, 1.6, min_steps=30)
 
 
 plt.legend()
