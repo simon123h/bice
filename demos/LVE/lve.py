@@ -63,10 +63,10 @@ print("time   :", end - start)
 
 
 data = np.array(data)
-plt.plot(data[:, 0], data[:, 1])
+plt.plot(data[:, 0], data[:, 1], label="time-stepping solution")
 # plt.show()
 
-T = 6.38
+T = 6.34
 Nt = 100
 
 problem.time_stepper.dt = T / Nt
@@ -88,12 +88,13 @@ problem.add_equation(tpoh)
 
 print("newton solve")
 x, y = tpoh.u[:-1].reshape((Nt, 2)).T
-plt.plot(y, x, "x", color="green")
+plt.plot(y, x, "x", color="green", label="continuation initial condition")
 r = problem.rhs(problem.u)
 print(r)
 problem.newton_solve()
 T = tpoh.u[-1]
 print("T =", T)
 x, y = tpoh.u[:-1].reshape((Nt, 2)).T
-plt.plot(y, x, "x", color="orange")
+plt.plot(y, x, "x", color="orange", label="continuation solution")
+plt.legend()
 plt.show()

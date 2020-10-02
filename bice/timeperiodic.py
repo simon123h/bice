@@ -33,7 +33,7 @@ class TimePeriodicOrbitHandler(Equation):
 
     # return the time derivative for a given list u's at each timestep using central differences
     def dudt(self, eq_u):
-        du = (np.roll(eq_u, 1) - np.roll(eq_u, -1)) * 0.5
+        du = (np.roll(eq_u, -1, axis=0) - np.roll(eq_u, 1, axis=0)) * 0.5
         return (du.T / self.dt).T
 
     # calculate the rhs of the full system of equations
