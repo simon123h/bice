@@ -91,7 +91,7 @@ n = 0
 while n < 20:
     problem.newton_solve()
     print("T =", orbitHandler.u[-1])
-    x, y = orbitHandler.u[:-1].reshape((Nt, 2)).T
+    x, y = orbitHandler.u_orbit().T
     plt.plot(y, x, color="grey")
     # problem.lve.a += 0.05
     problem.lve.b += 0.05

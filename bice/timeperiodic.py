@@ -28,8 +28,22 @@ class TimePeriodicOrbitHandler(Equation):
         self.u = np.append(u1, T)
 
     # access the period length
+    @property
     def T(self):
         return self.u[-1]
+    @T.setter
+    def T(self, v):
+        self.u[-1] = v
+
+    # number of points in time
+    @property
+    def Nt(self):
+        return len(self.dt)
+
+    # the unknowns in separate arrays for each point in time
+    def u_orbit(self):
+        # split the period and reshape to (Nt, N)
+        return self.u[:-1].reshape((self.Nt, self.ref_eq.dim))
 
     # return the time derivative for a given list u's at each timestep
     def dudt(self, u):
@@ -45,7 +59,7 @@ class TimePeriodicOrbitHandler(Equation):
         # dimension of a single equation
         N = self.ref_eq.dim
         # number of timesteps
-        Nt = len(self.dt)
+        Nt = self.Nt
         # split the unknowns into:
         # ... period length
         T = u[-1]
