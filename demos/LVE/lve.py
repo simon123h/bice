@@ -85,14 +85,21 @@ problem.remove_equation(lve)
 print("adding tpoh")
 problem.add_equation(tpoh)
 
-
-print("newton solve")
 x, y = tpoh.u[:-1].reshape((Nt, 2)).T
 plt.plot(y, x, "x", color="green", label="continuation initial condition")
+
+print("newton solve")
 problem.newton_solve()
-T = tpoh.u[-1]
-print("T =", T)
-x, y = tpoh.u[:-1].reshape((Nt, 2)).T
-plt.plot(y, x, "x", color="orange", label="continuation solution")
+
+n = 0
+while n < 20:
+    problem.newton_solve()
+    print("T =", tpoh.u[-1])
+    x, y = tpoh.u[:-1].reshape((Nt, 2)).T
+    plt.plot(y, x, "x", color="grey")
+    problem.lve.b += 0.05
+    n += 1
+
+
 plt.legend()
 plt.show()
