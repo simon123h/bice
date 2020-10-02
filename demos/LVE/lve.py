@@ -89,8 +89,6 @@ problem.add_equation(tpoh)
 print("newton solve")
 x, y = tpoh.u[:-1].reshape((Nt, 2)).T
 plt.plot(y, x, "x", color="green", label="continuation initial condition")
-r = problem.rhs(problem.u)
-print(r)
 problem.newton_solve()
 T = tpoh.u[-1]
 print("T =", T)
