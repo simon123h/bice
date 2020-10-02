@@ -64,39 +64,36 @@ print("time   :", end - start)
 
 data = np.array(data)
 plt.plot(data[:, 0], data[:, 1], label="time-stepping solution")
-# plt.show()
 
+# period length and number of timesteps
 T = 6.34
-Nt = 100
+Nt = 40
 
-problem.time_stepper.dt = T / Nt
-print(problem.time_stepper.dt)
+# create TimePeriodicOrbitHandler
+orbitHandler = TimePeriodicOrbitHandler(problem.lve, T, Nt)
+
+# add initial condition to the TimePeriodicOrbitHandler
 uu = []
+problem.time_stepper.dt = T / Nt
 for i in range(Nt):
     uu.append(problem.lve.u.copy())
     problem.time_step()
+orbitHandler.u = np.append(uu, T)
 
-print("creating tpoh")
-lve = problem.lve
-tpoh = TimePeriodicOrbitHandler(lve, T, Nt)
-tpoh.u = np.append(uu, T)
-print("removing lve")
-problem.remove_equation(lve)
-print("adding tpoh")
-problem.add_equation(tpoh)
+# replace the Problem's equation with the Handler
+problem.remove_equation(problem.lve)
+problem.add_equation(orbitHandler)
 
-x, y = tpoh.u[:-1].reshape((Nt, 2)).T
+x, y = orbitHandler.u[:-1].reshape((Nt, 2)).T
 plt.plot(y, x, "x", color="green", label="continuation initial condition")
-
-print("newton solve")
-problem.newton_solve()
 
 n = 0
 while n < 20:
     problem.newton_solve()
-    print("T =", tpoh.u[-1])
-    x, y = tpoh.u[:-1].reshape((Nt, 2)).T
-    plt.plot(y, x, "x", color="grey")
+    print("T =", orbitHandler.u[-1])
+    x, y = orbitHandler.u[:-1].reshape((Nt, 2)).T
+    plt.plot(y, x, color="grey")
+    # problem.lve.a += 0.05
     problem.lve.b += 0.05
     n += 1
 
