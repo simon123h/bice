@@ -1,6 +1,153 @@
 import numpy as np
-import scipy.optimize
 from .profiling import profile
+
+
+class EquationSystem:
+
+    def __init__(self):
+        # the list of sub-equations (or even sub-systems-of-equations)
+        self.equations = []
+        # optional reference to a parent EquationSystem
+        self.parent = None
+        # The indices of the equation's unknowns to the system's unknowns and vice versa
+        self.idx = {}
+
+    # The number of unknowns / degrees of freedom of the system
+    @property
+    def ndofs(self):
+        return sum([eq.ndofs for eq in self.equations])
+
+    # The unknowns of the system: combined unknowns of the sub-equations
+    @property
+    def u(self):
+        return np.concatenate([eq.u.ravel() for eq in self.equations])
+
+    # set the unknowns
+    @u.setter
+    def u(self, u):
+        for eq in self.equations:
+            # extract the equation's unknowns using the mapping and reshape to the equation's shape
+            eq.u = u[self.idx[eq]].reshape(eq.shape)
+
+    # add an equation to the system
+    def add_equation(self, eq):
+        # check if eq already in self.equations
+        if eq in self.equations:
+            print("Equation is already part of the system!")
+            return
+        # append to list of equations
+        self.equations.append(eq)
+        # assign this system as the equation's parent
+        eq.parent = self
+        # redo the mapping from equation's to parent's unknowns
+        self.map_unknowns()
+
+    # remove an equation from the system
+    def remove_equation(self, eq):
+        # check if eq in self.equations
+        if eq not in self.equations:
+            print("Equation is not part of the system!")
+            return
+        # remove from the list of equations
+        self.equations.remove(eq)
+        # remove the equations association with the system
+        eq.parent = None
+        # redo the mapping from equation's to parent's unknowns
+        self.map_unknowns()
+
+    # create the mapping from equation unknowns to system unknowns, in the sense
+    # that system.u[idx[eq]] = eq.u.ravel() where idx is the mapping
+    def map_unknowns(self):
+        # counter for the current position in system.u
+        i = 0
+        # assign index range for each equation according to their dimension
+        for eq in self.equations:
+            # unknowns / equations indexing
+            # NOTE: It is very important for performance that this is a slice,
+            #       not a range or anything else. Slices extract coherent parts
+            #       of an array, which goes much much faster than extracting values
+            #       from positions given by integer indices.
+            # indices of the equation's unknowns in EquationSystem.u
+            self.idx[eq] = slice(i, i+eq.ndofs)
+            # increment counter by the equation's number of degrees of freedom
+            i += eq.ndofs
+        # if there is a parent system, update its mapping as well
+        if self.parent:
+            self.parent.map_unknowns()
+
+    # Calculate the right-hand side of the system 0 = rhs(u)
+    @profile
+    def rhs(self, u):
+        # if there is only one equation, we can return the rhs directly
+        if len(self.equations) == 1:
+            eq = self.equations[0]
+            shape = u.shape if eq.is_coupled else eq.shape
+            return eq.rhs(u.reshape(shape)).ravel()
+        # otherwise, we need to assemble the result vector
+        res = np.zeros(self.ndofs)
+        # add the contributions of each equation
+        for eq in self.equations:
+            if eq.is_coupled:
+                # coupled equations work on the full set of variables
+                res += eq.rhs(u)
+            else:
+                # uncoupled equations simply work on their own variables, so we do the mapping
+                idx = self.idx[eq]
+                res[idx] += eq.rhs(u[idx].reshape(eq.shape)).ravel()
+        # everything assembled, return result
+        return res
+
+    # Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u
+    @profile
+    def jacobian(self, u):
+        # if there is only one equation, we can return the matrix directly
+        if len(self.equations) == 1:
+            return self.equations[0].jacobian(u)
+        # otherwise, we need to assemble the matrix
+        J = np.zeros((self.ndofs, self.ndofs))
+        # add the Jacobian of each equation
+        for eq in self.equations:
+            if eq.is_coupled:
+                # coupled equations work on the full set of variables
+                J += eq.jacobian(u)
+            else:
+                # uncoupled equations simply work on their own variables, so we do a mapping
+                idx = self.idx[eq]
+                J[idx, idx] += eq.jacobian(u[idx].reshape(eq.shape))
+        # all entries assembled, return
+        return J
+
+    # The mass matrix determines the linear relation of the rhs to the temporal derivatives:
+    # M * du/dt = rhs(u)
+    def mass_matrix(self, u):
+        # if there is only one equation, we can return the matrix directly
+        if len(self.equations) == 1:
+            return self.equations[0].mass_matrix()
+        # otherwise, we need to assemble the matrix
+        M = np.zeros((self.ndofs, self.ndofs))
+        # add the entries of each equation
+        for eq in self.equations:
+            if eq.is_coupled:
+                # coupled equations work on the full set of variables
+                M += eq.mass_matrix()
+            else:
+                # uncoupled equations simply work on their own variables, so we do a mapping
+                idx = self.idx[eq]
+                M[idx, idx] += eq.mass_matrix()
+        # all entries assembled, return
+        return M
+
+    # traverse a list of all equations in the tree of equations
+    def traverse_equations(self):
+        res = []
+        for eq in self.equations:
+            if isinstance(eq, EquationSystem):
+                # if it is a system of equations, traverse it
+                res += eq.traverse_equations()
+            elif isinstance(eq, Equation):
+                # if it is an actual equation, add to the result list
+                res.append(eq)
+        return res
 
 
 class Equation:
@@ -28,38 +175,15 @@ class Equation:
         if isinstance(shape, int):
             shape = (shape,)
         self.shape = shape
+        # The equation's storage for the unknowns
+        self.u = np.zeros(self.shape)
         # Does the equation couple to any other unknowns?
         # If it is coupled, then all unknowns and methods of this equation will have the
         # full dimension of the problem and need to be mapped to the equation's
         # variables accordingly. Otherwise, they only have the dimension of this equation.
         self.is_coupled = False
-        # the problem that the equation belongs to
-        self.problem = None
-        # Slice for the mapping from Problem.u to Equation.u: eq.u = problem.u[eq.idx]
-        self.idx = None
-        # List of slices for the mapping from Problem.u to unknowns assiociated with each variable in the equation
-        self.var_idx = None
-        # The equation's storage for the unknowns if it is not currently part of a problem
-        self.__u = np.zeros(self.shape)
-
-    # Getter for the vector of unknowns
-    @property
-    def u(self):
-        if self.idx is None:
-            # return the unknowns that are stored in the equation itself
-            return self.__u.reshape(self.shape)
-        # fetch the unknowns from the problem with the equation mapping
-        return self.problem.u[self.idx].reshape(self.shape)
-
-    # Setter for the vector of unknowns
-    @u.setter
-    def u(self, v):
-        if self.idx is None:
-            # update the unknowns stored in the equation itself
-            self.__u = v.reshape(self.shape)
-        else:
-            # set the unknowns in the problem with the equation mapping
-            self.problem.u[self.idx] = v.ravel()
+        # optional parent system of equation that this equation belongs to
+        self.parent = None
 
     # the number of unknowns per independent variable in the equation
     @property

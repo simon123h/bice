@@ -21,8 +21,6 @@ class Solution:
         self.id = Solution.solution_count
         # reference to the corresponding problem
         self.problem = problem
-        # the number of equations
-        self.neq = len(problem.equations)
         # the dimension / number of unknowns
         self.dim = problem.dim
         # vector of unknowns

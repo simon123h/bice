@@ -1,4 +1,5 @@
 import numpy as np
+from .equation import EquationSystem
 from .time_steppers import RungeKutta4
 from .continuation_steppers import PseudoArclengthContinuation
 from .solvers import NewtonSolver, EigenSolver
@@ -17,18 +18,12 @@ class Problem():
     Custom problems should be implemented as children of this class.
     """
 
-    # Constructor: initialize basic ar
+    # Constructor
     def __init__(self):
-        # the list of governing equations in this problem
-        self.eq = []
-        # The vector of unknowns (NumPy array)
-        self.u = np.array([])
-        # Number of constraints
-        self.nr_constraints = 0
+        # the system of equations that governs the problem
+        self.eqs = EquationSystem()
         # Time variable
         self.time = 0
-        # the list of equations that are part of this problem
-        self.equations = []
         # The time-stepper for integration in time
         self.time_stepper = RungeKutta4(dt=1e-2)
         # The continuation stepper for parameter continuation
@@ -66,140 +61,50 @@ class Problem():
     def dim(self):
         return self.u.size
 
+    # getter for unknowns of the problem
+    @property
+    def u(self):
+        return self.eqs.u
+
+    # set the unknowns of the problem
+    @u.setter
+    def u(self, u):
+        self.eqs.u = u
+
     # add an equation to the problem
     def add_equation(self, eq):
-        # check if eq already in self.equations
-        if eq in self.equations:
-            print("Equation is already part of the problem!")
-            return
-        # append to list of equations
-        self.equations.append(eq)
-        # append eq's degrees of freedom to the problem dofs
-        self.u = np.append(self.u, eq.u.ravel())
-        # assign this problem to the equation
-        eq.problem = self
-        # redo the mapping from equation to problem variables
-        self.assign_equation_numbers()
-        # sort the equations for efficiency
-        self.sort_equations()
-
-    # sort the equations, uncoupled first
-    # (for sparsity of Jacobian / efficiency of Newton solver)
-    def sort_equations(self):
-        # backup the old mapping
-        old_idx = {eq: eq.idx for eq in self.equations}
-        # sort: uncoupled equations first, coupled equations last
-        self.equations = [eq for eq in self.equations if not eq.is_coupled] + \
-            [eq for eq in self.equations if eq.is_coupled]
-        # redo the mapping from equation to problem variables
-        self.assign_equation_numbers()
-        # move the unknown values to their new positions
-        old_u = self.u.copy()
-        for eq in old_idx:
-            self.u[eq.idx] = old_u[old_idx[eq]]
+        self.eqs.add_equation(eq)
 
     # remove an equation from the problem
     def remove_equation(self, eq):
-        # check if eq in self.equations
-        if eq not in self.equations:
-            return
-        # remove from the list of equations
-        self.equations.remove(eq)
-        # remove the equations association with the problem
-        eq.problem = None
-        # ...and also the lookup table for the unknowns/equation of the problem
-        idx = eq.idx
-        eq.idx = None
-        # write the associated unknowns back into the equation
-        eq.u = self.u[idx].reshape(eq.shape)
-        # redo the mapping from equation to problem variables
-        self.assign_equation_numbers()
-        # remove eq's degrees of freedom from the problem dofs
-        self.u = np.delete(self.u, idx)
+        self.eqs.remove_equation(eq)
 
-    # create the mapping from equation variables to problem variables, in the sense
-    # that problem.u[eq.idx] = eq.u where eq.idx is the mapping
-    def assign_equation_numbers(self):
-        # counter for the current position in problem.u
-        i = 0
-        # assign index range for each equation according to their dimension
-        for eq in self.equations:
-            # unknowns / equations indexing
-            # NOTE: It is very important for performance that this is a slice,
-            #       not a range or anything else. Slices extract coherent parts
-            #       of an array, which goes much much faster than extracting values
-            #       from positions given by integer indices.
-            # indices of the equation's unknowns in Problem.u
-            eq.idx = slice(i, i+eq.ndofs)
-            # indices of unknowns for each independent variable in Problem.u
-            eq.var_idx = [slice(i+n*eq.dim, i+(n+1)*eq.dim)
-                          for n in range(eq.nvariables)]
-            # increment counter by the equation's number of degrees of freedom
-            i += eq.ndofs
+    # complete list of all equations that are part of the problem
+    def equations(self):
+        return self.eqs.traverse_equations()
 
     # Calculate the right-hand side of the system 0 = rhs(u)
     @profile
     def rhs(self, u):
         # call the actions_before_evaluation hook
         self.actions_before_evaluation(u)
-        # if there is only one equation, we can return the rhs directly
-        if len(self.equations) == 1:
-            eq = self.equations[0]
-            shape = u.shape if eq.is_coupled else eq.shape
-            return eq.rhs(u.reshape(shape)).ravel()
-        # otherwise, we need to assemble the vector
-        res = np.zeros(self.dim)
-        # add the residuals of each equation
-        for eq in self.equations:
-            if eq.is_coupled:
-                # coupled equations work on the full set of variables
-                res += eq.rhs(u)
-            else:
-                # uncoupled equations simply work on their own variables, so we do the mapping
-                res[eq.idx] += eq.rhs(u[eq.idx].reshape(eq.shape)).ravel()
-        # all residuals assembled, return
-        return res
+        # return the rhs of the (system of) equations
+        return self.eqs.rhs(u)
 
     # Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u
     @profile
     def jacobian(self, u):
         # call the actions_before_evaluation hook
         self.actions_before_evaluation(u)
-        # if there is only one equation, we can return the matrix directly
-        if len(self.equations) == 1:
-            return self.equations[0].jacobian(u)
-        # otherwise, we need to assemble the matrix
-        J = np.zeros((self.dim, self.dim))
-        # add the Jacobian of each equation
-        for eq in self.equations:
-            if eq.is_coupled:
-                # coupled equations work on the full set of variables
-                J += eq.jacobian(u)
-            else:
-                # uncoupled equations simply work on their own variables, so we do a mapping
-                J[eq.idx, eq.idx] += eq.jacobian(u[eq.idx].reshape(eq.shape))
-        # all entries assembled, return
-        return J
+        # return the Jacobian of the (system of) equations
+        return self.eqs.jacobian(u)
 
     # The mass matrix determines the linear relation of the rhs to the temporal derivatives:
     # M * du/dt = rhs(u)
     @profile
     def mass_matrix(self):
-        # if there is only one equation, we can return the matrix directly
-        if len(self.equations) == 1:
-            return self.equations[0].mass_matrix()
-        # otherwise, we need to assemble the matrix
-        M = np.zeros((self.dim, self.dim))
-        # add the entries of each equation
-        for eq in self.equations:
-            if eq.is_coupled:
-                # coupled equations work on the full set of variables
-                M += eq.mass_matrix()
-            else:
-                # uncoupled equations simply work on their own variables, so we do a mapping
-                M[eq.idx, eq.idx] += eq.mass_matrix()
-        # all entries assembled, return
-        return M
+        # return the mass matrix of the (system of) equations
+        return self.eqs.mass_matrix()
 
     # Solve the system rhs(u) = 0 for u with Newton's method
     @profile
@@ -280,13 +185,13 @@ class Problem():
     # this method is called before each evaluation of the rhs/jacobian
     def actions_before_evaluation(self, u):
         # pass it to the equations
-        for eq in self.equations:
+        for eq in self.equations():
             eq.actions_before_evaluation(u)
 
     # this method is called after each newton solve
     def actions_after_newton_solve(self):
         # pass it to the equations
-        for eq in self.equations:
+        for eq in self.equations():
             eq.actions_after_newton_solve()
 
     def add_point_to_bifdiag(self, check_eigenvalues=False):
@@ -331,8 +236,8 @@ class Problem():
         # TODO: @simon: if we want to calculate more than one measure,
         #       we could just return an array here, and do the choosing what
         #       to plot in the problem-specific plot function, right?
-        # defaults to the L2-norm of the first equation
-        return np.linalg.norm(self.equations[0].u)
+        # defaults to the L2-norm of the unknowns
+        return np.linalg.norm(self.u)
 
     # save the current solution to disk
     def save(self, filename):
@@ -361,7 +266,7 @@ class Problem():
             # clear the axes
             sol_ax.clear()
             # plot all equation's solutions
-            for eq in self.equations:
+            for eq in self.equations():
                 eq.plot(sol_ax)
         # plot the bifurcation diagram
         if bifdiag_ax is not None:
@@ -401,7 +306,7 @@ class Problem():
                     else:
                         self.u = ev
                     # the equation's own plotting method will know best how to plot it
-                    for eq in self.equations:
+                    for eq in self.equations():
                         eq.plot(eigvec_ax)
                         # adjust the y-label, TODO: do this only for 1d-equations
                         eigvec_ax.set_ylabel("first eigenvector")
