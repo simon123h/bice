@@ -191,17 +191,12 @@ class FiniteElementEquation(Equation):
         N = len(self.mesh.nodes)
         # if the number of nodes changed...
         if self.u is None or N != self.dim:
-            # store reference to the equation's problem
-            problem = self.problem
-            # remove the equation from the problem (if assigned)
-            if problem is not None:
-                problem.remove_equation(self)
-            # create a new array of correct size, values will be filled later
+            # create a new array of unknowns of correct size, values will be filled later
             self.dim = N
             self.u = np.zeros(self.shape)
-            # re-add the equation to the problem
-            if problem is not None:
-                problem.add_equation(self)
+            # if the equation belongs to a system of equations, redo it's mapping of the unknowns
+            if self.parent:
+                self.parent.map_unknowns()
         # now, we'll fill self.u with the values from the nodes
         # new empty array for the unknowns
         u = np.zeros(self.shape).T
