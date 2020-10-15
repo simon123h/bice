@@ -26,7 +26,7 @@ class ThinFilmEquation(FiniteElementEquation):
         # initial condition
         h0 = 60
         a = 3/20. / (h0-1)
-        x = self.x
+        x = self.x[0]
         h = np.maximum(-a*x*x + h0, 1)
         xi = h*0
         self.u = np.array([h, xi])
@@ -67,7 +67,7 @@ class ThinFilm(Problem):
         self.volume_constraint_h = VolumeConstraint(self.tfe, variable=0)
         self.volume_constraint_xi = VolumeConstraint(self.tfe, variable=1)
         # Generate the translation constraint
-        self.translation_constraint = TranslationConstraint(self.tfe)
+        self.translation_constraint = TranslationConstraint(self.tfe, variable=0)
         # assign the continuation parameter
         self.continuation_parameter = (self.tfe, "kappa")
 

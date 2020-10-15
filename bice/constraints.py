@@ -12,7 +12,7 @@ class VolumeConstraint(Equation):
     multiplier that can be interpreted as an influx into the system.
     """
 
-    def __init__(self, reference_equation, variable=None):
+    def __init__(self, reference_equation, variable=0):
         super().__init__()
         # on which equation/unknowns should the constraint be imposed?
         self.ref_eq = reference_equation
@@ -32,7 +32,7 @@ class VolumeConstraint(Equation):
         self_idx = self.parent.idx[self]
         eq_idx = self.parent.idx[self.ref_eq]
         # optionally split only that part that is referenced by self.variable
-        if self.variable:
+        if self.variable is not None:
             start = eq_idx.start + self.variable*self.ref_eq.dim
             eq_idx = slice(start, start + self.ref_eq.dim)
         # employ the constraint equation
@@ -88,7 +88,7 @@ class TranslationConstraint(Equation):
         self_idx = self.parent.idx[self]
         eq_idx = self.parent.idx[self.ref_eq]
         # optionally split only that part that is referenced by self.variable
-        if self.variable:
+        if self.variable is not None:
             start = eq_idx.start + self.variable*self.ref_eq.dim
             eq_idx = slice(start, start + self.ref_eq.dim)
         # define some variables
