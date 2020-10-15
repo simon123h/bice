@@ -156,13 +156,17 @@ class EquationSystem:
     subequation to another one.
     """
 
-    def __init__(self):
+    def __init__(self, equations=None):
         # the list of sub-equations (or even sub-systems-of-equations)
         self.equations = []
         # optional reference to a parent EquationSystem
         self.parent = None
         # The indices of the equation's unknowns to the system's unknowns and vice versa
         self.idx = {}
+        # optionally add the given equations
+        if equations:
+            for eq in self.equations:
+                self.add_equation(eq)
 
     # The number of unknowns / degrees of freedom of the system
     @property
