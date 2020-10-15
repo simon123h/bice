@@ -108,16 +108,6 @@ class Equation:
         # TODO: should be a sparse matrix
         return np.eye(self.ndofs)
 
-    # This method is called before each evaluation of the rhs/Jacobian and may be
-    # overwritten to do anything specific to the equation
-    def actions_before_evaluation(self, u):
-        pass
-
-    # This method is called after each newton solve and may be
-    # overwritten to do anything specific to the equation
-    def actions_after_newton_solve(self):
-        pass
-
     # plot the solution into a matplotlib axes object
     def plot(self, ax):
         # check if there is spatial coordinates, otherwise generate fake coordinates

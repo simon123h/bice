@@ -130,11 +130,13 @@ class BifurcationConstraint(Equation):
         return np.delete(np.delete(Gu, self_idx, axis=0), self_idx, axis=1)
 
     def actions_before_evaluation(self, u):
+        # TODO: these methods are currently not called from anywhere in the code!
         # write the free parameter back from the given unknowns
         param_obj, param_name = tuple(self.free_parameter)
         setattr(param_obj, param_name, u[-1])
 
     def actions_after_newton_solve(self):
+        # TODO: these methods are currently not called from anywhere in the code!
         # write the free parameter back from the unknowns
         param_obj, param_name = tuple(self.free_parameter)
         setattr(param_obj, param_name, self.u[-1])

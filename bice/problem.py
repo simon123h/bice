@@ -59,7 +59,7 @@ class Problem():
     # TODO: rename to 'ndofs' ?
     @property
     def dim(self):
-        return self.u.size
+        return self.eqs.ndofs
 
     # getter for unknowns of the problem
     @property
@@ -86,16 +86,12 @@ class Problem():
     # Calculate the right-hand side of the system 0 = rhs(u)
     @profile
     def rhs(self, u):
-        # call the actions_before_evaluation hook
-        self.actions_before_evaluation(u)
         # return the rhs of the (system of) equations
         return self.eqs.rhs(u)
 
     # Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u
     @profile
     def jacobian(self, u):
-        # call the actions_before_evaluation hook
-        self.actions_before_evaluation(u)
         # return the Jacobian of the (system of) equations
         return self.eqs.jacobian(u)
 
@@ -110,8 +106,6 @@ class Problem():
     @profile
     def newton_solve(self):
         self.u = self.newton_solver.solve(self.rhs, self.u, self.jacobian)
-        # call the hook
-        self.actions_after_newton_solve()
 
     # Calculate the eigenvalues and eigenvectors of the Jacobian
     # The method will only calculate as many eigenvalues as requested with self.neigs
@@ -182,18 +176,6 @@ class Problem():
         obj, attr_name = tuple(self.continuation_parameter)
         setattr(obj, attr_name, val)
 
-    # this method is called before each evaluation of the rhs/jacobian
-    def actions_before_evaluation(self, u):
-        # pass it to the equations
-        for eq in self.equations():
-            eq.actions_before_evaluation(u)
-
-    # this method is called after each newton solve
-    def actions_after_newton_solve(self):
-        # pass it to the equations
-        for eq in self.equations():
-            eq.actions_after_newton_solve()
-
     def add_point_to_bifdiag(self, check_eigenvalues=False):
         sol = Solution(self)
         self.bifurcation_diagram.current_branch().add_solution_point(sol)
@@ -212,6 +194,7 @@ class Problem():
 
     # locate the bifurcation of the given eigenvector
     def locate_bifurcation(self, eigenvector):
+        # TODO: does not yet work!
         # make sure it is real, if self.u is real
         if not np.iscomplexobj(self.u):
             eigenvector = eigenvector.real
