@@ -272,26 +272,31 @@ class Equation:
 
     # plot the solution into a matplotlib axes object
     def plot(self, ax):
-        if len(self.x) == 1:
+        # check if there is spatial coordinates, otherwise generate fake coordinates
+        if hasattr(self, 'x'):
+            x = self.x
+        else:
+            x = [np.arange(self.dim)]
+        if len(x) == 1:
             ax.set_xlabel("x")
             ax.set_ylabel("solution u(x,t)")
             # deal with the shape of u (1d vs 2d)
             if len(self.shape) == 1:
-                ax.plot(self.x[0], self.u)
+                ax.plot(x[0], self.u)
             else:
                 for n in range(self.nvariables):
-                    ax.plot(self.x[0], self.u[n])
-        if len(self.x) == 2:
+                    ax.plot(x[0], self.u[n])
+        if len(x) == 2:
             ax.set_xlabel("x")
             ax.set_ylabel("y")
-            mx, my = np.meshgrid(self.x[0], self.x[1])
+            mx, my = np.meshgrid(x[0], x[1])
             # deal with the shape of u (1d vs 2d)
             if len(self.shape) == 1:
                 u = self.u
             else:
                 # plot only the first variable
                 u = self.u[0]
-            u = u.reshape((self.x[0].size, self.x[1].size))
+            u = u.reshape((x[0].size, x[1].size))
             ax.pcolormesh(mx, my, u)
 
 
