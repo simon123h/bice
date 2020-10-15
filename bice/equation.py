@@ -10,10 +10,6 @@ class Equation:
     and r is a parameter vector. This may include ODEs and PDEs.
     All custom equations must inherit from this class and implement the rhs(u) method.
     Time and parameters are implemented as member attributes.
-    The general Equation class gives the general interface, takes care of some bookkeeping,
-    i.e., mapping the equation's unknowns and variables to the ones of the Problem that
-    the equation belongs to, and provides some general functionality that every equation
-    should have.
     This is a very fundamental class. Specializations of the Equation class exist for covering
     more intricate types of equations, i.e., particular discretizations for spatial fields, e.g.,
     finite difference schemes or pseudospectral methods.
