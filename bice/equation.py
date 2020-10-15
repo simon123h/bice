@@ -158,10 +158,25 @@ class EquationSystem:
             for eq in self.equations:
                 self.add_equation(eq)
 
+    # the number of unknowns per independent variable in the equation
+    @property
+    def dim(self):
+        return self.ndofs
+
+    # the number of independent variables (always = 1 for system of equations)
+    @property
+    def nvariables(self):
+        return 1
+
     # The number of unknowns / degrees of freedom of the system
     @property
     def ndofs(self):
         return sum([eq.ndofs for eq in self.equations])
+
+    # The shape of the unknowns
+    @property
+    def shape(self):
+        return (self.ndofs,)
 
     # The unknowns of the system: combined unknowns of the sub-equations
     @property
