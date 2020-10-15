@@ -27,8 +27,10 @@ class BifurcationConstraint(Equation):
         # if the constraint is disabled, no residuals will be calculated
         if self.__disabled:
             return 0
+        # reference to the indices of the own unknowns
+        self_idx = self.parent.idx[self]
         # get the value of the current and the previous null-eigenvector phi
-        phi = u[self.idx][:-1]
+        phi = u[self_idx][:-1]
         phi_old = self.u[:-1]
         # calculate the original Jacobian of the problem
         Gu = self.original_jacobian(u)
@@ -42,7 +44,7 @@ class BifurcationConstraint(Equation):
         res = np.zeros((u.size))
         res1 = np.matmul(Gu, phi)
         res2 = np.array([np.dot(phi, phi_old) - 1])
-        res[self.idx] = np.concatenate((res1, res2))
+        res[self_idx] = np.concatenate((res1, res2))
         return res
 
     def jacobian(self, u):
@@ -68,8 +70,10 @@ class BifurcationConstraint(Equation):
 
         # upper left block: d(rhs_orig)/d(u_orig) will be assembled by their respective equations
 
+        # reference to the indices of the own unknowns
+        self_idx = self.parent.idx[self]
         # get phi and phi_old
-        phi = u[self.idx][:-1]
+        phi = u[self_idx][:-1]
         phi_old = self.u[:-1]
         # calculate the original Jacobian of the problem
         Gu = self.original_jacobian(u)
@@ -83,28 +87,28 @@ class BifurcationConstraint(Equation):
             # calculate the original Jacobian of the problem
             # NOTE: oookay... here we'd also need N times evaluation of the Jacobian... that's slow as well
             Gu1 = self.original_jacobian(u1)
-            # NOTE: the following line is not general, wrt. self.idx
+            # NOTE: the following line is not general, wrt. self_idx
             J[:, i] = np.matmul(Gu1-Gu, phi) / eps
             # .... I'm giving up at this point!
 
         # lower right sub-block: d(res1)/d(phi) = Gu
-        res1_slice = slice(self.idx.start, self.idx.stop-1)
+        res1_slice = slice(self_idx.start, self_idx.stop-1)
         J[res1_slice, res1_slice] = Gu
 
         # last column: d(rhs)/d(param), calculate with FD
-        f0 = self.problem.rhs(u)
+        f0 = self.parent.rhs(u)
         # deviate the free parameter value
-        param_val = u[self.idx][-1]
-        u[self.idx][-1] += eps
+        param_val = u[self_idx][-1]
+        u[self_idx][-1] += eps
         # calculate new residuals
-        f1 = self.problem.rhs(u)
+        f1 = self.parent.rhs(u)
         # reset the value of the free parameter
-        u[self.idx][-1] = param_val
+        u[self_idx][-1] = param_val
         # add FD parameter derivative to Jacobian
-        J[:, self.idx.stop-1] = (f1 - f0) / eps
+        J[:, self_idx.stop-1] = (f1 - f0) / eps
 
         # last row: d(res2)/du = ([0]*N, phi_old, 0)
-        J[self.idx.stop -
+        J[self_idx.stop -
             1] = np.concatenate((np.zeros(phi_old.size), phi_old, np.array([0])))
 
         return J
@@ -117,11 +121,13 @@ class BifurcationConstraint(Equation):
     def original_jacobian(self, u):
         # disable the null-space equations
         self.__disabled = True
-        Gu = self.problem.jacobian(u)
+        Gu = self.parent.jacobian(u)
         self.__disabled = False
+        # reference to the indices of the own unknowns
+        self_idx = self.parent.idx[self]
         # remove those columns/rows of the Jacobian that belong to self,
         # so we are left with the original (unextended) Jacobian
-        return np.delete(np.delete(Gu, self.idx, axis=0), self.idx, axis=1)
+        return np.delete(np.delete(Gu, self_idx, axis=0), self_idx, axis=1)
 
     def actions_before_evaluation(self, u):
         # write the free parameter back from the given unknowns
