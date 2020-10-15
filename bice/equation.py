@@ -119,7 +119,7 @@ class EquationSystem:
 
     # The mass matrix determines the linear relation of the rhs to the temporal derivatives:
     # M * du/dt = rhs(u)
-    def mass_matrix(self, u):
+    def mass_matrix(self):
         # if there is only one equation, we can return the matrix directly
         if len(self.equations) == 1:
             return self.equations[0].mass_matrix()
