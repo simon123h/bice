@@ -186,8 +186,6 @@ class BifurcationDiagram:
 
     # plot the bifurcation diagram
     def plot(self, ax):
-        # clear axes first
-        ax.clear()
         # plot every branch separately
         for branch in self.branches:
             p, norm = branch.data()
