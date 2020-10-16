@@ -116,7 +116,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = NikolaevskiyProblem(Nx=16, Ny=16)
+problem = NikolaevskiyProblem(Nx=12, Ny=12)
 problem.ne.r = 0.5
 problem.ne.m = 1.1
 
@@ -160,7 +160,7 @@ else:
 
 # start parameter continuation
 problem.continuation_stepper.ds = 1e-3
-problem.continuation_stepper.ndesired_newton_steps = 3
+problem.continuation_stepper.ndesired_newton_steps = 6
 problem.settings.always_check_eigenvalues = True
 problem.settings.neigs = 50
 
