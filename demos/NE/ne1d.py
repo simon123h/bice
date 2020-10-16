@@ -134,30 +134,25 @@ else:
     # load the initial state
     problem.load("initial_state.dat")
 
-
-problem.plot(ax)
-fig.savefig("out/img/{:05d}.svg".format(plotID))
-plotID += 1
-
-
 # start parameter continuation
 problem.continuation_stepper.ds = 1e-3
 problem.continuation_stepper.ds_max = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
-problem.settings.always_check_eigenvalues = False
-problem.settings.neigs = 0
+problem.settings.always_check_eigenvalues = True
+problem.settings.neigs = 10
 
+# add constraints
 volume_constraint = VolumeConstraint(problem.ne)
 problem.add_equation(volume_constraint)
 translation_constraint = TranslationConstraint(problem.ne)
 problem.add_equation(translation_constraint)
 
-
+# create new figure
 plt.close(fig)
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 
 n = 0
-plotevery = 5
+plotevery = 50
 while problem.ne.m > 0:
     # perform continuation step
     problem.continuation_step()
