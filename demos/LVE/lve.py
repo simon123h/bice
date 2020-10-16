@@ -81,9 +81,10 @@ for i in range(Nt):
 orbitHandler.u = np.append(uu, T)
 
 # replace the Problem's equation with the Handler
-problem.eq = orbitHandler
+problem.remove_equation(problem.eq)
+problem.add_equation(orbitHandler)
 
-x, y = orbitHandler.u[:-1].reshape((Nt, 2)).T
+x, y = orbitHandler.u_orbit().T
 plt.plot(y, x, "x", color="green", label="continuation initial condition")
 
 n = 0
