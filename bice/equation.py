@@ -309,6 +309,18 @@ class EquationGroup:
                 res.append(eq)
         return res
 
+    # pretty-print EquationGroups in the terminal
+    def __repr__(self):
+        res = super().__repr__()
+        # prints tree structure of nested equations
+        for i, eq in enumerate(self.equations):
+            eq_repr = eq.__repr__()
+            if i < len(self.equations)-1:
+                res += "\n ├─" + eq_repr.replace("\n", "\n │ ")
+            else:
+                res += "\n └─" + eq_repr.replace("\n", "\n   ")
+        return res
+
 
 class FiniteDifferenceEquation(Equation):
     """
