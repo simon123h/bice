@@ -70,7 +70,7 @@ T = 6.34
 Nt = 60
 
 # create TimePeriodicOrbitHandler
-orbitHandler = TimePeriodicOrbitHandler(problem.lve, T, Nt)
+orbitHandler = TimePeriodicOrbitHandler(problem.eq, T, Nt)
 
 # add initial condition to the TimePeriodicOrbitHandler
 uu = []
@@ -81,8 +81,7 @@ for i in range(Nt):
 orbitHandler.u = np.append(uu, T)
 
 # replace the Problem's equation with the Handler
-problem.remove_equation(problem.lve)
-problem.add_equation(orbitHandler)
+problem.eq = orbitHandler
 
 x, y = orbitHandler.u[:-1].reshape((Nt, 2)).T
 plt.plot(y, x, "x", color="green", label="continuation initial condition")

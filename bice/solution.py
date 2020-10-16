@@ -22,7 +22,7 @@ class Solution:
         # reference to the corresponding problem
         self.problem = problem
         # the dimension / number of unknowns
-        self.dim = problem.dim
+        self.ndofs = problem.ndofs
         # vector of unknowns
         # TODO: storing each solution may eat up some memory
         #  @simon: do we need to save every solution? we could save some
