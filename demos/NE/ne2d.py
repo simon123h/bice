@@ -47,7 +47,6 @@ class NikolaevskiyEquation(PseudospectralEquation):
 
     # definition of the Nikolaevskiy equation (right-hand side)
     def rhs(self, u):
-        N0 = u.size
         # calculate the system length
         L = self.L0 * self.m
         # include length scale in the k-vectors
@@ -62,8 +61,16 @@ class NikolaevskiyEquation(PseudospectralEquation):
         nonlin = - 0.5 * np.fft.irfft2(1j * kx * u_k)**2
         nonlin += - 0.5 * np.fft.irfft2(1j * ky * u_k)**2
         # sum up and return
-        return (np.fft.irfft2(lin) + nonlin).reshape(N0)
+        return (np.fft.irfft2(lin) + nonlin).reshape(u.size)
 
+    # calculate the spatial derivative
+    def first_spatial_derivative(self, u, direction=0):
+        u2 = u.reshape((self.x[0].size, self.x[1].size))
+        du_dx = 1j*self.k[direction]*np.fft.rfft2(u2)
+        du_dx = np.fft.irfft2(du_dx)
+        return du_dx.reshape(u.size)
+
+    # plot the solution
     def plot(self, ax):
         ax.set_xlabel("x")
         ax.set_ylabel("y")
@@ -71,7 +78,8 @@ class NikolaevskiyEquation(PseudospectralEquation):
         x, y = np.meshgrid(self.x[0], self.x[1])
         Lx = self.L0 * self.m
         Ly = Lx * self.ratio
-        ax.pcolormesh(x*Lx, y*Ly, self.u.reshape((self.Nx, self.Ny)))
+        pcol = ax.pcolor(x*Lx, y*Ly, self.u.reshape((self.Nx, self.Ny)), cmap="coolwarm", rasterized=True)
+        pcol.set_edgecolor('face')
 
 
 class NikolaevskiyProblem(Problem):
@@ -106,7 +114,7 @@ os.makedirs("out/img", exist_ok=True)
 # create problem
 problem = NikolaevskiyProblem(Nx=32, Ny=32)
 problem.ne.r = 0.5
-problem.ne.m = 2
+problem.ne.m = 1.1
 
 # create figure
 fig, ax = plt.subplots(1, 1, figsize=(16, 9))
@@ -149,20 +157,22 @@ else:
 problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
 problem.settings.always_check_eigenvalues = True
-problem.settings.neigs = 10
+problem.settings.neigs = 50
 
 # add constraints
 volume_constraint = VolumeConstraint(problem.ne)
 problem.add_equation(volume_constraint)
-translation_constraint = TranslationConstraint(problem.ne)
-problem.add_equation(translation_constraint)
+translation_constraint_x = TranslationConstraint(problem.ne, direction=0)
+problem.add_equation(translation_constraint_x)
+translation_constraint_y = TranslationConstraint(problem.ne, direction=1)
+problem.add_equation(translation_constraint_y)
 
 # create new figure
 plt.close(fig)
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 
 n = 0
-plotevery = 10
+plotevery = 1
 while problem.ne.m > 0:
     # perform continuation step
     problem.continuation_step()
