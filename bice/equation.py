@@ -36,16 +36,11 @@ class Equation:
     # the number of unknowns per independent variable in the equation
     @property
     def dim(self):
-        if len(self.shape) == 1:
-            return self.shape[0]
-        return self.shape[1]
+        return self.shape[-1]
 
     @dim.setter
     def dim(self, d):
-        if len(self.shape) == 1:
-            self.shape = (d,)
-        else:
-            self.shape = (self.shape[0], d)
+        self.shape = self.shape[:-1] + (d,)
 
     # the number of independent variables in the equation (e.g. for vector-valued equations)
     @property
@@ -53,13 +48,6 @@ class Equation:
         if len(self.shape) == 1:
             return 1
         return self.shape[0]
-
-    @nvariables.setter
-    def nvariables(self, n):
-        if len(self.shape) == 1 and n == 1:
-            pass
-        else:
-            self.shape[0] = (n, self.dim)
 
     # The total number of unknowns / degrees of freedom of the equation
     @property
@@ -105,7 +93,7 @@ class Equation:
     # M * du/dt = rhs(u)
     def mass_matrix(self):
         # default case: assume the identity matrix I (--> du/dt = rhs(u))
-        # TODO: should be a sparse matrix
+        # NOTE: could be a scipy.sparse matrix
         return np.eye(self.ndofs)
 
     # plot the solution into a matplotlib axes object
@@ -118,7 +106,7 @@ class Equation:
         if len(x) == 1:
             ax.set_xlabel("x")
             ax.set_ylabel("solution u(x,t)")
-            # deal with the shape of u (1d vs 2d)
+            # deal with the shape of u
             if len(self.shape) == 1:
                 ax.plot(x[0], self.u)
             else:
@@ -128,7 +116,7 @@ class Equation:
             ax.set_xlabel("x")
             ax.set_ylabel("y")
             mx, my = np.meshgrid(x[0], x[1])
-            # deal with the shape of u (1d vs 2d)
+            # deal with the shape of u
             if len(self.shape) == 1:
                 u = self.u
             else:
@@ -154,8 +142,8 @@ class EquationSystem:
         # The indices of the equation's unknowns to the system's unknowns and vice versa
         self.idx = {}
         # optionally add the given equations
-        if equations:
-            for eq in self.equations:
+        if equations is not None:
+            for eq in equations:
                 self.add_equation(eq)
 
     # the number of unknowns per independent variable in the equation
@@ -177,6 +165,11 @@ class EquationSystem:
     @property
     def shape(self):
         return (self.ndofs,)
+
+    # A system of equations should never couple to other systems
+    @property
+    def is_coupled(self):
+        return False
 
     # The unknowns of the system: combined unknowns of the sub-equations
     @property
@@ -263,7 +256,9 @@ class EquationSystem:
     def jacobian(self, u):
         # if there is only one equation, we can return the matrix directly
         if len(self.equations) == 1:
-            return self.equations[0].jacobian(u)
+            eq = self.equations[0]
+            shape = u.shape if eq.is_coupled else eq.shape
+            return eq.jacobian(u.reshape(shape))
         # otherwise, we need to assemble the matrix
         J = np.zeros((self.ndofs, self.ndofs))
         # add the Jacobian of each equation
@@ -325,7 +320,7 @@ class FiniteDifferenceEquation(Equation):
         # second order derivative
         self.laplace = None
         # the spatial coordinates
-        self.x = np.linspace(0, 1, 100, endpoint=False)
+        self.x = [np.linspace(0, 1, self.dim, endpoint=False)]
 
     def build_FD_matrices(self):
         N = self.dim
@@ -370,7 +365,7 @@ class PseudospectralEquation(Equation):
     def __init__(self, shape=(1,)):
         super().__init__(shape)
         # the spatial coordinates
-        self.x = None
+        self.x = [np.linspace(0, 1, self.dim)]
         self.k = None
         self.ksquare = None
 
