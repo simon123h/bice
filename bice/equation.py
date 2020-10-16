@@ -66,7 +66,7 @@ class Equation:
         eps = 1e-10
         use_central_differences = False
         N = u.size
-        J = np.zeros((N, N))
+        J = np.zeros((N, N), dtype=u.dtype)
         # uncoupled equations require u to be reshaped the self.shape before calling rhs(u)
         shape = u.shape if self.is_coupled else self.shape
         # reference rhs without central differences
@@ -242,7 +242,7 @@ class EquationGroup:
             shape = u.shape if eq.is_coupled else eq.shape
             return eq.rhs(u.reshape(shape)).ravel()
         # otherwise, we need to assemble the result vector
-        res = np.zeros(self.ndofs)
+        res = np.zeros(self.ndofs, dtype=u.dtype)
         # add the contributions of each equation
         for eq in self.equations:
             if eq.is_coupled:
@@ -264,7 +264,7 @@ class EquationGroup:
             shape = u.shape if eq.is_coupled else eq.shape
             return eq.jacobian(u.reshape(shape))
         # otherwise, we need to assemble the matrix
-        J = np.zeros((self.ndofs, self.ndofs))
+        J = np.zeros((self.ndofs, self.ndofs), dtype=u.dtype)
         # add the Jacobian of each equation
         for eq in self.equations:
             if eq.is_coupled:

@@ -68,7 +68,7 @@ class RungeKutta4(TimeStepper):
         k3 = problem.rhs(problem.u + self.dt / 2 * k2)
         problem.time += self.dt/2.
         k4 = problem.rhs(problem.u + self.dt * k3)
-        problem.u = problem.u + self.dt / 6. * (k1 + 2 * k2 + 2 * k3 + k4)
+        problem.u += self.dt / 6. * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
 # Runge-Kutta-Fehlberg-4-5 scheme with adaptive step size
