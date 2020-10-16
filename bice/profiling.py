@@ -77,7 +77,7 @@ class MethodProfile:
         return data
 
     # print the stats on this method's profile and all the nested methods recursively
-    def print_stats(self, total_time, indentation=0, nested=True):
+    def print_stats(self, total_time, indentation=0, nested=True, last=False):
         if len(self.execution_times) > 0:
             # calculate stats
             Ncalls = len(self.execution_times)
@@ -86,8 +86,9 @@ class MethodProfile:
             T_rel_stddev = np.std(self.execution_times) / total_time
             # if nested: generate tree view for name
             if nested:
+                corn = "└" if last else "├"
                 name = ("│ "*indentation) + \
-                    ("└─" if indentation > 0 else "") + self.name
+                    (""+corn+"─" if indentation > 0 else "") + self.name
             else:
                 name = self.name
             # pretty print the stats
@@ -108,8 +109,9 @@ class MethodProfile:
             profs = {k: v for k, v in sorted(
                 profs.items(), key=lambda item: sum(item[1].execution_times), reverse=True)}
             # print their summary recursively
-            for _, p in profs.items():
-                p.print_stats(total_time, indentation, nested)
+            items = profs.items()
+            for i, (_, p) in enumerate(items):
+                p.print_stats(total_time, indentation, nested, last=(i==len(items)-1))
 
 
 class Profiler:
