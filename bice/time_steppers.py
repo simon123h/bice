@@ -216,11 +216,12 @@ class BDF(TimeStepper):
     using scipy.integrate
     """
 
-    def __init__(self, problem):
+    def __init__(self, problem, dt_max=np.inf):
         super().__init__()
         self.problem = problem
         self.rtol = 1e-5
         self.atol = 1e-8
+        self.dt_max = dt_max
         self.factory_reset()
 
     def step(self, problem):
@@ -238,4 +239,4 @@ class BDF(TimeStepper):
             return self.problem.rhs(u)
         # create instance of scipy.integrate.BDF
         self.bdf = scipy.integrate.BDF(
-            f, self.problem.time, self.problem.u, self.problem.time+1e18, rtol=self.rtol, atol=self.atol, vectorized=False)
+            f, self.problem.time, self.problem.u, self.problem.time+1e18, max_step=self.dt_max, rtol=self.rtol, atol=self.atol, vectorized=False)
