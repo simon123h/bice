@@ -85,6 +85,11 @@ class NikolaevskiyProblem(Problem):
         u_k[0] = 0
         self.ne.u = np.fft.irfft(u_k)
 
+    # Norm is the L2-norm of the NE
+    def norm(self):
+        return np.linalg.norm(self.ne.u)
+
+
 
 # create output folder
 shutil.rmtree("out", ignore_errors=True)
@@ -103,7 +108,7 @@ plotID = 0
 n = 0
 plotevery = 10
 dudtnorm = 1
-T = 60
+T = 100 / problem.ne.r
 if not os.path.exists("initial_state.dat"):
     while problem.time < T:
         # plot

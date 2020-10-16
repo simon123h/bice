@@ -103,14 +103,18 @@ class NikolaevskiyProblem(Problem):
         # TODO: fix for 2d
         pass
 
+    # Norm is the L2-norm of the NE
+    def norm(self):
+        return np.linalg.norm(self.ne.u)
+
 
 # create output folder
 shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = NikolaevskiyProblem(Nx=32, Ny=32)
-problem.ne.r = 0.1
+problem = NikolaevskiyProblem(Nx=16, Ny=16)
+problem.ne.r = 0.5
 problem.ne.m = 1.1
 
 # create figure
@@ -121,7 +125,7 @@ plotID = 0
 n = 0
 plotevery = 10
 dudtnorm = 1
-T = 60
+T = 100 / problem.ne.r
 if not os.path.exists("initial_state.dat"):
     while problem.time < T:
         # plot
@@ -133,6 +137,7 @@ if not os.path.exists("initial_state.dat"):
             print("time:   {:}".format(problem.time))
             print("dt:     {:}".format(problem.time_stepper.dt))
             print("|dudt|: {:}".format(dudtnorm))
+            print("norm:   {:}".format(problem.norm()))
         n += 1
         # perform timestep
         problem.time_step()
@@ -151,7 +156,7 @@ else:
     problem.load("initial_state.dat")
 
 # start parameter continuation
-problem.continuation_stepper.ds = 1e-2
+problem.continuation_stepper.ds = 1e-3
 problem.continuation_stepper.ndesired_newton_steps = 3
 problem.settings.always_check_eigenvalues = True
 problem.settings.neigs = 50
