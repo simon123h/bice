@@ -26,6 +26,7 @@ class NikolaevskiyEquation(PseudospectralEquation):
         self.Ny = Ny
         # we have only a single variable h
         self.shape = (Nx*Ny,)
+        self.rshape = (Nx, Ny)
         # parameters
         self.r = 0.5  # drive
         self.m = 10  # characteristic system length
@@ -54,21 +55,21 @@ class NikolaevskiyEquation(PseudospectralEquation):
         ky = self.k[1] / L / self.ratio
         ksq = kx**2 + ky**2
         # fourier transform
-        u_k = np.fft.rfft2(u.reshape((self.Nx, self.Ny)))
+        u_k = np.fft.rfft2(u.reshape(self.rshape))
         # calculate linear part (in fourier space)
         lin = ksq * (self.r - (1-ksq)**2) * u_k
         # calculate nonlinear part (in real space)
-        nonlin = - 0.5 * np.fft.irfft2(1j * kx * u_k)**2
-        nonlin += - 0.5 * np.fft.irfft2(1j * ky * u_k)**2
+        nonlin = np.fft.irfft2(1j * kx * u_k)**2
+        nonlin += np.fft.irfft2(1j * ky * u_k)**2
         # sum up and return
-        return (np.fft.irfft2(lin) + nonlin).reshape(u.size)
+        return (np.fft.irfft2(lin) - 0.5 * nonlin).ravel()
 
     # calculate the spatial derivative
     def first_spatial_derivative(self, u, direction=0):
-        u2 = u.reshape((self.x[0].size, self.x[1].size))
+        u2 = u.reshape(self.rshape)
         du_dx = 1j*self.k[direction]*np.fft.rfft2(u2)
         du_dx = np.fft.irfft2(du_dx)
-        return du_dx.reshape(u.size)
+        return du_dx.ravel()
 
     # plot the solution
     def plot(self, ax):
@@ -78,7 +79,7 @@ class NikolaevskiyEquation(PseudospectralEquation):
         x, y = np.meshgrid(self.x[0], self.x[1])
         Lx = self.L0 * self.m
         Ly = Lx * self.ratio
-        pcol = ax.pcolor(x*Lx, y*Ly, self.u.reshape((self.Nx, self.Ny)), cmap="coolwarm", rasterized=True)
+        pcol = ax.pcolor(x*Lx, y*Ly, self.u.reshape(self.rshape), cmap="coolwarm", rasterized=True)
         pcol.set_edgecolor('face')
 
 
@@ -99,12 +100,8 @@ class NikolaevskiyProblem(Problem):
 
     # set higher modes to null, for numerical stability
     def dealias(self, fraction=1./2.):
-        u_k = np.fft.rfft2(self.ne.u.reshape((self.ne.Nx, self.ne.Ny)))
-        N = len(u_k)
-        k = int(N*fraction)
-        u_k[k+1:] = 0
-        u_k[0] = 0
-        self.ne.u = np.fft.irfft2(u_k).reshape(self.ne.u.size)
+        # TODO: fix for 2d
+        pass
 
 
 # create output folder
@@ -113,7 +110,7 @@ os.makedirs("out/img", exist_ok=True)
 
 # create problem
 problem = NikolaevskiyProblem(Nx=32, Ny=32)
-problem.ne.r = 0.5
+problem.ne.r = 0.1
 problem.ne.m = 1.1
 
 # create figure
