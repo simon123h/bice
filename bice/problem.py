@@ -197,23 +197,6 @@ class Problem():
         obj, attr_name = tuple(self.continuation_parameter)
         setattr(obj, attr_name, val)
 
-    # add a point to the BifurcationDiagram based on the current solution
-    def __add_point_to_bifdiag(self, check_eigenvalues=False):
-        sol = Solution(self)
-        self.bifurcation_diagram.current_branch().add_solution_point(sol)
-        # if desired, solve the eigenproblem
-        if check_eigenvalues:
-            # solve the eigenproblem
-            eigenvalues, eigenvectors = self.solve_eigenproblem()
-            # count number of positive eigenvalues
-            sol.nunstable_eigenvalues = len([ev for ev in np.real(
-                eigenvalues) if ev > self.settings.eigval_zero_tolerance])
-            # temporarily save eigenvalues and eigenvectors for this step
-            # NOTE: this is currently only needed for plotting
-            self.latest_eigenvalues = eigenvalues
-            self.latest_eigenvectors = eigenvectors
-        return sol
-
     # locate the bifurcation of the given eigenvector
     def locate_bifurcation(self, eigenvector):
         # TODO: does not yet work!
