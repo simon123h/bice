@@ -68,7 +68,7 @@ class RungeKutta4(TimeStepper):
         k3 = problem.rhs(problem.u + self.dt / 2 * k2)
         problem.time += self.dt/2.
         k4 = problem.rhs(problem.u + self.dt * k3)
-        problem.u += self.dt / 6. * (k1 + 2 * k2 + 2 * k3 + k4)
+        problem.u = problem.u + self.dt / 6. * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
 # Runge-Kutta-Fehlberg-4-5 scheme with adaptive step size
@@ -121,10 +121,10 @@ class RungeKuttaFehlberg45(TimeStepper):
     c4 = 5.353313840155945e-01  # 2197/4104
     c5 = -2.000000000000000e-01  # -1/5
 
-    def __init__(self, dt=1e-2):
+    def __init__(self, dt=1e-2, error_tolerance=1e-3):
         super().__init__(dt)
         # Local truncation error tolerance
-        self.error_tolerance = 1e-3
+        self.error_tolerance = error_tolerance
         # Maximum number of iterations when steps are rejected
         self.max_rejections = 30
         # counter for the number of rejections in current step
