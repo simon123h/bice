@@ -17,21 +17,28 @@ class NikolaevskiyEquation(PseudospectralEquation):
     \partial t h &= -\Delta (r - (1+\Delta)^2) h - 1/2 (\nabla h)^2
     """
 
-    def __init__(self, N):
+    def __init__(self, Nx, Ny):
         super().__init__()
         # make sure N is even
-        N = int(np.floor(N/2)*2)
+        Nx = int(np.floor(Nx/2)*2)
+        Ny = int(np.floor(Ny/2)*2)
+        self.Nx = Nx
+        self.Ny = Ny
         # we have only a single variable h
-        self.shape = (N,)
+        self.shape = (Nx*Ny,)
         # parameters
         self.r = 0.5  # drive
         self.m = 10  # characteristic system length
+        self.ratio = 1  # length ratio Ly/Lx
         # space and fourier space
         L = 1
-        self.x = [np.linspace(0, L, N)]
-        self.k = [np.fft.rfftfreq(N, L / (2. * N * np.pi))]
+        self.x = [np.linspace(0, L, Nx), np.linspace(0, L, Ny)]
+        kx = np.fft.rfftfreq(Nx, L / (2. * Nx * np.pi))
+        ky = np.fft.fftfreq(Ny, L / (2. * Ny * np.pi))
+        kx, ky = np.meshgrid(kx, ky)
+        self.k = [kx, ky]
         # initial condition
-        self.u = 2*(np.random.rand(N)-0.5) * 1e-5
+        self.u = 2*(np.random.rand(Nx*Ny)-0.5) * 1e-5
 
     # characteristic length scale
     @property
@@ -40,33 +47,39 @@ class NikolaevskiyEquation(PseudospectralEquation):
 
     # definition of the Nikolaevskiy equation (right-hand side)
     def rhs(self, u):
+        N0 = u.size
         # calculate the system length
         L = self.L0 * self.m
-        # include length scale in the k-vector
-        k = self.k[0] / L
-        ksq = k**2
+        # include length scale in the k-vectors
+        kx = self.k[0] / L
+        ky = self.k[1] / L / self.ratio
+        ksq = kx**2 + ky**2
         # fourier transform
-        u_k = np.fft.rfft(u)
+        u_k = np.fft.rfft2(u.reshape((self.Nx, self.Ny)))
         # calculate linear part (in fourier space)
         lin = ksq * (self.r - (1-ksq)**2) * u_k
         # calculate nonlinear part (in real space)
-        nonlin = - 0.5 * np.fft.irfft(1j * k * u_k)**2
+        nonlin = - 0.5 * np.fft.irfft2(1j * kx * u_k)**2
+        nonlin += - 0.5 * np.fft.irfft2(1j * ky * u_k)**2
         # sum up and return
-        return np.fft.irfft(lin) + nonlin
+        return (np.fft.irfft2(lin) + nonlin).reshape(N0)
 
     def plot(self, ax):
         ax.set_xlabel("x")
-        ax.set_ylabel("h(x,t)")
-        L = self.L0 * self.m
-        ax.plot(self.x[0] * L, self.u)
+        ax.set_ylabel("y")
+        ax.set_aspect("equal")
+        x, y = np.meshgrid(self.x[0], self.x[1])
+        Lx = self.L0 * self.m
+        Ly = Lx * self.ratio
+        ax.pcolormesh(x*Lx, y*Ly, self.u.reshape((self.Nx, self.Ny)))
 
 
 class NikolaevskiyProblem(Problem):
 
-    def __init__(self, N):
+    def __init__(self, Nx, Ny):
         super().__init__()
         # Add the Nikolaevskiy equation to the problem
-        self.ne = NikolaevskiyEquation(N)
+        self.ne = NikolaevskiyEquation(Nx, Ny)
         self.add_equation(self.ne)
         # initialize time stepper
         # self.time_stepper = RungeKutta4(dt=1e-7)
@@ -78,12 +91,12 @@ class NikolaevskiyProblem(Problem):
 
     # set higher modes to null, for numerical stability
     def dealias(self, fraction=1./2.):
-        u_k = np.fft.rfft(self.ne.u)
+        u_k = np.fft.rfft2(self.ne.u.reshape((self.ne.Nx, self.ne.Ny)))
         N = len(u_k)
         k = int(N*fraction)
         u_k[k+1:] = 0
         u_k[0] = 0
-        self.ne.u = np.fft.irfft(u_k)
+        self.ne.u = np.fft.irfft2(u_k).reshape(self.ne.u.size)
 
 
 # create output folder
@@ -91,9 +104,9 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = NikolaevskiyProblem(N=64)
+problem = NikolaevskiyProblem(Nx=32, Ny=32)
 problem.ne.r = 0.5
-problem.ne.m = 1.1
+problem.ne.m = 2
 
 # create figure
 fig, ax = plt.subplots(1, 1, figsize=(16, 9))
