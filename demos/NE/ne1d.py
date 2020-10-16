@@ -135,8 +135,7 @@ else:
     problem.load("initial_state.dat")
 
 # start parameter continuation
-problem.continuation_stepper.ds = 1e-3
-problem.continuation_stepper.ds_max = 1e-2
+problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
 problem.settings.always_check_eigenvalues = True
 problem.settings.neigs = 10
@@ -152,7 +151,7 @@ plt.close(fig)
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 
 n = 0
-plotevery = 50
+plotevery = 10
 while problem.ne.m > 0:
     # perform continuation step
     problem.continuation_step()
