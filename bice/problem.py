@@ -136,14 +136,22 @@ class Problem():
     def continuation_step(self):
         # get the current branch in the bifurcation diagram
         branch = self.bifurcation_diagram.current_branch()
-        # if the branch is empty, add initial point
-        if branch.is_empty():
-            sol = self.__add_point_to_bifdiag(
-                self.settings.always_check_eigenvalues)
         # perform the step with a continuation stepper
         self.continuation_stepper.step(self)
         # add the solution to the branch
-        sol = self.__add_point_to_bifdiag(self.settings.always_check_eigenvalues)
+        sol = Solution(self)
+        self.bifurcation_diagram.current_branch().add_solution_point(sol)
+        # if desired, solve the eigenproblem
+        if self.settings.always_check_eigenvalues:
+            # solve the eigenproblem
+            eigenvalues, eigenvectors = self.solve_eigenproblem()
+            # count number of positive eigenvalues
+            sol.nunstable_eigenvalues = len([ev for ev in np.real(
+                eigenvalues) if ev > self.settings.eigval_zero_tolerance])
+            # temporarily save eigenvalues and eigenvectors for this step
+            # NOTE: this is currently only needed for plotting
+            self.latest_eigenvalues = eigenvalues
+            self.latest_eigenvectors = eigenvectors
         # optionally locate bifurcations
         if self.settings.always_locate_bifurcations and sol.is_bifurcation():
             # backup the values of u and the continuation parameter
