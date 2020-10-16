@@ -13,7 +13,7 @@ class VolumeConstraint(Equation):
     """
 
     def __init__(self, reference_equation, variable=0):
-        super().__init__()
+        super().__init__(shape=(1,))
         # on which equation/unknowns should the constraint be imposed?
         self.ref_eq = reference_equation
         # on which variable (index) of the equation should the constraint be imposed?
@@ -21,7 +21,7 @@ class VolumeConstraint(Equation):
         # the constraint equation couples to some other equation of the problem
         self.is_coupled = True
         # this equation brings a single extra degree of freedom (influx Lagrange multiplier)
-        self.u = np.array([0])
+        self.u = np.zeros(1)
         # This parameter allows for prescribing a fixed volume (unless it is None)
         self.fixed_volume = None
 
@@ -29,8 +29,8 @@ class VolumeConstraint(Equation):
         # generate empty vector of residual contributions
         res = np.zeros((u.size))
         # reference to the indices of the unknowns/equations that we work on
-        self_idx = self.parent.idx[self]
-        eq_idx = self.parent.idx[self.ref_eq]
+        self_idx = self.group.idx[self]
+        eq_idx = self.group.idx[self.ref_eq]
         # optionally split only that part that is referenced by self.variable
         if self.variable is not None:
             start = eq_idx.start + self.variable*self.ref_eq.dim
@@ -39,7 +39,7 @@ class VolumeConstraint(Equation):
         if self.fixed_volume is None:
             # calculate the difference in volumes between current
             # and previous unknowns of the reference equation
-            res[self_idx] = np.mean(u[eq_idx] - self.parent.u[eq_idx])
+            res[self_idx] = np.mean(u[eq_idx] - self.group.u[eq_idx])
         else:
             # parametric constraint: calculate the difference between current
             # volume and the prescribed fixed_volume parameter
@@ -69,7 +69,7 @@ class TranslationConstraint(Equation):
 
     def __init__(self, reference_equation, variable=None, direction=0):
         # call parent constructor
-        super().__init__()
+        super().__init__(shape=(1,))
         # on which equation/unknowns should the constraint be imposed?
         self.ref_eq = reference_equation
         # on which variable (index) of the equation should the constraint be imposed?
@@ -85,8 +85,8 @@ class TranslationConstraint(Equation):
         # set up the vector of the residual contributions
         res = np.zeros((u.size))
         # reference to the indices of the unknowns/equations that we work on
-        self_idx = self.parent.idx[self]
-        eq_idx = self.parent.idx[self.ref_eq]
+        self_idx = self.group.idx[self]
+        eq_idx = self.group.idx[self.ref_eq]
         # optionally split only that part that is referenced by self.variable
         if self.variable is not None:
             start = eq_idx.start + self.variable*self.ref_eq.dim
@@ -94,7 +94,7 @@ class TranslationConstraint(Equation):
         # define some variables
         eq = self.ref_eq
         eq_u = u[eq_idx]
-        eq_u_old = self.parent.u[eq_idx]
+        eq_u_old = self.group.u[eq_idx]
         velocity = u[self_idx]
         # add constraint to residuals of reference equation (velocity is the langrange multiplier)
         try:  # if method first_spatial_derivative is implemented, use this

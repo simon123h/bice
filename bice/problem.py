@@ -1,5 +1,5 @@
 import numpy as np
-from .equation import EquationSystem, Equation
+from .equation import EquationGroup, Equation
 from .time_steppers import RungeKutta4
 from .continuation_steppers import PseudoArclengthContinuation
 from .solvers import NewtonSolver, EigenSolver
@@ -72,13 +72,13 @@ class Problem():
 
     # add an equation to the problem
     def add_equation(self, eq):
-        if self.eq is eq:
+        if self.eq is self.equations():
             # if the given equation equals self.eq, warn
-            print("Equation is already part of the problem!")
+            print("Error: Equation is already part of the problem!")
         elif isinstance(self.eq, Equation):
             # if there is just a single equation, create a system of equations
-            self.eq = EquationSystem([self.eq, eq])
-        elif isinstance(self.eq, EquationSystem):
+            self.eq = EquationGroup([self.eq, eq])
+        elif isinstance(self.eq, EquationGroup):
             # if there is a system of equations, add the new equation to it
             self.eq.add_equation(eq)
         elif self.eq is None:
@@ -90,31 +90,31 @@ class Problem():
         if self.eq is eq:
             # if the given equation equals self.eq, remove it
             self.eq = None
-        elif isinstance(self.eq, EquationSystem):
-            # if there is a system of equations, remove the equation from it
+        elif isinstance(self.eq, EquationGroup):
+            # if there is a group of equations, remove the equation from it
             self.eq.remove_equation(eq)
         else:
             # else, eq could not be removed, warn
-            print("Equation is not part of the problem!")
+            print("Equation was not removed, since it is not part of the problem!")
 
-    # complete list of all equations that are part of the problem
+    # list all equations that are part of the problem
     def equations(self):
         if isinstance(self.eq, Equation):
             return [self.eq]
-        if isinstance(self.eq, EquationSystem):
-            return self.eq.traverse_equations()
+        if isinstance(self.eq, EquationGroup):
+            return self.eq.list_equations()
         return []
 
     # Calculate the right-hand side of the system 0 = rhs(u)
     @profile
     def rhs(self, u):
-        # return the rhs of the (system of) equations
+        # adjust the shape and return the rhs of the (system of) equations
         return self.eq.rhs(u.reshape(self.eq.shape)).ravel()
 
     # Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u
     @profile
     def jacobian(self, u):
-        # return the Jacobian of the (system of) equations
+        # adjust the shape and return the Jacobian of the (system of) equations
         return self.eq.jacobian(u.reshape(self.eq.shape))
 
     # The mass matrix determines the linear relation of the rhs to the temporal derivatives:

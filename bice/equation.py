@@ -30,8 +30,8 @@ class Equation:
         # full dimension of the problem and need to be mapped to the equation's
         # variables accordingly. Otherwise, they only have the dimension of this equation.
         self.is_coupled = False
-        # optional parent system of equation that this equation belongs to
-        self.parent = None
+        # optional reference to group of equations that this equation belongs to
+        self.group = None
 
     # the number of unknowns per independent variable in the equation
     @property
@@ -59,7 +59,7 @@ class Equation:
         raise NotImplementedError(
             "No right-hand side (rhs) implemented for this equation!")
 
-    # Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u
+    # Calculate the Jacobian J = d rhs(u) / du for the unknowns u
     @profile
     def jacobian(self, u):
         # default implementation: calculate Jacobian with finite differences
@@ -126,20 +126,20 @@ class Equation:
             ax.pcolormesh(mx, my, u)
 
 
-class EquationSystem:
+class EquationGroup:
     """
-    An EquationSystem or 'system of equations', groups multiple equations into a single large equation.
+    An EquationGroup or 'system of equations', groups multiple equations into a single large equation.
     All properties and functions are assembled from the subequations.
-    EquationSystems may even form hierarchical trees, where one system of equations serves as a
+    EquationGroups may even form hierarchical trees, where one group of equations serves as a
     subequation to another one.
     """
 
     def __init__(self, equations=None):
-        # the list of sub-equations (or even sub-systems-of-equations)
+        # the list of sub-equations (or even sub-groups-of-equations)
         self.equations = []
-        # optional reference to a parent EquationSystem
-        self.parent = None
-        # The indices of the equation's unknowns to the system's unknowns and vice versa
+        # optional reference to a parent EquationGroup
+        self.group = None
+        # The indices of the equation's unknowns to the group's unknowns and vice versa
         self.idx = {}
         # optionally add the given equations
         if equations is not None:
@@ -151,12 +151,12 @@ class EquationSystem:
     def dim(self):
         return self.ndofs
 
-    # the number of independent variables (always = 1 for system of equations)
+    # the number of independent variables (always = 1 for group)
     @property
     def nvariables(self):
         return 1
 
-    # The number of unknowns / degrees of freedom of the system
+    # The number of unknowns / degrees of freedom of the group
     @property
     def ndofs(self):
         return sum([eq.ndofs for eq in self.equations])
@@ -166,7 +166,7 @@ class EquationSystem:
     def shape(self):
         return (self.ndofs,)
 
-    # A system of equations should never couple to other systems
+    # A group of equations should never couple to other groups
     @property
     def is_coupled(self):
         return False
@@ -183,36 +183,40 @@ class EquationSystem:
             # extract the equation's unknowns using the mapping and reshape to the equation's shape
             eq.u = u[self.idx[eq]].reshape(eq.shape)
 
-    # add an equation to the system
+    # add an equation to the group
     def add_equation(self, eq):
         # check if eq already in self.equations
         if eq in self.equations:
-            print("Equation is already part of the system!")
+            print("Error: Equation is already part of this group!")
+            return
+        # check if eq already in other group
+        if eq.group is not None:
+            print("Error: Equation is already part of another group of equations!")
             return
         # append to list of equations
         self.equations.append(eq)
-        # assign this system as the equation's parent
-        eq.parent = self
-        # redo the mapping from equation's to parent's unknowns
+        # assign this group as the equation's group
+        eq.group = self
+        # redo the mapping from equation's to group's unknowns
         self.map_unknowns()
 
-    # remove an equation from the system
+    # remove an equation from the group
     def remove_equation(self, eq):
         # check if eq in self.equations
         if eq not in self.equations:
-            print("Equation is not part of the system!")
+            print("Error: Equation is not part of this group!")
             return
         # remove from the list of equations
         self.equations.remove(eq)
-        # remove the equations association with the system
-        eq.parent = None
-        # redo the mapping from equation's to parent's unknowns
+        # remove the equations association with the group
+        eq.group = None
+        # redo the mapping from equation's to group's unknowns
         self.map_unknowns()
 
-    # create the mapping from equation unknowns to system unknowns, in the sense
-    # that system.u[idx[eq]] = eq.u.ravel() where idx is the mapping
+    # create the mapping from equation unknowns to group unknowns, in the sense
+    # that group.u[idx[eq]] = eq.u.ravel() where idx is the mapping
     def map_unknowns(self):
-        # counter for the current position in system.u
+        # counter for the current position in group.u
         i = 0
         # assign index range for each equation according to their dimension
         for eq in self.equations:
@@ -221,15 +225,15 @@ class EquationSystem:
             #       not a range or anything else. Slices extract coherent parts
             #       of an array, which goes much much faster than extracting values
             #       from positions given by integer indices.
-            # indices of the equation's unknowns in EquationSystem.u
+            # indices of the equation's unknowns in EquationGroup.u
             self.idx[eq] = slice(i, i+eq.ndofs)
             # increment counter by the equation's number of degrees of freedom
             i += eq.ndofs
-        # if there is a parent system, update its mapping as well
-        if self.parent:
-            self.parent.map_unknowns()
+        # if there is a parent group, update its mapping as well
+        if self.group:
+            self.group.map_unknowns()
 
-    # Calculate the right-hand side of the system 0 = rhs(u)
+    # Calculate the right-hand side of the group 0 = rhs(u)
     @profile
     def rhs(self, u):
         # if there is only one equation, we can return the rhs directly
@@ -251,7 +255,7 @@ class EquationSystem:
         # everything assembled, return result
         return res
 
-    # Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u
+    # Calculate the Jacobian J = d rhs(u) / du for the unknowns u
     @profile
     def jacobian(self, u):
         # if there is only one equation, we can return the matrix directly
@@ -293,13 +297,13 @@ class EquationSystem:
         # all entries assembled, return
         return M
 
-    # traverse a list of all equations in the tree of equations
-    def traverse_equations(self):
+    # return a flattened list of all equations in the group and sub-groups
+    def list_equations(self):
         res = []
         for eq in self.equations:
-            if isinstance(eq, EquationSystem):
-                # if it is a system of equations, traverse it
-                res += eq.traverse_equations()
+            if isinstance(eq, EquationGroup):
+                # if it is a group of equations, traverse it
+                res += eq.list_equations()
             elif isinstance(eq, Equation):
                 # if it is an actual equation, add to the result list
                 res.append(eq)

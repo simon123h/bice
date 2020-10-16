@@ -28,7 +28,7 @@ class BifurcationConstraint(Equation):
         if self.__disabled:
             return 0
         # reference to the indices of the own unknowns
-        self_idx = self.parent.idx[self]
+        self_idx = self.group.idx[self]
         # get the value of the current and the previous null-eigenvector phi
         phi = u[self_idx][:-1]
         phi_old = self.u[:-1]
@@ -71,7 +71,7 @@ class BifurcationConstraint(Equation):
         # upper left block: d(rhs_orig)/d(u_orig) will be assembled by their respective equations
 
         # reference to the indices of the own unknowns
-        self_idx = self.parent.idx[self]
+        self_idx = self.group.idx[self]
         # get phi and phi_old
         phi = u[self_idx][:-1]
         phi_old = self.u[:-1]
@@ -96,12 +96,12 @@ class BifurcationConstraint(Equation):
         J[res1_slice, res1_slice] = Gu
 
         # last column: d(rhs)/d(param), calculate with FD
-        f0 = self.parent.rhs(u)
+        f0 = self.group.rhs(u)
         # deviate the free parameter value
         param_val = u[self_idx][-1]
         u[self_idx][-1] += eps
         # calculate new residuals
-        f1 = self.parent.rhs(u)
+        f1 = self.group.rhs(u)
         # reset the value of the free parameter
         u[self_idx][-1] = param_val
         # add FD parameter derivative to Jacobian
@@ -121,10 +121,10 @@ class BifurcationConstraint(Equation):
     def original_jacobian(self, u):
         # disable the null-space equations
         self.__disabled = True
-        Gu = self.parent.jacobian(u)
+        Gu = self.group.jacobian(u)
         self.__disabled = False
         # reference to the indices of the own unknowns
-        self_idx = self.parent.idx[self]
+        self_idx = self.group.idx[self]
         # remove those columns/rows of the Jacobian that belong to self,
         # so we are left with the original (unextended) Jacobian
         return np.delete(np.delete(Gu, self_idx, axis=0), self_idx, axis=1)

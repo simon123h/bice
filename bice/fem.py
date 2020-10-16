@@ -194,9 +194,9 @@ class FiniteElementEquation(Equation):
             # create a new array of unknowns of correct size, values will be filled later
             self.dim = N
             self.u = np.zeros(self.shape)
-            # if the equation belongs to a system of equations, redo it's mapping of the unknowns
-            if self.parent:
-                self.parent.map_unknowns()
+            # if the equation belongs to a group of equations, redo it's mapping of the unknowns
+            if self.group is not None:
+                self.group.map_unknowns()
         # now, we'll fill self.u with the values from the nodes
         # new empty array for the unknowns
         u = np.zeros(self.shape).T
