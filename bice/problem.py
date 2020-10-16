@@ -242,7 +242,7 @@ class Problem():
 
     # load the current solution from disk
     def load(self, filename):
-        self.u = np.loadtxt(filename)
+        self.u = np.loadtxt(filename, dtype=self.u.dtype)
 
     # Plot everything to the given axes.
     # Axes may be given explicitly of as a list of axes, that is then expanded.
