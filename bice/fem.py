@@ -149,10 +149,10 @@ class FiniteElementEquation(Equation):
     # adapt the mesh to the variables
     @profile
     def adapt(self):
-        # store the unknowns in the nodes
-        self.copy_unknowns_to_nodal_values()
         # calculate error estimate
         error_estimate = self.refinement_error_estimate()
+        # store the unknowns in the nodes
+        self.copy_unknowns_to_nodal_values()
         # adapt the mesh
         self.mesh.adapt(error_estimate)
         # restore the unknowns from the (interpolated) node values
@@ -190,14 +190,12 @@ class FiniteElementEquation(Equation):
         # number of nodes
         N = len(self.mesh.nodes)
         # if the number of nodes changed...
-        if self.u is None or N != self.dim:
-            # create a new array of unknowns of correct size, values will be filled later
+        if N != self.dim:
+            # update the dimension of the vector of unknowns
             self.dim = N
-            self.u = np.zeros(self.shape)
             # if the equation belongs to a group of equations, redo it's mapping of the unknowns
             if self.group is not None:
                 self.group.map_unknowns()
-        # now, we'll fill self.u with the values from the nodes
         # new empty array for the unknowns
         u = np.zeros(self.shape).T
         # loop over the nodes

@@ -137,10 +137,10 @@ class EquationGroup:
     def __init__(self, equations=None):
         # the list of sub-equations (or even sub-groups-of-equations)
         self.equations = []
-        # optional reference to a parent EquationGroup
-        self.group = None
         # The indices of the equation's unknowns to the group's unknowns and vice versa
         self.idx = {}
+        # optional reference to a parent EquationGroup
+        self.group = None
         # optionally add the given equations
         if equations is not None:
             for eq in equations:
