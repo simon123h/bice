@@ -76,7 +76,7 @@ class NikolaevskiyProblem(Problem):
         # self.time_stepper = BDF2(dt=1e-3)
         self.time_stepper = BDF(self, dt_max=1e-1)
         # assign the continuation parameter
-        self.continuation_parameter = (self.ne, "r")
+        self.continuation_parameter = (self.ne, "m")
 
     # set higher modes to null, for numerical stability
     def dealias(self, fraction=1./2.):
@@ -93,7 +93,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = NikolaevskiyProblem(N=256)
+problem = NikolaevskiyProblem(N=64)
 problem.ne.r = 0.5
 problem.ne.m = 1.1
 
@@ -106,7 +106,7 @@ n = 0
 plotevery = 10
 dudtnorm = 1
 T = 60
-if not os.path.exists("initial_state.dat") or True:
+if not os.path.exists("initial_state.dat"):
     while problem.time < T:
         # plot
         if n % plotevery == 0:
@@ -145,7 +145,6 @@ problem.continuation_stepper.ds = 1e-3
 problem.continuation_stepper.ds_max = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
 problem.settings.always_check_eigenvalues = False
-problem.settings.always_locate_bifurcations = False
 problem.settings.neigs = 0
 
 volume_constraint = VolumeConstraint(problem.ne)
@@ -159,7 +158,7 @@ fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 
 n = 0
 plotevery = 5
-while problem.ne.r > 0:
+while problem.ne.m > 0:
     # perform continuation step
     problem.continuation_step()
     n += 1
