@@ -1,5 +1,5 @@
 from .problem import Problem
-from .equation import Equation, FiniteDifferenceEquation, PseudospectralEquation
+from .equation import Equation, EquationGroup, FiniteDifferenceEquation, PseudospectralEquation
 
-__all__ = ['Problem', 'Equation',
+__all__ = ['Problem', 'Equation', 'EquationGroup',
            'FiniteDifferenceEquation', 'PseudospectralEquation']

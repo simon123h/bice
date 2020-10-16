@@ -32,6 +32,8 @@ class Problem():
         self.newton_solver = NewtonSolver()
         # The eigensolver for eigenvalues and -vectors
         self.eigen_solver = EigenSolver()
+        # The settings (tolerances, switches, etc.) are held by this ProblemSettings object
+        self.settings = ProblemSettings()
         # The bifurcation diagram of the problem holds all branches and their solutions
         self.bifurcation_diagram = BifurcationDiagram()
         # The continuation parameter is defined by passing an object and the name of the
@@ -42,18 +44,6 @@ class Problem():
         self.latest_eigenvalues = None
         # storage for the latest eigenvectors that were calculated
         self.latest_eigenvectors = None
-        # how many eigenvalues should be computed when problem.solve_eigenproblem() is called?
-        # TODO: should have a more verbose name
-        self.neigs = 20
-        # how small does an eigenvalue need to be in order to be counted as 'zero'?
-        self.eigval_zero_tolerance = 1e-6
-        # should eigenvalues be calculated after each step?
-        self.always_check_eigenvalues = False
-        # should we always try to locate bifurcations with an augmented system?
-        self.always_locate_bifurcations = False
-        # should sparse matrices be assumed when solving linear systems?
-        self.use_sparse_matrices = True
-        # TODO: maybe use some substructure for all the settings (tolerances, neigs, booleans...)
 
     # The number of unknowns / degrees of freedom of the problem
     @property
@@ -72,7 +62,7 @@ class Problem():
 
     # add an equation to the problem
     def add_equation(self, eq):
-        if self.eq is self.equations():
+        if self.eq is self.list_equations() or self.eq is eq:
             # if the given equation equals self.eq, warn
             print("Error: Equation is already part of the problem!")
         elif isinstance(self.eq, Equation):
@@ -98,7 +88,7 @@ class Problem():
             print("Equation was not removed, since it is not part of the problem!")
 
     # list all equations that are part of the problem
-    def equations(self):
+    def list_equations(self):
         if isinstance(self.eq, Equation):
             return [self.eq]
         if isinstance(self.eq, EquationGroup):
@@ -130,10 +120,10 @@ class Problem():
         self.u = self.newton_solver.solve(self.rhs, self.u, self.jacobian)
 
     # Calculate the eigenvalues and eigenvectors of the Jacobian
-    # The method will only calculate as many eigenvalues as requested with self.neigs
+    # The method will only calculate as many eigenvalues as requested with self.settings.neigs
     @profile
     def solve_eigenproblem(self):
-        return self.eigen_solver.solve(self.jacobian(self.u), self.mass_matrix(), k=self.neigs)
+        return self.eigen_solver.solve(self.jacobian(self.u), self.mass_matrix(), k=self.settings.neigs)
 
     # Integrate in time with the assigned time-stepper
     @profile
@@ -148,13 +138,14 @@ class Problem():
         branch = self.bifurcation_diagram.current_branch()
         # if the branch is empty, add initial point
         if branch.is_empty():
-            sol = self.add_point_to_bifdiag(self.always_check_eigenvalues)
+            sol = self.__add_point_to_bifdiag(
+                self.settings.always_check_eigenvalues)
         # perform the step with a continuation stepper
         self.continuation_stepper.step(self)
         # add the solution to the branch
-        sol = self.add_point_to_bifdiag(self.always_check_eigenvalues)
+        sol = self.__add_point_to_bifdiag(self.settings.always_check_eigenvalues)
         # optionally locate bifurcations
-        if self.always_locate_bifurcations and sol.is_bifurcation():
+        if self.settings.always_locate_bifurcations and sol.is_bifurcation():
             # backup the values of u and the continuation parameter
             u = self.u.copy()
             p = self.get_continuation_parameter()
@@ -198,7 +189,8 @@ class Problem():
         obj, attr_name = tuple(self.continuation_parameter)
         setattr(obj, attr_name, val)
 
-    def add_point_to_bifdiag(self, check_eigenvalues=False):
+    # add a point to the BifurcationDiagram based on the current solution
+    def __add_point_to_bifdiag(self, check_eigenvalues=False):
         sol = Solution(self)
         self.bifurcation_diagram.current_branch().add_solution_point(sol)
         # if desired, solve the eigenproblem
@@ -207,7 +199,7 @@ class Problem():
             eigenvalues, eigenvectors = self.solve_eigenproblem()
             # count number of positive eigenvalues
             sol.nunstable_eigenvalues = len([ev for ev in np.real(
-                eigenvalues) if ev > self.eigval_zero_tolerance])
+                eigenvalues) if ev > self.settings.eigval_zero_tolerance])
             # temporarily save eigenvalues and eigenvectors for this step
             # NOTE: this is currently only needed for plotting
             self.latest_eigenvalues = eigenvalues
@@ -271,7 +263,7 @@ class Problem():
             # clear the axes
             sol_ax.clear()
             # plot all equation's solutions
-            for eq in self.equations():
+            for eq in self.list_equations():
                 eq.plot(sol_ax)
         # plot the bifurcation diagram
         if bifdiag_ax is not None:
@@ -289,9 +281,9 @@ class Problem():
             if self.latest_eigenvalues is not None:
                 ev_re = np.real(self.latest_eigenvalues)
                 ev_re_n = np.ma.masked_where(
-                    ev_re > self.eigval_zero_tolerance, ev_re)
+                    ev_re > self.settings.eigval_zero_tolerance, ev_re)
                 ev_re_p = np.ma.masked_where(
-                    ev_re <= self.eigval_zero_tolerance, ev_re)
+                    ev_re <= self.settings.eigval_zero_tolerance, ev_re)
                 eigval_ax.plot(ev_re_n, "o", color="C0", label="Re < 0")
                 eigval_ax.plot(ev_re_p, "o", color="C1", label="Re > 0")
                 eigval_ax.axhline(0, color="gray")
@@ -311,9 +303,28 @@ class Problem():
                     else:
                         self.u = ev
                     # the equation's own plotting method will know best how to plot it
-                    for eq in self.equations():
+                    for eq in self.list_equations():
                         eq.plot(eigvec_ax)
                         # adjust the y-label, TODO: do this only for 1d-equations
                         eigvec_ax.set_ylabel("first eigenvector")
                     # reassign the correct unknowns to the problem
                     self.u = u_old
+
+
+class ProblemSettings():
+    """
+    A wrapper class that holds all the settings of a problem.
+    """
+
+    def __init__(self):
+        # how many eigenvalues should be computed when problem.solve_eigenproblem() is called?
+        # TODO: should have a more verbose name
+        self.neigs = 20
+        # how small does an eigenvalue need to be in order to be counted as 'zero'?
+        self.eigval_zero_tolerance = 1e-6
+        # should eigenvalues be calculated after each step?
+        self.always_check_eigenvalues = False
+        # should we always try to locate bifurcations with an augmented system?
+        self.always_locate_bifurcations = False
+        # should sparse matrices be assumed when solving linear systems?
+        self.use_sparse_matrices = True

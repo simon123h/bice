@@ -128,9 +128,9 @@ fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 print("starting continuation")
 problem.continuation_stepper.ds = -1e-2
 problem.use_sparse_matrices = True
-problem.always_check_eigenvalues = False
-problem.always_locate_bifurcations = False
-problem.neigs = 0
+problem.settings.always_check_eigenvalues = False
+problem.settings.always_locate_bifurcations = False
+problem.settings.neigs = 0
 
 n = 0
 plotevery = 10
