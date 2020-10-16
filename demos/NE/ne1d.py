@@ -52,7 +52,7 @@ class NikolaevskiyEquation(PseudospectralEquation):
         # calculate nonlinear part (in real space)
         nonlin = np.fft.irfft(1j * k * u_k)**2
         # sum up and return
-        return resnp.fft.irfft(lin) - 0.5 * nonlin
+        return np.fft.irfft(lin) - 0.5 * nonlin
 
     def plot(self, ax):
         ax.set_xlabel("x")
