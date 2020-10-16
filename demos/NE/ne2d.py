@@ -61,8 +61,10 @@ class NikolaevskiyEquation(PseudospectralEquation):
         # calculate nonlinear part (in real space)
         nonlin = np.fft.irfft2(1j * kx * u_k)**2
         nonlin += np.fft.irfft2(1j * ky * u_k)**2
-        # sum up and return
-        return (np.fft.irfft2(lin) - 0.5 * nonlin).ravel()
+        # sum up, nullify zero-mode and return
+        res = (np.fft.irfft2(lin) - 0.5 * nonlin).ravel()
+        res[0] = 0
+        return res
 
     # calculate the spatial derivative
     def first_spatial_derivative(self, u, direction=0):
@@ -102,6 +104,9 @@ class NikolaevskiyProblem(Problem):
     def dealias(self, fraction=1./2.):
         # TODO: fix for 2d
         pass
+        # u_k = np.fft.rfft(self.ne.u)
+        # u_k[0] = 0
+        # self.ne.u = np.fft.irfft(u_k)
 
     # Norm is the L2-norm of the NE
     def norm(self):
@@ -125,7 +130,7 @@ plotID = 0
 n = 0
 plotevery = 10
 dudtnorm = 1
-T = 100 / problem.ne.r
+T = 50 / problem.ne.r
 if not os.path.exists("initial_state.dat"):
     while problem.time < T:
         # plot

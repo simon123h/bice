@@ -50,9 +50,11 @@ class NikolaevskiyEquation(PseudospectralEquation):
         # calculate linear part (in fourier space)
         lin = ksq * (self.r - (1-ksq)**2) * u_k
         # calculate nonlinear part (in real space)
-        nonlin = - 0.5 * np.fft.irfft(1j * k * u_k)**2
-        # sum up and return
-        return np.fft.irfft(lin) + nonlin
+        nonlin = np.fft.irfft(1j * k * u_k)**2
+        # sum up, nullify zero-mode and return
+        res = np.fft.irfft(lin) - 0.5 * nonlin
+        res[0] = 0
+        return res
 
     def plot(self, ax):
         ax.set_xlabel("x")
