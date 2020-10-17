@@ -118,7 +118,7 @@ os.makedirs("out/img", exist_ok=True)
 # create problem
 problem = NikolaevskiyProblem(Nx=12, Ny=12)
 problem.ne.r = 0.5
-problem.ne.m = 1.1
+problem.ne.m = 1.3
 
 # create figure
 fig, ax = plt.subplots(1, 1, figsize=(16, 9))
@@ -159,9 +159,10 @@ else:
     problem.load("initial_state.dat")
 
 # start parameter continuation
-problem.continuation_stepper.ds = 1e-3
+problem.continuation_stepper.ds = 1e-1
 problem.continuation_stepper.ndesired_newton_steps = 6
 problem.settings.always_check_eigenvalues = True
+problem.settings.always_locate_bifurcations = True
 problem.settings.neigs = 50
 
 # add constraints

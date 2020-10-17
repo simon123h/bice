@@ -134,13 +134,13 @@ class Problem():
     # Perform a parameter continuation step
     @profile
     def continuation_step(self):
-        # get the current branch in the bifurcation diagram
-        branch = self.bifurcation_diagram.current_branch()
         # perform the step with a continuation stepper
         self.continuation_stepper.step(self)
+        # get the current branch in the bifurcation diagram
+        branch = self.bifurcation_diagram.current_branch()
         # add the solution to the branch
         sol = Solution(self)
-        self.bifurcation_diagram.current_branch().add_solution_point(sol)
+        branch.add_solution_point(sol)
         # if desired, solve the eigenproblem
         if self.settings.always_check_eigenvalues:
             # solve the eigenproblem
@@ -159,11 +159,12 @@ class Problem():
             p = self.get_continuation_parameter()
             # get the eigenvector that corresponds to the bifurcation
             # (the one with the smallest abolute real part)
+            # TODO: this is not necessarily the eigenvalue of the bifurcation
             unstable_eigval_index = np.argsort(
                 np.abs(self.latest_eigenvalues.real))[0]
-            eigenvector = self.latest_eigenvectors[unstable_eigval_index]
+            # eigenvector = self.latest_eigenvectors[unstable_eigval_index]
             # locate the exact bifurcation point
-            self.locate_bifurcation(eigenvector)
+            self.locate_bifurcation(unstable_eigval_index)
             # remove the point that we previously thought was the bifurcation
             branch.remove_solution_point(sol)
             # add the new solution point
@@ -198,7 +199,53 @@ class Problem():
         setattr(obj, attr_name, val)
 
     # locate the bifurcation of the given eigenvector
-    def locate_bifurcation(self, eigenvector):
+    # finds the point where eigenvalues[ev_index].real = 0 by bisection
+    # returns True/False if the location was successful or not
+    def locate_bifurcation(self, ev_index=0):
+        # backup the initial state and settings
+        u_old = self.u
+        p_old = self.get_continuation_parameter()
+        ds = self.continuation_stepper.ds
+        # solve the eigenproblem
+        eigenvalues, _ = self.solve_eigenproblem()
+        # save the eigenvalue and its sign
+        ev = eigenvalues[ev_index]
+        sgn = np.sign(ev.real)
+        # reverse continuation direction
+        self.continuation_stepper.ds *= -1
+        # bisection interval and current position
+        intvl = (0, 1)
+        pos = 1
+        # bisection method loop
+        while abs(ev.real) > 1e-6 and intvl[1] - intvl[0] > 1e-6:
+            # new middle point
+            pos_old = pos
+            pos = (intvl[0] + intvl[1]) / 2
+            # perform the continuation step to new center point
+            self.continuation_stepper.ds = ds * (pos - pos_old)
+            try:
+                self.continuation_stepper.step(self)
+            except np.linalg.LinAlgError as err:
+                print("Warning: error while trying to locate a bifurcation point:")
+                print(err)
+                break
+            # solve the eigenproblem and get the new eigenvalue
+            eigenvalues, _ = self.solve_eigenproblem()
+            ev = eigenvalues[ev_index]
+            # check the sign of the eigenvalue and adapt the interval
+            intvl = (pos, intvl[1]) if ev.real * sgn < 0 else (intvl[0], pos)
+        # restore the original stepsize
+        self.continuation_stepper.ds = ds
+        # if not converged, restore the initial state
+        if abs(ev.real) > 1e-2:
+            self.u = u_old
+            self.set_continuation_parameter(p_old)
+            return False
+        # if converged, return True
+        return True
+
+    # locate the bifurcation of the given eigenvector
+    def locate_bifurcation_using_constraint(self, eigenvector):
         # TODO: does not yet work!
         # make sure it is real, if self.u is real
         if not np.iscomplexobj(self.u):
