@@ -39,11 +39,6 @@ class Problem():
         # The continuation parameter is defined by passing an object and the name of the
         # object's attribute that corresponds to the continuation parameter as a tuple
         self.continuation_parameter = None
-        # storage for the latest eigenvalues that were calculated
-        # TODO: what if these become invalid, e.g., due to manual changes to the unknowns?
-        self.latest_eigenvalues = None
-        # storage for the latest eigenvectors that were calculated
-        self.latest_eigenvectors = None
 
     # The number of unknowns / degrees of freedom of the problem
     @property
@@ -148,10 +143,6 @@ class Problem():
             # count number of positive eigenvalues
             sol.nunstable_eigenvalues = len([ev for ev in np.real(
                 eigenvalues) if ev > self.settings.eigval_zero_tolerance])
-            # temporarily save eigenvalues and eigenvectors for this step
-            # NOTE: this is currently only needed for plotting
-            self.latest_eigenvalues = eigenvalues
-            self.latest_eigenvectors = eigenvectors
         # optionally locate bifurcations
         if self.settings.always_locate_bifurcations and sol.is_bifurcation():
             # try to locate the exact bifurcation point
@@ -204,7 +195,7 @@ class Problem():
         # (the one with the smallest abolute real part)
         if ev_index is None:
             ev_index = np.argsort(np.abs(eigenvalues.real))[0]
-        print("Locating bifurcation at index", ev_index)
+        # TODO: location sometimes has troubles, when there is more than one null-eigenvalue
         # store the eigenvalue and its sign
         ev = eigenvalues[ev_index]
         sgn = np.sign(ev.real)
@@ -317,8 +308,8 @@ class Problem():
             # clear the axes
             eigval_ax.clear()
             # plot the eigenvalues, if any
-            if self.latest_eigenvalues is not None:
-                ev_re = np.real(self.latest_eigenvalues)
+            if self.eigen_solver.latest_eigenvalues is not None:
+                ev_re = np.real(self.eigen_solver.latest_eigenvalues)
                 ev_re_n = np.ma.masked_where(
                     ev_re > self.settings.eigval_zero_tolerance, ev_re)
                 ev_re_p = np.ma.masked_where(
@@ -332,8 +323,8 @@ class Problem():
                 # clear the axes
                 eigvec_ax.clear()
                 # map the eigenvectors onto the equations and plot them
-                if self.latest_eigenvectors is not None:
-                    ev = self.latest_eigenvectors[0]
+                if self.eigen_solver.latest_eigenvectors is not None:
+                    ev = self.eigen_solver.latest_eigenvectors[0]
                     # backup the unknowns
                     u_old = self.u.copy()
                     # overwrite the unknowns with the eigenvalues (or their real part only)

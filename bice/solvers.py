@@ -40,6 +40,10 @@ class EigenSolver:
         # If shift != None, the eigensolver will find the eigenvalues near the
         # value of the shift first
         self.shift = 1
+        # store results of the latest computation
+        # NOTE: this is currently only needed for plotting the problem
+        self.latest_eigenvalues = None
+        self.latest_eigenvectors = None
 
     def solve(self, A, M=None, k=None, sigma=1):
         if k is None:
@@ -62,6 +66,7 @@ class EigenSolver:
         # sort by largest eigenvalue (largest real part) and filter infinite eigenvalues
         idx = np.argsort(eigenvalues)[::-1]
         idx = idx[np.isfinite(eigenvalues[idx])]
-        eigenvalues = eigenvalues[idx]
-        eigenvectors = eigenvectors.T[idx]
-        return (eigenvalues, eigenvectors)
+        # store and return
+        self.latest_eigenvalues = eigenvalues[idx]
+        self.latest_eigenvectors = eigenvectors.T[idx]
+        return (self.latest_eigenvalues, self.latest_eigenvectors)
