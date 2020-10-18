@@ -85,8 +85,6 @@ class FiniteElementEquation(Equation):
     def assemble_residuals(self, residuals_definition, u):
         # empty result variable
         res = np.zeros(self.shape).T
-        # transpose so node index comes first
-        uT = u.T
         # store the global indices of the nodes
         for i, n in enumerate(self.mesh.nodes):
             n.index = i
@@ -103,15 +101,16 @@ class FiniteElementEquation(Equation):
                 #  ...spatial coordinates
                 x = sum([n.x*s for n, s in zip(element.nodes, shape)])
                 #  ...unknowns
-                u = sum([uT[n.index]*s for n, s in zip(element.nodes, shape)])
+                uu = sum([u[..., n.index]*s for n,
+                          s in zip(element.nodes, shape)])
                 # ...spatial derivative of unknowns: dudx = sum_{nodes} u * dshapedx
-                dudx = np.array([sum(
-                    [uT[n.index]*ds[d] for n, ds in zip(element.nodes, dshapedx)]) for d in range(self.mesh.dim)]).T
+                dudx = np.array([sum([u[..., n.index]*ds[d] for n, ds in zip(
+                    element.nodes, dshapedx)]) for d in range(self.mesh.dim)]).T
                 # for every node in the element
                 for i, node in enumerate(element.nodes):
                     # calculate residual contribution
                     residual_contribution = residuals_definition(
-                        x, u, dudx, test[i], dtestdx[i])
+                        x, uu, dudx, test[i], dtestdx[i])
                     # cancel the contributions of pinned values (Dirichlet conditions)
                     if node.pinned_values:
                         residual_contribution[list(node.pinned_values)] = 0
@@ -125,8 +124,6 @@ class FiniteElementEquation(Equation):
     def integrate(self, f, u):
         # integral will be accumulated in this variable
         result = 0
-        # transpose so node index comes first
-        uT = u.T
         # store the global indices of the nodes
         for i, n in enumerate(self.mesh.nodes):
             n.index = i
@@ -140,9 +137,10 @@ class FiniteElementEquation(Equation):
                 shape = element.shape(s)
                 # interpolate spatial coordinates and unknowns
                 x = sum([n.x*s for n, s in zip(element.nodes, shape)])
-                u = sum([uT[n.index]*s for n, s in zip(element.nodes, shape)])
+                uu = sum([u[..., n.index]*s for n,
+                          s in zip(element.nodes, shape)])
                 # accumulate weighted values to the integral
-                result += f(x, u) * weight
+                result += f(x, uu) * weight
         # return the integral value
         return result
 
@@ -174,19 +172,20 @@ class FiniteElementEquation(Equation):
 
     # copy the unknowns u to the values in the mesh nodes
     @profile
-    def copy_unknowns_to_nodal_values(self, u=None):
+    def copy_unknowns_to_nodal_values(self, u=None, include_history=True):
         if u is None:
             u = self.u
-        # transpose for correct shape
-        u = u.T
+        # optionally append the history of unknowns to u
+        if include_history:
+            u = np.array([u] + self.u_history)
         # loop over the nodes
         for n, node in enumerate(self.mesh.nodes):
-            # assign the unknowns to the node, transpose for correct shape
-            node.u = u[n]
+            # assign the unknowns to the node
+            node.u = u[..., n]
 
     # copy the values of the nodes to the equation's unknowns
     @profile
-    def copy_nodal_values_to_unknowns(self):
+    def copy_nodal_values_to_unknowns(self, include_history=True):
         # number of nodes
         N = len(self.mesh.nodes)
         # if the number of nodes changed...
@@ -197,7 +196,11 @@ class FiniteElementEquation(Equation):
             if self.group is not None:
                 self.group.map_unknowns()
         # new empty array for the unknowns
-        u = np.zeros(self.shape).T
+        u = np.zeros(self.shape)
+        # if needed, also for the history of unknowns
+        if include_history:
+            hist_len = len(self.u_history)
+            u = np.array([u] + [u.copy() for t in range(hist_len)])
         # loop over the nodes
         for n, node in enumerate(self.mesh.nodes):
             # make sure the node has storage for the unknowns
@@ -205,9 +208,13 @@ class FiniteElementEquation(Equation):
                 raise Exception(
                     "Node #{:d} at x={} has no unknowns assigned! Unable to copy them to equation.u!".format(n, node.x))
             # store the node's unknowns in the new u
-            u[n] = node.u
+            u[..., n] = node.u
+        # optionally split the history of unknowns again
+        if include_history:
+            self.u_history = [uu for uu in u[1:]]
+            u = u[0]
         # assign the new unknowns to the equation
-        self.u = np.array(u).T
+        self.u = u
 
 
 class Node:
@@ -221,6 +228,8 @@ class Node:
         self.x = x
         # storage for the unknowns (not always up to date!)
         self.u = None
+        # storage for the history of the unknowns
+        self.u_history = []
         # the elements that this node belongs to
         self.elements = []
         # indices of the values that are pinned (e.g. by a Dirichlet condition)

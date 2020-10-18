@@ -98,8 +98,9 @@ class Equation:
         # NOTE: could be a scipy.sparse matrix
         return np.eye(self.ndofs)
 
-    # adapt the equation to the solution (mesh refinement or similar)
-    # may be overridden for specific types of equations
+    # adapt the equation to the solution (mesh refinement or similar).
+    # May be overridden for specific types of equations,
+    # do not forget to adapt Equation.u_history as well!
     def adapt(self):
         pass
 
