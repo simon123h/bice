@@ -12,9 +12,6 @@ class ContinuationStepper:
     def __init__(self, ds=1e-3):
         # continuation step size
         self.ds = ds
-        # every ContinuationStepper is expected to have a tangent property, see PseudoArclengthContinuation
-        # TODO: this can be removed, once the the tangent is calculated from the history that should be saved in the Problem/Equation
-        self.tangent = None
 
     # perform a continuation step on a problem
     def step(self, problem):
@@ -24,7 +21,6 @@ class ContinuationStepper:
     # reset the continuation-stepper parameters & storage to default, e.g.,
     # when starting off a new solution point, switching branches or
     # switching the principal continuation parameter
-    # NOTE: is there a better name for this?
     def factory_reset(self):
         pass
 
@@ -39,9 +35,8 @@ class NaturalContinuation(ContinuationStepper):
         # update the parameter value
         p = problem.get_continuation_parameter()
         problem.set_continuation_parameter(p + self.ds)
-        # solve it with a Newton solver
-        # TODO: detect if Newton solver failed and reject step
-        problem.u = scipy.optimize.newton_krylov(problem.rhs, problem.u)
+        # solve the problem with a Newton solver
+        problem.newton_solve()
 
 
 class PseudoArclengthContinuation(ContinuationStepper):
@@ -74,22 +69,23 @@ class PseudoArclengthContinuation(ContinuationStepper):
         self.parameter_arc_length_proportion = 1
         # finite-difference for calculating parameter derivatives
         self.fd_epsilon = 1e-10
-        # stores the du-vector of the last step in order to use it as tangent for the next step
-        self.tangent = None
 
     # perform continuation step
     def step(self, problem):
         p = problem.get_continuation_parameter()
         u = problem.u
         N = u.size
-        # save old variables
-        u_old = u.copy()
-        p_old = p
-        # if we stored a valid tangent
-        if self.tangent is not None and self.tangent.size == u.size + 1:
-            tangent = self.tangent
+        # save the old variables
+        u_old, p_old = u.copy(), p
+        # check if we know at least the two previous continuation points
+        if problem.history.length > 1 and problem.history.type == "continuation":
+            # if yes, we can approximate the tangent in phase-space from the history points
+            tangent = np.append(u - problem.history.u(-1),
+                                p - problem.history.continuation_parameter(-1))
+            # normalize tangent and adjust sign with respect to continuation direction
+            tangent /= np.linalg.norm(tangent) * np.sign(self.ds)
         else:
-            # calculate tangent from extended Jacobian in (u, parameter)-space
+            # else, we need to calculate the tangent from extended Jacobian in (u, parameter)-space
             jac = problem.jacobian(u)
             # last column of extended jacobian: d(rhs)/d(parameter), calculate it with FD
             problem.set_continuation_parameter(p - self.fd_epsilon)
@@ -106,7 +102,8 @@ class PseudoArclengthContinuation(ContinuationStepper):
             tangent = self._linear_solve(
                 jac, zero, problem.settings.use_sparse_matrices)
             tangent /= np.linalg.norm(tangent)
-        # TODO: make sure that ds is going in the expected direction
+            # NOTE: if we multiply tangent with sign(tangent-1),
+            #       we could make sure that it points in positive parameter direction
         # make initial guess: u -> u + ds * tangent
         u = u + self.ds * tangent[:N]
         p = p + self.ds * tangent[N]
@@ -148,12 +145,6 @@ class PseudoArclengthContinuation(ContinuationStepper):
             # system converged to new solution, assign the new values
             problem.u = u
             problem.set_continuation_parameter(p)
-            # approximate tangent for the following step
-            self.tangent = np.append(u - u_old, p - p_old)
-            self.tangent /= np.linalg.norm(self.tangent)
-            # adjust sign of tangent for negative continuation direction
-            if self.ds < 0:
-                self.tangent *= -1
         else:
             # we didn't converge, reset to old values :-/
             problem.u = u_old
@@ -181,7 +172,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
     # when starting off a new solution point, switching branches or
     # switching the principal continuation parameter
     def factory_reset(self):
-        self.tangent = None
+        pass
 
     # Solve the linear system A*x = b for x and return x
     def _linear_solve(self, A, b, use_sparse_matrices=False):

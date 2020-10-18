@@ -127,16 +127,16 @@ class Problem():
     # Integrate in time with the assigned time-stepper
     @profile
     def time_step(self):
-        # update the history with the new u-values
-        self.history.update()
+        # update the history with the current state
+        self.history.update(history_type="time")
         # perform timestep according to current scheme
         self.time_stepper.step(self)
 
     # Perform a parameter continuation step
     @profile
     def continuation_step(self):
-        # update the history with the new u-values
-        self.history.update()
+        # update the history with the current state
+        self.history.update(history_type="continuation")
         # perform the step with a continuation stepper
         self.continuation_stepper.step(self)
         # get the current branch in the bifurcation diagram
@@ -195,9 +195,8 @@ class Problem():
         # backup the initial state
         u_old = self.u
         p_old = self.get_continuation_parameter()
-        # backup stepsize and tangent
+        # backup stepsize
         ds = self.continuation_stepper.ds
-        tangent = self.continuation_stepper.tangent
         # solve the eigenproblem
         eigenvalues, _ = self.solve_eigenproblem()
         # get the eigenvalue that corresponds to the bifurcation
@@ -229,9 +228,8 @@ class Problem():
             ev = eigenvalues[ev_index]
             # check the sign of the eigenvalue and adapt the interval
             intvl = (pos, intvl[1]) if ev.real * sgn < 0 else (intvl[0], pos)
-        # restore the original stepsize and tangent
+        # restore the original stepsize
         self.continuation_stepper.ds = ds
-        self.continuation_stepper.tangent = tangent
         # if not converged, restore the initial state
         if abs(ev.real) > 1e-2:
             self.u = u_old
@@ -261,6 +259,8 @@ class Problem():
         self.bifurcation_diagram.new_branch()
         # reset the settings and storage of the continuation stepper
         self.continuation_stepper.factory_reset()
+        # clear the history of unknowns because it would otherwise be invalid
+        self.history.clear()
 
     # the default norm of the solution, used for bifurcation diagrams
     def norm(self):
@@ -374,12 +374,12 @@ class ProblemHistory():
 
     # update the history with the current unknowns of the problem
     @profile
-    def update(self, hist_type=None):
+    def update(self, history_type=None):
         # make sure that the history is of correct type, do not mix different types
-        if self.type != hist_type:
-            # if it is of a different type, clear the history first
+        if self.type != history_type:
+            # if it is of a different type, clear the history first and assign new type
             self.clear()
-            self.type = hist_type
+            self.type = history_type
         # check the minimum length of the history in each equation
         eq_hist_length = min([len(eq.u_history)
                               for eq in self.problem.list_equations()])
@@ -418,6 +418,8 @@ class ProblemHistory():
 
     # get for the value of the time at some point t in history
     def time(self, t=0):
+        # accept negative and positive t
+        t = abs(t)
         # check length of history
         if t >= self.length:
             raise IndexError(
