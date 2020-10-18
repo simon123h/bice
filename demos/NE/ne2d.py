@@ -161,7 +161,8 @@ else:
 # start parameter continuation
 problem.continuation_stepper.ds = 1e-1
 problem.continuation_stepper.ndesired_newton_steps = 6
-problem.settings.always_check_eigenvalues = True
+problem.continuation_stepper.max_newton_iterations = 30
+problem.continuation_stepper.convergence_tolerance = 1e-8
 problem.settings.always_locate_bifurcations = True
 problem.settings.neigs = 50
 

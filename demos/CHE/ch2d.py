@@ -127,7 +127,6 @@ Profiler.print_summary()
 # start parameter continuation
 problem.continuation_stepper.ds = -1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
-problem.settings.always_check_eigenvalues = True
 
 translation_constraint = TranslationConstraint(problem.che)
 problem.add_equation(translation_constraint)

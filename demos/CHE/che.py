@@ -115,7 +115,6 @@ else:
 problem.continuation_stepper.ds = 1e-3
 problem.continuation_stepper.ndesired_newton_steps = 3
 problem.continuation_stepper.ds_max = 1e0
-problem.settings.always_check_eigenvalues = True
 problem.settings.neigs = 50
 translation_constraint = TranslationConstraint(problem.che)
 problem.add_equation(translation_constraint)
