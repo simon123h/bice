@@ -34,6 +34,8 @@ class Problem():
         self.eigen_solver = EigenSolver()
         # The settings (tolerances, switches, etc.) are held by this ProblemSettings object
         self.settings = ProblemSettings()
+        # The history of the unknown values is accessed and managed with the Problem.history object
+        self.history = ProblemHistory(self)
         # The bifurcation diagram of the problem holds all branches and their solutions
         self.bifurcation_diagram = BifurcationDiagram()
         # The continuation parameter is defined by passing an object and the name of the
@@ -69,6 +71,7 @@ class Problem():
         elif self.eq is None:
             # else, just assign the given equation
             self.eq = eq
+        # TODO: clear history?
 
     # remove an equation from the problem
     def remove_equation(self, eq):
@@ -81,6 +84,7 @@ class Problem():
         else:
             # else, eq could not be removed, warn
             print("Equation was not removed, since it is not part of the problem!")
+        # TODO: clear history?
 
     # list all equations that are part of the problem
     def list_equations(self):
@@ -123,12 +127,16 @@ class Problem():
     # Integrate in time with the assigned time-stepper
     @profile
     def time_step(self):
+        # update the history with the new u-values
+        self.history.update()
         # perform timestep according to current scheme
         self.time_stepper.step(self)
 
     # Perform a parameter continuation step
     @profile
     def continuation_step(self):
+        # update the history with the new u-values
+        self.history.update()
         # perform the step with a continuation stepper
         self.continuation_stepper.step(self)
         # get the current branch in the bifurcation diagram
@@ -160,6 +168,7 @@ class Problem():
                 # TODO: add the original solution point back to the branch?
 
     # return the value of the continuation parameter
+
     def get_continuation_parameter(self):
         # if no continuation parameter set, return None
         if self.continuation_parameter is None:
@@ -339,6 +348,100 @@ class Problem():
                         eigvec_ax.set_ylabel("first eigenvector")
                     # reassign the correct unknowns to the problem
                     self.u = u_old
+
+
+class ProblemHistory():
+    """
+    This class manages the history of the unknowns and the time /
+    continuation parameter of a given problem.
+    The history is needed for implicit time-stepping schemes or for
+    the calculation of tangents during parameter continuation.
+    Note that this class does not actually store the history of the unknowns,
+    which is rather found in the equations itself, in order to support adaption.
+    """
+
+    def __init__(self, problem):
+        # store reference to the problem
+        self.problem = problem
+        # maximum length of the history
+        self.max_length = 4
+        # what 'type' of history is currently stored? options are:
+        #  - "time" for a time-stepping history
+        #  - "continuation" for a history of continuation steps
+        self.type = None
+        # storage for the values of the time or the continuation parameter
+        self.__tp = []
+
+    # update the history with the current unknowns of the problem
+    def update(self, hist_type=None):
+        # make sure that the history is of correct type, do not mix different types
+        if self.type != hist_type:
+            # if it is of a different type, clear the history first
+            self.clear()
+            self.type = hist_type
+        # check the minimum length of the history in each equation
+        eq_hist_length = min([len(eq.u_history)
+                              for eq in self.problem.list_equations()])
+        # make sure that the equation's history length matches the parameter history's length
+        self.__tp = self.__tp[:eq_hist_length]
+        # update the history of unknowns in every equation
+        for eq in self.problem.list_equations():
+            eq.u_history = [eq.u.copy()] + eq.u_history[:self.max_length-1]
+        # add the value of the time / continuation parameter to the history
+        if self.type == "time":
+            val = self.problem.time
+        elif self.type == "continuation":
+            val = self.problem.get_continuation_parameter()
+        else:
+            val = None
+        self.__tp = [val] + self.__tp[:self.max_length-1]
+
+    # get the unknowns at some point t in history
+    def u(self, t=0):
+        # check length of history
+        if t >= self.length:
+            raise IndexError(
+                "Unknowns u[t=-{:d}] requested, but history length is {:d}".format(t, self.length))
+        # backup the unknowns
+        u_old = self.problem.u
+        # set the equation's unknowns from history
+        for eq in self.problem.list_equations():
+            eq.u = eq.u_history[abs(t)]
+        # result is now in the problem's unknowns
+        res = self.problem.u
+        # reset the unknowns
+        self.problem.u = u_old
+        # return result
+        return res
+
+    # get for the value of the time at some point t in history
+    def time(self, t=0):
+        # check length of history
+        if t >= self.length:
+            raise IndexError(
+                "Unknowns u[t=-{:d}] requested, but history length is {:d}".format(t, self.length))
+        # return the value
+        return self.__tp[t]
+
+    # get for the value of the continuation_parameter at some point t in history
+    def continuation_parameter(self, t=0):
+        # identical to fetching the time
+        return self.time(t)
+
+    # returns the length of the history
+    @property
+    def length(self):
+        return len(self.__tp)
+
+    # clears the history
+    def clear(self):
+        # clear the history type
+        self.type = None
+        # clear the history of unknowns in each equation
+        for eq in self.problem.list_equations():
+            eq.u_history = []
+        # clear the time / continuation parameter history
+        self.__tp = []
 
 
 class ProblemSettings():

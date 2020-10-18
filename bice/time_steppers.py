@@ -44,9 +44,11 @@ class ImplicitEuler(TimeStepper):
         problem.time += self.dt
         # obtain the mass matrix
         M = problem.mass_matrix()
+
         def f(u):
             # assemble the system
             return problem.rhs(u) - M.dot(u - problem.u) / self.dt
+
         def J(u):
             # Jacobian of the system
             return problem.jacobian(u) - M / self.dt
@@ -175,7 +177,7 @@ class RungeKuttaFehlberg45(TimeStepper):
         else:
             # if we rejected too many steps already: abort with Exception
             raise Exception(
-                "Runge-Kutta-Fehlberg time-stepper exceeded maximum number of rejected steps:", self.rejection_count)
+                "Runge-Kutta-Fehlberg time-stepper exceeded maximum number of rejected steps: {:d}".format(self.rejection_count))
 
 
 class BDF2(TimeStepper):
@@ -185,7 +187,6 @@ class BDF2(TimeStepper):
 
     def __init__(self, dt=1e-3):
         super().__init__(dt)
-        self.history = []
         self.order = 2
 
     def step(self, problem):
@@ -194,20 +195,19 @@ class BDF2(TimeStepper):
 
         # recover the history (impulsive start, if history is missing)
         u_1 = problem.u
-        u_2 = self.history[1] if len(self.history) > 1 else u_1
+        u_2 = problem.history.u(1) if problem.history.length > 1 else u_1
         # obtain the problem's mass matrix
         M = problem.mass_matrix()
 
         def f(u):
             # assemble the system
             return self.dt * problem.rhs(u) - M.dot(3*u - 4*u_1 + u_2)
+
         def J(u):
             # Jacobian of the system
             return self.dt * problem.jacobian(u) - 3*M
         # solve it with a Newton solver
         problem.u = problem.newton_solver.solve(f, problem.u, J)
-        # update history
-        self.history = [problem.u] + self.history[:self.order]
 
 
 class BDF(TimeStepper):

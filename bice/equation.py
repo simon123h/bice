@@ -25,6 +25,8 @@ class Equation:
         self.shape = shape
         # The equation's storage for the unknowns
         self.u = np.zeros(self.shape)
+        # a history of the unknowns, needed for implicit schemes
+        self.u_history = []
         # Does the equation couple to any other unknowns?
         # If it is coupled, then all unknowns and methods of this equation will have the
         # full dimension of the problem and need to be mapped to the equation's

@@ -21,7 +21,7 @@ class MyNewtonSolver:
                 return u
         # if we didn't converge, throw an error
         raise np.linalg.LinAlgError(
-            "Newton solver did not converge after", self.iteration_count, "iterations!")
+            "Newton solver did not converge after {:d} iterations!".format(self.iteration_count))
 
 
 class NewtonSolver:

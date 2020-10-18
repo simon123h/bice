@@ -161,7 +161,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
             # and throw error
             # TODO: we could also try again with a smaller step size, unless ds is already minimal
             raise np.linalg.LinAlgError(
-                "Newton solver did not converge after", count, "iterations!")
+                "Newton solver did not converge after {:d} iterations!".format(count))
 
         # adapt step size
         if self.adapt_stepsize:

@@ -10,6 +10,7 @@ from bice.time_steppers import Euler, ImplicitEuler, RungeKutta4, BDF, BDF2
 from bice.timeperiodic import TimePeriodicOrbitHandler
 import time
 
+
 # The Lotka-Volterra equations (predator prey model)
 class LotkaVolterraEquation(Equation):
     def __init__(self):
