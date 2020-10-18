@@ -96,6 +96,11 @@ class Equation:
         # NOTE: could be a scipy.sparse matrix
         return np.eye(self.ndofs)
 
+    # adapt the equation to the solution (mesh refinement or similar)
+    # may be overridden for specific types of equations
+    def adapt(self):
+        pass
+
     # plot the solution into a matplotlib axes object
     def plot(self, ax):
         # check if there is spatial coordinates, otherwise generate fake coordinates
