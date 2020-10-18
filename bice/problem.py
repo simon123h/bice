@@ -142,7 +142,7 @@ class Problem():
         sol = Solution(self)
         branch.add_solution_point(sol)
         # if desired, solve the eigenproblem
-        if self.settings.always_check_eigenvalues:
+        if self.settings.neigs > 0:
             # solve the eigenproblem
             eigenvalues, eigenvectors = self.solve_eigenproblem()
             # count number of positive eigenvalues
@@ -154,31 +154,19 @@ class Problem():
             self.latest_eigenvectors = eigenvectors
         # optionally locate bifurcations
         if self.settings.always_locate_bifurcations and sol.is_bifurcation():
-            # backup the values of u and the continuation parameter
-            u = self.u.copy()
-            p = self.get_continuation_parameter()
-            # get the eigenvector that corresponds to the bifurcation
-            # (the one with the smallest abolute real part)
-            # TODO: this is not necessarily the eigenvalue of the bifurcation
-            unstable_eigval_index = np.argsort(
-                np.abs(self.latest_eigenvalues.real))[0]
-            # eigenvector = self.latest_eigenvectors[unstable_eigval_index]
-            # locate the exact bifurcation point
-            self.locate_bifurcation(unstable_eigval_index)
-            # remove the point that we previously thought was the bifurcation
-            branch.remove_solution_point(sol)
-            # add the new solution point
-            new_sol = Solution(self)
-            branch.add_solution_point(new_sol)
-            # adapt the number of unstable eigenvalues from the point that
-            # overshot the bifurcation
-            new_sol.nunstable_eigenvalues = sol.nunstable_eigenvalues
-            # TODO: store bifurcation points separately?
-            # reset the values of u and the continuation parameter
-            self.u = u
-            self.set_continuation_parameter(p)
-            # add the original solution point back to the branch
-            branch.add_solution_point(sol)
+            # try to locate the exact bifurcation point
+            converged = self.locate_bifurcation()
+            if converged:
+                # remove the point that we previously thought was the bifurcation
+                branch.remove_solution_point(sol)
+                # add the new solution point
+                new_sol = Solution(self)
+                branch.add_solution_point(new_sol)
+                # adapt the number of unstable eigenvalues from the point that
+                # overshot the bifurcation
+                new_sol.nunstable_eigenvalues = sol.nunstable_eigenvalues
+                # TODO: store bifurcation points separately?
+                # TODO: add the original solution point back to the branch?
 
     # return the value of the continuation parameter
     def get_continuation_parameter(self):
@@ -198,26 +186,33 @@ class Problem():
         obj, attr_name = tuple(self.continuation_parameter)
         setattr(obj, attr_name, val)
 
-    # locate the bifurcation of the given eigenvector
-    # finds the point where eigenvalues[ev_index].real = 0 by bisection
-    # returns True/False if the location was successful or not
-    def locate_bifurcation(self, ev_index=0):
-        # backup the initial state and settings
+    # locate the closest bifurcation using bisection method
+    # (finds point where the real part of the eigenvalue closest to zero vanishes)
+    # ev_index: optional index of the eigenvalue that corresponds to the bifurcation
+    # tolerance: threshold at which the value is considered zero
+    # returns True (False) if the location converged (or not)
+    def locate_bifurcation(self, ev_index=None, tolerance=1e-6):
+        # backup the initial state
         u_old = self.u
         p_old = self.get_continuation_parameter()
+        # backup stepsize and tangent
         ds = self.continuation_stepper.ds
+        tangent = self.continuation_stepper.tangent
         # solve the eigenproblem
         eigenvalues, _ = self.solve_eigenproblem()
-        # save the eigenvalue and its sign
+        # get the eigenvalue that corresponds to the bifurcation
+        # (the one with the smallest abolute real part)
+        if ev_index is None:
+            ev_index = np.argsort(np.abs(eigenvalues.real))[0]
+        print("Locating bifurcation at index", ev_index)
+        # store the eigenvalue and its sign
         ev = eigenvalues[ev_index]
         sgn = np.sign(ev.real)
-        # reverse continuation direction
-        self.continuation_stepper.ds *= -1
         # bisection interval and current position
-        intvl = (0, 1)
+        intvl = (-1, 1)
         pos = 1
         # bisection method loop
-        while abs(ev.real) > 1e-6 and intvl[1] - intvl[0] > 1e-6:
+        while abs(ev.real) > tolerance and intvl[1] - intvl[0] > 1e-6:
             # new middle point
             pos_old = pos
             pos = (intvl[0] + intvl[1]) / 2
@@ -234,8 +229,9 @@ class Problem():
             ev = eigenvalues[ev_index]
             # check the sign of the eigenvalue and adapt the interval
             intvl = (pos, intvl[1]) if ev.real * sgn < 0 else (intvl[0], pos)
-        # restore the original stepsize
+        # restore the original stepsize and tangent
         self.continuation_stepper.ds = ds
+        self.continuation_stepper.tangent = tangent
         # if not converged, restore the initial state
         if abs(ev.real) > 1e-2:
             self.u = u_old
@@ -281,6 +277,11 @@ class Problem():
     # load the current solution from disk
     def load(self, filename):
         self.u = np.loadtxt(filename, dtype=self.u.dtype)
+
+    # adapt the problem/equations to the solution (e.g. by mesh refinement)
+    def adapt(self):
+        for eq in self.list_equations():
+            eq.adapt()
 
     # Plot everything to the given axes.
     # Axes may be given explicitly of as a list of axes, that is then expanded.
@@ -360,9 +361,7 @@ class ProblemSettings():
         self.neigs = 20
         # how small does an eigenvalue need to be in order to be counted as 'zero'?
         self.eigval_zero_tolerance = 1e-6
-        # should eigenvalues be calculated after each step?
-        self.always_check_eigenvalues = False
-        # should we always try to locate bifurcations with an augmented system?
+        # should we always try to exactly locate bifurcations when passing one?
         self.always_locate_bifurcations = False
         # should sparse matrices be assumed when solving linear systems?
         self.use_sparse_matrices = True

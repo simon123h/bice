@@ -12,6 +12,9 @@ class ContinuationStepper:
     def __init__(self, ds=1e-3):
         # continuation step size
         self.ds = ds
+        # every ContinuationStepper is expected to have a tangent property, see PseudoArclengthContinuation
+        # TODO: this can be removed, once the the tangent is calculated from the history that should be saved in the Problem/Equation
+        self.tangent = None
 
     # perform a continuation step on a problem
     def step(self, problem):
