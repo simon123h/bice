@@ -191,7 +191,7 @@ class Problem():
     # ev_index: optional index of the eigenvalue that corresponds to the bifurcation
     # tolerance: threshold at which the value is considered zero
     # returns True (False) if the location converged (or not)
-    def locate_bifurcation(self, ev_index=None, tolerance=1e-6):
+    def locate_bifurcation(self, ev_index=None, tolerance=1e-5):
         # backup the initial state
         u_old = self.u
         p_old = self.get_continuation_parameter()
@@ -211,13 +211,14 @@ class Problem():
         intvl = (-1, 1)
         pos = 1
         # bisection method loop
-        while abs(ev.real) > tolerance and intvl[1] - intvl[0] > 1e-6:
+        while abs(ev.real) > tolerance and intvl[1] - intvl[0] > 1e-4:
             # new middle point
             pos_old = pos
             pos = (intvl[0] + intvl[1]) / 2
             # perform the continuation step to new center point
             self.continuation_stepper.ds = ds * (pos - pos_old)
             try:
+                # Note that we do not update the history, so the tangent remains unchanged
                 self.continuation_stepper.step(self)
             except np.linalg.LinAlgError as err:
                 print("Warning: error while trying to locate a bifurcation point:")
@@ -231,9 +232,10 @@ class Problem():
         # restore the original stepsize
         self.continuation_stepper.ds = ds
         # if not converged, restore the initial state
-        if abs(ev.real) > 1e-2:
+        if abs(ev.real) > tolerance * 100:
             self.u = u_old
             self.set_continuation_parameter(p_old)
+            print("Warning: Failed to converge onto bifurcation point.")
             return False
         # if converged, return True
         return True
@@ -370,7 +372,9 @@ class ProblemHistory():
         #  - "continuation" for a history of continuation steps
         self.type = None
         # storage for the values of the time or the continuation parameter
-        self.__tp = []
+        self.__t = []
+        # storage for the values of the stepsize
+        self.__dt = []
 
     # update the history with the current unknowns of the problem
     @profile
@@ -384,18 +388,22 @@ class ProblemHistory():
         eq_hist_length = min([len(eq.u_history)
                               for eq in self.problem.list_equations()])
         # make sure that the equation's history length matches the parameter history's length
-        self.__tp = self.__tp[:eq_hist_length]
+        self.__t = self.__t[:eq_hist_length]
         # update the history of unknowns in every equation
         for eq in self.problem.list_equations():
             eq.u_history = [eq.u.copy()] + eq.u_history[:self.max_length-1]
-        # add the value of the time / continuation parameter to the history
+        # add the value of the time / continuation parameter and step size to the history
         if self.type == "time":
             val = self.problem.time
+            dval = self.problem.time_stepper.dt
         elif self.type == "continuation":
             val = self.problem.get_continuation_parameter()
+            dval = self.problem.continuation_stepper.ds
         else:
             val = None
-        self.__tp = [val] + self.__tp[:self.max_length-1]
+            dval = None
+        self.__t = [val] + self.__t[:self.max_length-1]
+        self.__dt = [dval] + self.__dt[:self.max_length-1]
 
     # get the unknowns at some point t in history
     @profile
@@ -425,17 +433,28 @@ class ProblemHistory():
             raise IndexError(
                 "Unknowns u[t=-{:d}] requested, but history length is {:d}".format(t, self.length))
         # return the value
-        return self.__tp[t]
+        return self.__t[t]
 
     # get for the value of the continuation_parameter at some point t in history
     def continuation_parameter(self, t=0):
         # identical to fetching the time
         return self.time(t)
 
+    # get for the value of the (time / continuation) step size at some point t in history
+    def step_size(self, t=0):
+        # accept negative and positive t
+        t = abs(t)
+        # check length of history
+        if t >= self.length:
+            raise IndexError(
+                "Unknowns u[t=-{:d}] requested, but history length is {:d}".format(t, self.length))
+        # return the value
+        return self.__dt[t]
+
     # returns the length of the history
     @property
     def length(self):
-        return len(self.__tp)
+        return len(self.__t)
 
     # clears the history
     def clear(self):
@@ -445,7 +464,7 @@ class ProblemHistory():
         for eq in self.problem.list_equations():
             eq.u_history = []
         # clear the time / continuation parameter history
-        self.__tp = []
+        self.__t = []
 
 
 class ProblemSettings():

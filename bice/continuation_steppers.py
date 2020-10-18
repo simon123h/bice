@@ -83,7 +83,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
             tangent = np.append(u - problem.history.u(-1),
                                 p - problem.history.continuation_parameter(-1))
             # normalize tangent and adjust sign with respect to continuation direction
-            tangent /= np.linalg.norm(tangent) * np.sign(self.ds)
+            tangent /= np.linalg.norm(tangent) * np.sign(problem.history.step_size(-1))
         else:
             # else, we need to calculate the tangent from extended Jacobian in (u, parameter)-space
             jac = problem.jacobian(u)

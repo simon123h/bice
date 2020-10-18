@@ -79,7 +79,8 @@ class NikolaevskiyEquation(PseudospectralEquation):
         x, y = np.meshgrid(self.x[0], self.x[1])
         Lx = self.L0 * self.m
         Ly = Lx * self.ratio
-        pcol = ax.pcolor(x*Lx, y*Ly, self.u.reshape(self.rshape), cmap="coolwarm", rasterized=True)
+        pcol = ax.pcolor(x*Lx, y*Ly, self.u.reshape(self.rshape),
+                         cmap="coolwarm", rasterized=True)
         pcol.set_edgecolor('face')
 
 
@@ -118,7 +119,7 @@ os.makedirs("out/img", exist_ok=True)
 # create problem
 problem = NikolaevskiyProblem(Nx=12, Ny=12)
 problem.ne.r = 0.5
-problem.ne.m = 1.1
+problem.ne.m = 1.25
 
 # create figure
 fig, ax = plt.subplots(1, 1, figsize=(16, 9))
@@ -159,7 +160,8 @@ else:
     problem.load("initial_state.dat")
 
 # start parameter continuation
-problem.continuation_stepper.ds = 1e-1
+problem.continuation_stepper.ds = 1e-0
+problem.continuation_stepper.ds_max = 1e-0
 problem.continuation_stepper.ndesired_newton_steps = 5
 problem.settings.always_locate_bifurcations = True
 problem.settings.neigs = 50
