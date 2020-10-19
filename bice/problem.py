@@ -245,7 +245,7 @@ class Problem():
             self.set_continuation_parameter(p_old)
             print("Warning: Failed to converge onto bifurcation point.")
             self.log("Corresponding eigenvalue:", ev)
-            return True
+            return False
         # if converged, return True
         return True
 
