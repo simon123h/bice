@@ -191,13 +191,14 @@ class Problem():
     # ev_index: optional index of the eigenvalue that corresponds to the bifurcation
     # tolerance: threshold at which the value is considered zero
     # returns True (False) if the location converged (or not)
-    def locate_bifurcation(self, ev_index=None, tolerance=1e-5):
+    def locate_bifurcation(self, ev_index=None, tolerance=1e-5, verbose=False):
         # backup the initial state
         u_old = self.u
         p_old = self.get_continuation_parameter()
         # backup stepsize
         ds = self.continuation_stepper.ds
         # solve the eigenproblem
+        # TODO: or recover them from self.eigen_solver.latest_eigenvalues?
         eigenvalues, _ = self.solve_eigenproblem()
         # get the eigenvalue that corresponds to the bifurcation
         # (the one with the smallest abolute real part)
@@ -208,10 +209,15 @@ class Problem():
         ev = eigenvalues[ev_index]
         sgn = np.sign(ev.real)
         # bisection interval and current position
-        intvl = (-1, 1)
+        # TODO: it can happen that the bifurcation is at pos 1.001, then we will not find it!
+        #       we somehow need to check on a broader interval first or known the sign of the
+        #       eigenvalue at the limits of the interval
+        intvl = (-1, 1)  # in multiples of step size
         pos = 1
         # bisection method loop
         while abs(ev.real) > tolerance and intvl[1] - intvl[0] > 1e-4:
+            if verbose:
+                print("[{:.6f} {:.6f}], Re: {:e}".format(*intvl, ev.real))
             # new middle point
             pos_old = pos
             pos = (intvl[0] + intvl[1]) / 2
@@ -254,6 +260,31 @@ class Problem():
         self.newton_solve()
         # remove the constraint again
         self.remove_equation(bifurcation_constraint)
+
+    # attempt to switch branches in a bifurcation
+    def switch_branch(self, ev_index=None, amplitude=1e-4):
+        # try to converge onto a bifurcation nearby
+        converged = self.locate_bifurcation(ev_index)
+        if not converged:
+            # TODO: raise error?
+            print(
+                "Failed to converge onto a bifurcation point! Branch switching aborted.")
+            return
+        # recover eigenvalues and -vectors from the eigensolver
+        eigenvalues = self.eigen_solver.latest_eigenvalues
+        eigenvectors = self.eigen_solver.latest_eigenvectors
+        # find the eigenvalue that corresponds to the bifurcation
+        # (the one with the smallest abolute real part)
+        if ev_index is None:
+            ev_index = np.argsort(np.abs(eigenvalues.real))[0]
+        print(
+            "Attempting to switch branch with eigenvector #{:d}".format(ev_index))
+        # get the eigenvector that corresponds to the bifurcation
+        eigenvector = eigenvectors[ev_index]
+        if not np.iscomplexobj(self.u):
+            eigenvector = eigenvector.real
+        # perturb unknowns in direction of eigenvector
+        self.u = self.u + amplitude * eigenvector
 
     # create a new branch in the bifurcation diagram and prepare for a new continuation
     def new_branch(self):

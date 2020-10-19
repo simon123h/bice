@@ -76,13 +76,12 @@ class Solution:
         # if we don't know the branch, there is no neighboring solutions
         if self.branch is None:
             return None
-        else:
-            index = self.branch.solutions.index(self) + distance
-            # if index out of range, there is no neighbor at requested distance
-            if index < 0 or index >= len(self.branch.solutions):
-                return None
-            # else, return the neighbor
-            return self.branch.solutions[index]
+        index = self.branch.solutions.index(self) + distance
+        # if index out of range, there is no neighbor at requested distance
+        if index < 0 or index >= len(self.branch.solutions):
+            return None
+        # else, return the neighbor
+        return self.branch.solutions[index]
 
 
 class Branch:
@@ -172,6 +171,10 @@ class BifurcationDiagram:
             self.new_branch()
         # return the latest branch
         return self.branches[-1]
+
+    # return the latest solution in the diagram
+    def current_solution(self):
+        return self.current_branch().solutions[-1]
 
     # return a branch by its ID
     def get_branch_by_ID(self, branch_id):

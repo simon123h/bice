@@ -161,8 +161,9 @@ else:
 
 # start parameter continuation
 problem.continuation_stepper.ds = 1e-0
-problem.continuation_stepper.ds_max = 1e-0
+problem.continuation_stepper.ds_max = 1e1
 problem.continuation_stepper.ndesired_newton_steps = 5
+problem.continuation_stepper.convergence_tolerance = 1e-6
 problem.settings.always_locate_bifurcations = True
 problem.settings.neigs = 50
 
@@ -180,6 +181,27 @@ fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 
 n = 0
 plotevery = 1
+while problem.ne.m > 0:
+    # perform continuation step
+    problem.continuation_step()
+    n += 1
+    print("step #:", n, " ds:", problem.continuation_stepper.ds)
+    # plot
+    if n % plotevery == 0:
+        problem.plot(ax)
+        fig.savefig("out/img/{:05d}.svg".format(plotID))
+        plotID += 1
+        
+    if problem.bifurcation_diagram.current_solution().is_bifurcation():
+        break
+
+# try to switch branches
+problem.switch_branch()
+problem.plot(ax)
+fig.savefig("out/img/{:05d}.svg".format(plotID))
+plotID += 1
+
+
 while problem.ne.m > 0:
     # perform continuation step
     problem.continuation_step()
