@@ -262,7 +262,7 @@ class Problem():
         self.remove_equation(bifurcation_constraint)
 
     # attempt to switch branches in a bifurcation
-    def switch_branch(self, ev_index=None, amplitude=1e-4):
+    def switch_branch(self, ev_index=None, amplitude=1e-3):
         # try to converge onto a bifurcation nearby
         converged = self.locate_bifurcation(ev_index)
         if not converged:
@@ -284,7 +284,7 @@ class Problem():
         if not np.iscomplexobj(self.u):
             eigenvector = eigenvector.real
         # perturb unknowns in direction of eigenvector
-        self.u = self.u + amplitude * eigenvector
+        self.u = self.u + amplitude * np.linalg.norm(self.u) * eigenvector
 
     # create a new branch in the bifurcation diagram and prepare for a new continuation
     def new_branch(self):

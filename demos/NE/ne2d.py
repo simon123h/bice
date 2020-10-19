@@ -42,11 +42,13 @@ class NikolaevskiyEquation(PseudospectralEquation):
         self.u = 2*(np.random.rand(Nx*Ny)-0.5) * 1e-5
         # create constraints
         self.volume_constraint = VolumeConstraint(self)
-        self.translation_constraint_x = TranslationConstraint(self, direction=0)
-        self.translation_constraint_y = TranslationConstraint(self, direction=1)
-
+        self.translation_constraint_x = TranslationConstraint(
+            self, direction=0)
+        self.translation_constraint_y = TranslationConstraint(
+            self, direction=1)
 
     # characteristic length scale
+
     @property
     def L0(self):
         return 2*np.pi / np.sqrt(1+np.sqrt(self.r))
@@ -82,15 +84,16 @@ class NikolaevskiyEquation(PseudospectralEquation):
         ax.set_ylabel("y")
         ax.set_aspect("equal")
         x, y = np.meshgrid(self.x[0], self.x[1])
+        h = self.u.reshape(self.rshape)
         Lx = self.L0 * self.m
         Ly = Lx * self.ratio
-        pcol = ax.pcolor(x*Lx, y*Ly, self.u.reshape(self.rshape),
-                         cmap="coolwarm", rasterized=True)
+        pcol = ax.pcolor(x*Lx, y*Ly, h, cmap="coolwarm", rasterized=True)
         pcol.set_edgecolor('face')
         # put velocity labels into plot
-        ax.text(0.02, 0.06, "vx = {:.1g}".format(self.translation_constraint_x.u[0]), transform=ax.transAxes)
-        ax.text(0.02, 0.02, "vy = {:.1g}".format(self.translation_constraint_y.u[0]), transform=ax.transAxes)
-
+        ax.text(0.02, 0.06, "vx = {:.1g}".format(
+            self.translation_constraint_x.u[0]), transform=ax.transAxes)
+        ax.text(0.02, 0.02, "vy = {:.1g}".format(
+            self.translation_constraint_y.u[0]), transform=ax.transAxes)
 
 
 class NikolaevskiyProblem(Problem):
@@ -118,6 +121,7 @@ class NikolaevskiyProblem(Problem):
 
     # Norm is the L2-norm of the NE
     def norm(self):
+        # TODO: divide by Nx*Nx*Lx*Ly
         return np.linalg.norm(self.ne.u)
 
 
@@ -144,7 +148,7 @@ if not os.path.exists("initial_state.dat"):
         # plot
         if n % plotevery == 0:
             problem.plot(ax)
-            fig.savefig("out/img/{:05d}.svg".format(plotID))
+            fig.savefig("out/img/{:05d}.png".format(plotID))
             plotID += 1
             print("step #: {:}".format(n))
             print("time:   {:}".format(problem.time))
@@ -174,7 +178,7 @@ problem.continuation_stepper.ds_max = 1e1
 problem.continuation_stepper.ndesired_newton_steps = 5
 problem.continuation_stepper.convergence_tolerance = 1e-6
 problem.settings.always_locate_bifurcations = True
-problem.settings.neigs = 50
+problem.settings.neigs = 20
 
 # add constraints
 problem.add_equation(problem.ne.volume_constraint)
@@ -187,6 +191,7 @@ fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 
 n = 0
 plotevery = 1
+bifcount = 0
 while problem.ne.m > 0:
     # perform continuation step
     problem.continuation_step()
@@ -195,16 +200,20 @@ while problem.ne.m > 0:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
-        fig.savefig("out/img/{:05d}.svg".format(plotID))
+        fig.savefig("out/img/{:05d}.png".format(plotID))
         plotID += 1
-        
+
     if problem.bifurcation_diagram.current_solution().is_bifurcation():
+        bifcount += 1
+    if bifcount > 0:
         break
 
+
 # try to switch branches
-problem.switch_branch()
+print("Branch switching started")
+problem.switch_branch(amplitude=1e-3)
 problem.plot(ax)
-fig.savefig("out/img/{:05d}.svg".format(plotID))
+fig.savefig("out/img/{:05d}.png".format(plotID))
 plotID += 1
 
 
@@ -216,5 +225,5 @@ while problem.ne.m > 0:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
-        fig.savefig("out/img/{:05d}.svg".format(plotID))
+        fig.savefig("out/img/{:05d}.png".format(plotID))
         plotID += 1
