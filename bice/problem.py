@@ -226,6 +226,7 @@ class Problem():
             self.continuation_stepper.ds = ds * (pos - pos_old)
             try:
                 # Note that we do not update the history, so the tangent remains unchanged
+                # TODO: instead of continuation, we could also update (u, p) and do newton_solve(), may be more stable
                 self.continuation_stepper.step(self)
             except np.linalg.LinAlgError as err:
                 print("Warning: error while trying to locate a bifurcation point:")
