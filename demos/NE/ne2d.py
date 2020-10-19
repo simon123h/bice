@@ -174,11 +174,12 @@ else:
 
 # start parameter continuation
 problem.continuation_stepper.ds = 1e-1
-problem.continuation_stepper.ds_max = 1e1
+problem.continuation_stepper.ds_max = 1e0
 problem.continuation_stepper.ndesired_newton_steps = 5
-problem.continuation_stepper.convergence_tolerance = 1e-6
+problem.continuation_stepper.convergence_tolerance = 1e-8
 problem.settings.always_locate_bifurcations = True
 problem.settings.neigs = 20
+problem.settings.verbose = True
 
 # add constraints
 problem.add_equation(problem.ne.volume_constraint)
@@ -211,7 +212,7 @@ while problem.ne.m > 0:
 
 # try to switch branches
 print("Branch switching started")
-problem.switch_branch(amplitude=1e-3)
+problem.switch_branch(amplitude=1e-2)
 problem.plot(ax)
 fig.savefig("out/img/{:05d}.png".format(plotID))
 plotID += 1

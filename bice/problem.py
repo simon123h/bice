@@ -191,7 +191,7 @@ class Problem():
     # ev_index: optional index of the eigenvalue that corresponds to the bifurcation
     # tolerance: threshold at which the value is considered zero
     # returns True (False) if the location converged (or not)
-    def locate_bifurcation(self, ev_index=None, tolerance=1e-5, verbose=False):
+    def locate_bifurcation(self, ev_index=None, tolerance=1e-5):
         # backup the initial state
         u_old = self.u
         p_old = self.get_continuation_parameter()
@@ -216,8 +216,9 @@ class Problem():
         pos = 1
         # bisection method loop
         while abs(ev.real) > tolerance and intvl[1] - intvl[0] > 1e-4:
-            if verbose:
-                print("[{:.6f} {:.6f}], Re: {:e}".format(*intvl, ev.real))
+            if self.settings.verbose:
+                self.log("Bisection: [{:.6f} {:.6f}], Re: {:e}".format(
+                    *intvl, ev.real))
             # new middle point
             pos_old = pos
             pos = (intvl[0] + intvl[1]) / 2
@@ -242,7 +243,8 @@ class Problem():
             self.u = u_old
             self.set_continuation_parameter(p_old)
             print("Warning: Failed to converge onto bifurcation point.")
-            return False
+            self.log("Corresponding eigenvalue:", ev)
+            return True
         # if converged, return True
         return True
 
@@ -277,7 +279,7 @@ class Problem():
         # (the one with the smallest abolute real part)
         if ev_index is None:
             ev_index = np.argsort(np.abs(eigenvalues.real))[0]
-        print(
+        self.log(
             "Attempting to switch branch with eigenvector #{:d}".format(ev_index))
         # get the eigenvector that corresponds to the bifurcation
         eigenvector = eigenvectors[ev_index]
@@ -285,6 +287,7 @@ class Problem():
             eigenvector = eigenvector.real
         # perturb unknowns in direction of eigenvector
         self.u = self.u + amplitude * np.linalg.norm(self.u) * eigenvector
+        # self.new_branch()
 
     # create a new branch in the bifurcation diagram and prepare for a new continuation
     def new_branch(self):
@@ -315,6 +318,14 @@ class Problem():
     def adapt(self):
         for eq in self.list_equations():
             eq.adapt()
+
+    # print()-wrapper for log messages
+    # log messages are printed only if verbosity is switched on
+    def log(self, *args, **kwargs):
+        if self.settings.verbose:
+            print(*args, **kwargs)
+        else:
+            print(self.settings.verbose)
 
     # Plot everything to the given axes.
     # Axes may be given explicitly of as a list of axes, that is then expanded.
@@ -513,3 +524,5 @@ class ProblemSettings():
         self.always_locate_bifurcations = False
         # should sparse matrices be assumed when solving linear systems?
         self.use_sparse_matrices = True
+        # should there be some extra output? useful for debugging
+        self.verbose = False
