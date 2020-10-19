@@ -40,6 +40,11 @@ class NikolaevskiyEquation(PseudospectralEquation):
         self.k = [kx, ky]
         # initial condition
         self.u = 2*(np.random.rand(Nx*Ny)-0.5) * 1e-5
+        # create constraints
+        self.volume_constraint = VolumeConstraint(self)
+        self.translation_constraint_x = TranslationConstraint(self, direction=0)
+        self.translation_constraint_y = TranslationConstraint(self, direction=1)
+
 
     # characteristic length scale
     @property
@@ -82,6 +87,10 @@ class NikolaevskiyEquation(PseudospectralEquation):
         pcol = ax.pcolor(x*Lx, y*Ly, self.u.reshape(self.rshape),
                          cmap="coolwarm", rasterized=True)
         pcol.set_edgecolor('face')
+        # put velocity labels into plot
+        ax.text(0.02, 0.06, "vx = {:.1g}".format(self.translation_constraint_x.u[0]), transform=ax.transAxes)
+        ax.text(0.02, 0.02, "vy = {:.1g}".format(self.translation_constraint_y.u[0]), transform=ax.transAxes)
+
 
 
 class NikolaevskiyProblem(Problem):
@@ -160,7 +169,7 @@ else:
     problem.load("initial_state.dat")
 
 # start parameter continuation
-problem.continuation_stepper.ds = 1e-0
+problem.continuation_stepper.ds = 1e-1
 problem.continuation_stepper.ds_max = 1e1
 problem.continuation_stepper.ndesired_newton_steps = 5
 problem.continuation_stepper.convergence_tolerance = 1e-6
@@ -168,12 +177,9 @@ problem.settings.always_locate_bifurcations = True
 problem.settings.neigs = 50
 
 # add constraints
-volume_constraint = VolumeConstraint(problem.ne)
-problem.add_equation(volume_constraint)
-translation_constraint_x = TranslationConstraint(problem.ne, direction=0)
-problem.add_equation(translation_constraint_x)
-translation_constraint_y = TranslationConstraint(problem.ne, direction=1)
-problem.add_equation(translation_constraint_y)
+problem.add_equation(problem.ne.volume_constraint)
+problem.add_equation(problem.ne.translation_constraint_x)
+problem.add_equation(problem.ne.translation_constraint_y)
 
 # create new figure
 plt.close(fig)
