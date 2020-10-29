@@ -16,9 +16,9 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = NikolaevskiyProblem(N=128)
+problem = NikolaevskiyProblem(N=32)
 problem.ne.r = 0.5
-problem.ne.m = 10
+problem.ne.m = 1.1
 
 # create figure
 fig, ax = plt.subplots(1, 1, figsize=(16, 9))
@@ -57,10 +57,14 @@ else:
     # load the initial state
     problem.load("initial_state.dat")
 
-
 # calculate Lyapunov exponents
 problem.time_stepper = BDF2(dt=0.1)
-lyapunov = LyapunovExponentCalculator(problem, nexponents=3, epsilon=1e-6, dt=0.4)
+lyapunov = LyapunovExponentCalculator(problem, nexponents=10, epsilon=1e-6, dt=0.1)
 while True:
     lyapunov.step()
+    problem.dealias()
+    ax.clear()
+    ax.plot(lyapunov.exponents, marker="o")
+    fig.savefig("out/img/{:05d}.svg".format(plotID))
+    plotID += 1
     print("Lyapunov exponents:", lyapunov.exponents)

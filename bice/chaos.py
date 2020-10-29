@@ -70,6 +70,7 @@ class LyapunovExponentCalculator():
         for i in range(self.nexponents+1):
             self.problem.u = trajectories[i]
             self.problem.time = time
+            self.problem.history.clear()
             while self.problem.time < time + self.dt:
                 self.problem.time_step()
             trajectories[i] = self.problem.u.copy()
