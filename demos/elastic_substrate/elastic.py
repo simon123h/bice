@@ -1,13 +1,13 @@
 #!/usr/bin/python3
-import numpy as np
-import matplotlib.pyplot as plt
 import shutil
 import os
 import sys
+import numpy as np
+import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem
 from bice.fem import FiniteElementEquation, OneDimMesh
-from bice.constraints import TranslationConstraint, VolumeConstraint
+from bice.continuation import TranslationConstraint, VolumeConstraint
 
 
 class ThinFilmEquation(FiniteElementEquation):
@@ -67,7 +67,8 @@ class ThinFilm(Problem):
         self.volume_constraint_h = VolumeConstraint(self.tfe, variable=0)
         self.volume_constraint_xi = VolumeConstraint(self.tfe, variable=1)
         # Generate the translation constraint
-        self.translation_constraint = TranslationConstraint(self.tfe, variable=0)
+        self.translation_constraint = TranslationConstraint(
+            self.tfe, variable=0)
         # assign the continuation parameter
         self.continuation_parameter = (self.tfe, "kappa")
 

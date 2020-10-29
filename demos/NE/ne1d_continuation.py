@@ -1,14 +1,12 @@
 #!/usr/bin/python3
-import numpy as np
-import matplotlib.pyplot as plt
 import shutil
 import os
 import sys
+import numpy as np
+import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, PseudospectralEquation
-from bice.time_steppers import RungeKutta4, RungeKuttaFehlberg45, BDF2, BDF
-from bice.constraints import TranslationConstraint, VolumeConstraint
-from ne1d import NikolaevskiyEquation, NikolaevskiyProblem
+from ne1d import NikolaevskiyProblem
+from bice.continuation import TranslationConstraint, VolumeConstraint
 
 # create output folder
 shutil.rmtree("out", ignore_errors=True)

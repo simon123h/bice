@@ -1,5 +1,5 @@
-from .equation import Equation
 import numpy as np
+from bice.core.equation import Equation
 
 # TODO: make this work for multiple variables, regarding ref_eq.shape
 # TODO: maybe use (Nt, N) as the shape

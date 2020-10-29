@@ -1,13 +1,14 @@
 #!/usr/bin/python3
-import numpy as np
-import matplotlib.pyplot as plt
 import shutil
 import os
 import sys
+import numpy as np
+import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, Equation, FiniteDifferenceEquation
+from bice import Problem, Equation, time_steppers
+from bice.pde import FiniteDifferenceEquation
 from bice.time_steppers import RungeKuttaFehlberg45, RungeKutta4, BDF2, BDF
-from bice.constraints import *
+from bice.continuation import VolumeConstraint, TranslationConstraint
 
 
 class ThinFilmEquation(Equation):
@@ -127,11 +128,11 @@ class ThinFilm(Problem):
         # Generate the translation constraint
         self.translation_constraint = TranslationConstraint(self.tfe)
         # initialize time stepper
-        # self.time_stepper = RungeKutta4()
-        # self.time_stepper = RungeKuttaFehlberg45()
+        # self.time_stepper = time_steppers.RungeKutta4()
+        # self.time_stepper = time_steppers.RungeKuttaFehlberg45()
         # self.time_stepper.error_tolerance = 1e1
         # self.time_stepper.dt = 3e-5
-        self.time_stepper = BDF(self)  # better for FD
+        self.time_stepper = time_steppers.BDF(self)  # better for FD
         # assign the continuation parameter
         self.continuation_parameter = (self.volume_constraint, "fixed_volume")
 

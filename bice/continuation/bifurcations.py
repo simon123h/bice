@@ -1,5 +1,5 @@
 import numpy as np
-from .equation import Equation
+from bice.core.equation import Equation
 
 
 class BifurcationConstraint(Equation):

@@ -1,14 +1,14 @@
 #!/usr/bin/python3
-import numpy as np
-import matplotlib.pyplot as plt
 import shutil
 import os
 import sys
+import numpy as np
+import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, Equation, FiniteDifferenceEquation, PseudospectralEquation
-from bice.time_steppers import RungeKutta4, RungeKuttaFehlberg45, BDF2
-from bice.constraints import TranslationConstraint
-from bice.profiling import Profiler, profile
+from bice import Problem, time_steppers
+from bice.pde import FiniteDifferenceEquation, PseudospectralEquation
+from bice.continuation import TranslationConstraint
+from bice import profile, Profiler
 
 
 class SwiftHohenbergEquation(PseudospectralEquation):
@@ -84,9 +84,9 @@ class SwiftHohenbergProblem(Problem):
         # self.she = SwiftHohenbergEquationFD(N, L)
         self.add_equation(self.she)
         # initialize time stepper
-        self.time_stepper = RungeKuttaFehlberg45(dt=1e-3)
+        self.time_stepper = time_steppers.RungeKuttaFehlberg45(dt=1e-3)
         self.time_stepper.error_tolerance = 1e-7
-        # self.time_stepper = BDF2(dt=1e-3) # better for FD
+        # self.time_stepper = time_steppers.BDF2(dt=1e-3) # better for FD
         # assign the continuation parameter
         self.continuation_parameter = (self.she, "r")
 

@@ -1,10 +1,9 @@
 import numpy as np
-from .equation import EquationGroup, Equation
-from .time_steppers import RungeKutta4
-from .continuation_steppers import PseudoArclengthContinuation
+from bice.time_steppers.runge_kutta import RungeKutta4
+from bice.continuation.continuation_steppers import PseudoArclengthContinuation
+from .equation import Equation, EquationGroup
 from .solvers import NewtonSolver, EigenSolver
 from .solution import Solution, BifurcationDiagram
-from .bifurcations import BifurcationConstraint
 from .profiling import profile
 
 
@@ -256,7 +255,7 @@ class Problem():
         if not np.iscomplexobj(self.u):
             eigenvector = eigenvector.real
         # create the bifurcation constraint and add it to the problem
-        bifurcation_constraint = BifurcationConstraint(
+        bifurcation_constraint = continuation.BifurcationConstraint(
             eigenvector, self.continuation_parameter)
         self.add_equation(bifurcation_constraint)
         # perform a newton solve

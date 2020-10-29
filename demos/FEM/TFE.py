@@ -1,15 +1,15 @@
 #!/usr/bin/python3
-import numpy as np
-import matplotlib.pyplot as plt
 import shutil
 import os
 import sys
+import numpy as np
+import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, Equation
-from bice.constraints import *
-from bice.solvers import *
+from bice import Problem
 from bice.fem import FiniteElementEquation, OneDimMesh
-from bice.profiling import Profiler
+from bice.continuation import VolumeConstraint, TranslationConstraint
+from bice import NewtonSolver, MyNewtonSolver
+from bice import profile, Profiler
 
 class ThinFilmEquation(FiniteElementEquation):
     r"""

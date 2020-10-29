@@ -1,16 +1,16 @@
 #!/usr/bin/python3
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
 import shutil
 import os
 import sys
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, Equation
-from bice.constraints import *
-from bice.solvers import *
+from bice import Problem
 from bice.fem import FiniteElementEquation, TriangleMesh
-from bice.profiling import Profiler
+from bice.continuation import VolumeConstraint, TranslationConstraint
+from bice import NewtonSolver, MyNewtonSolver
+from bice import profile, Profiler
 
 
 class ThinFilmEquation(FiniteElementEquation):
@@ -67,7 +67,8 @@ class ThinFilmEquation(FiniteElementEquation):
             n.index = i
         for element in self.mesh.elements:
             triangles.append([n.index for n in element.nodes])
-        triangulation = matplotlib.tri.Triangulation(self.x[0], self.x[1], triangles)
+        triangulation = matplotlib.tri.Triangulation(
+            self.x[0], self.x[1], triangles)
         ax.triplot(triangulation, lw=0.2, color='black')
 
 
@@ -81,8 +82,10 @@ class ThinFilm(Problem):
         # Generate the volume constraint
         self.volume_constraint = VolumeConstraint(self.tfe)
         # Generate the translation constraints
-        self.translation_constraint_x = TranslationConstraint(self.tfe, direction=0)
-        self.translation_constraint_y = TranslationConstraint(self.tfe, direction=1)
+        self.translation_constraint_x = TranslationConstraint(
+            self.tfe, direction=0)
+        self.translation_constraint_y = TranslationConstraint(
+            self.tfe, direction=1)
 
 
 # create output folder
