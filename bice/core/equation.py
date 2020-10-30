@@ -35,26 +35,10 @@ class Equation:
         # optional reference to group of equations that this equation belongs to
         self.group = None
 
-    # the number of unknowns per independent variable in the equation
-    @property
-    def dim(self):
-        return self.shape[-1]
-
-    @dim.setter
-    def dim(self, d):
-        self.shape = self.shape[:-1] + (d,)
-
-    # the number of independent variables in the equation (e.g. for vector-valued equations)
-    @property
-    def nvariables(self):
-        if len(self.shape) == 1:
-            return 1
-        return self.shape[0]
-
     # The total number of unknowns / degrees of freedom of the equation
     @property
     def ndofs(self):
-        return self.nvariables * self.dim
+        return np.prod(self.shape)
 
     # Calculate the right-hand side of the equation 0 = rhs(u)
     def rhs(self, u):
@@ -110,7 +94,7 @@ class Equation:
         try:
             x = self.x
         except AttributeError:
-            x = [np.arange(self.dim)]
+            x = [np.arange(self.shape[-1])]
         if len(x) == 1:
             ax.set_xlabel("x")
             ax.set_ylabel("solution u(x,t)")
@@ -118,7 +102,7 @@ class Equation:
             if len(self.shape) == 1:
                 ax.plot(x[0], self.u)
             else:
-                for n in range(self.nvariables):
+                for n in range(self.shape[0]):
                     ax.plot(x[0], self.u[n])
         if len(x) == 2:
             ax.set_xlabel("x")
@@ -153,16 +137,6 @@ class EquationGroup:
         if equations is not None:
             for eq in equations:
                 self.add_equation(eq)
-
-    # the number of unknowns per independent variable in the equation
-    @property
-    def dim(self):
-        return self.ndofs
-
-    # the number of independent variables (always = 1 for group)
-    @property
-    def nvariables(self):
-        return 1
 
     # The number of unknowns / degrees of freedom of the group
     @property

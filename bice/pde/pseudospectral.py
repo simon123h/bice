@@ -12,7 +12,7 @@ class PseudospectralEquation(Equation):
     def __init__(self, shape=(1,)):
         super().__init__(shape)
         # the spatial coordinates
-        self.x = [np.linspace(0, 1, self.dim)]
+        self.x = [np.linspace(0, 1, self.shape[-1])]
         self.k = None
         self.ksquare = None
 

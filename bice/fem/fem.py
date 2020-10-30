@@ -30,6 +30,22 @@ class FiniteElementEquation(Equation):
     def x(self):
         return np.array([n.x for n in self.mesh.nodes]).T
 
+    # the number of unknowns per independent variable in the equation
+    @property
+    def dim(self):
+        return self.shape[-1]
+
+    @dim.setter
+    def dim(self, d):
+        self.shape = self.shape[:-1] + (d,)
+
+    # the number of independent variables in the equation
+    @property
+    def nvariables(self):
+        if len(self.shape) == 1:
+            return 1
+        return self.shape[0]
+
     # assemble the matrices of the FEM operators
     @profile
     def build_FEM_matrices(self):
@@ -161,7 +177,7 @@ class FiniteElementEquation(Equation):
     def refinement_error_estimate(self):
         # calculate integral of curvature:
         # error = | \int d^2 u / dx^2 * test(x) dx |
-        # TODO: use weighted curvature of all variables, not just the sum
+        # NOTE: overwrite this method, if different weights of the curvatures are needed
         curvature = 0
         for n in range(self.nvariables):
             u = self.u if len(self.shape) == 1 else self.u[n]
@@ -211,7 +227,6 @@ class FiniteElementEquation(Equation):
         # optionally split the history of unknowns again
         if include_history:
             self.u_history = list(u[1:])
-            print(self.u_history)
             u = u[0]
         # assign the new unknowns to the equation
         self.u = u
