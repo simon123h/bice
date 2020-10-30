@@ -10,15 +10,15 @@ class LyapunovExponentCalculator():
     Physica D: Nonlinear Phenomena, 16(3), 285-317.
     """
 
-    def __init__(self, problem, nexponents=1, epsilon=1e-6, dt=1):
+    def __init__(self, problem, nexponents=1, epsilon=1e-6, nintegration_steps=1):
         # reference to the problem
         self.problem = problem
         # the number of exponents to be calculated
         self.nexponents = nexponents
         # the norm of the perturbation
         self.epsilon = epsilon
-        # the integration interval for each trajectory
-        self.dt = dt
+        # the number of time-integration steps for each trajectory
+        self.nintegration_steps = nintegration_steps
         # cumulative variable for the total integration time
         self.T = 0
         # storage for the perturbation vectors and the reference trajectory
@@ -66,11 +66,13 @@ class LyapunovExponentCalculator():
         trajectories.append(reference)
         # integrate every trajectory, including reference
         time = self.problem.time
+        dt = self.problem.time_stepper.dt
         for i in range(self.nexponents+1):
             self.problem.u = trajectories[i]
             self.problem.time = time
+            self.problem.time_stepper.dt = dt
             self.problem.history.clear()
-            while self.problem.time < time + self.dt:
+            for _ in range(self.nintegration_steps):
                 self.problem.time_step()
             trajectories[i] = self.problem.u.copy()
         # calculate new perturbation vectors from difference to reference

@@ -59,7 +59,7 @@ else:
 # calculate Lyapunov exponents
 problem.time_stepper = time_steppers.BDF2(dt=0.1)
 lyapunov = LyapunovExponentCalculator(
-    problem, nexponents=10, epsilon=1e-6, dt=0.1)
+    problem, nexponents=10, epsilon=1e-6, nintegration_steps=1)
 
 last10 = np.zeros((10, 10))
 largest = []
