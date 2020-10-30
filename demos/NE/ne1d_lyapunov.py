@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from ne1d import NikolaevskiyProblem
 from bice import time_steppers
-from bice.chaos import LyapunovExponentCalculator
+from bice.measure import LyapunovExponentCalculator
 
 # create output folder
 shutil.rmtree("out", ignore_errors=True)
@@ -56,9 +56,10 @@ else:
     problem.load("initial_state.dat")
 
 # calculate Lyapunov exponents
-problem.time_stepper = BDF2(dt=0.1)
+problem.time_stepper = time_steppers.BDF2(dt=0.1)
 lyapunov = LyapunovExponentCalculator(
     problem, nexponents=10, epsilon=1e-6, dt=0.1)
+    
 while True:
     lyapunov.step()
     problem.dealias()
