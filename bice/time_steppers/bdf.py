@@ -39,8 +39,7 @@ class BDF(TimeStepper):
     using scipy.integrate
     """
 
-    def __init__(self, problem, dt_max=
-    np.inf):
+    def __init__(self, problem, dt_max=np.inf):
         super().__init__()
         self.problem = problem
         self.rtol = 1e-5

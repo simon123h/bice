@@ -124,7 +124,7 @@ class TimePeriodicOrbitHandler(Equation):
         # no T-dependency in phase condition, so jac[-1, -1] = 0
 
     # adapt the time mesh to the solution
-    def adapt(self, min_error=1e-5, max_error=1e-3, min_steps=10, max_steps=1e4):
+    def adapt(self):
         # dimension of a single equation
         N = self.ref_eq.dim
         # number of timesteps
@@ -140,6 +140,11 @@ class TimePeriodicOrbitHandler(Equation):
         # TODO: maybe there is something better than this
         error_estimate = np.array(
             [np.linalg.norm(dudt[i]) / np.linalg.norm(u[i]) for i in range(Nt)])
+        # define error tolerances
+        min_error = 1e-5
+        max_error = 1e-3
+        min_steps = 10
+        max_steps = 1e4
         # (un)refinement loop
         i = 0
         dt = self.dt.copy()
@@ -162,24 +167,13 @@ class TimePeriodicOrbitHandler(Equation):
             i += 1
         # build new u
         u = np.append(u.reshape(u.size), [T])
-        # if the size of u changed, re-add the equation to the problem
-        if len(dt) != Nt:
-            # store reference to the equation's problem
-            problem = self.problem
-            # remove the equation from the problem (if assigned)
-            if problem is not None:
-                problem.remove_equation(self)
-            # update shape of equation
-            self.shape = (len(dt)*N + 1,)
-            # assign new variables and timesteps
-            self.u = u
-            self.dt = dt
-            # re-add the equation to the problem
-            if problem is not None:
-                problem.add_equation(self)
-        else:
-            # else, we can simply overwrite the variables
-            self.u = u
-            self.dt = dt
+        # update shape of equation
+        self.shape = (len(dt)*N + 1,)
+        # assign new variables and timesteps
+        self.u = u
+        self.dt = dt
+        # if the equation belongs to a group of equations, redo it's mapping of the unknowns
+        if self.group is not None:
+            self.group.map_unknowns()
         # return min/max error estimates
         return (min(error_estimate), max(error_estimate))

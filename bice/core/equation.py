@@ -107,9 +107,9 @@ class Equation:
     # plot the solution into a matplotlib axes object
     def plot(self, ax):
         # check if there is spatial coordinates, otherwise generate fake coordinates
-        if hasattr(self, 'x'):
+        try:
             x = self.x
-        else:
+        except AttributeError:
             x = [np.arange(self.dim)]
         if len(x) == 1:
             ax.set_xlabel("x")
@@ -136,7 +136,7 @@ class Equation:
 
 class EquationGroup:
     """
-    An EquationGroup or 'system of equations', groups multiple equations into a single large equation.
+    An EquationGroup groups multiple equations into a single new equation (a system of equations).
     All properties and functions are assembled from the subequations.
     EquationGroups may even form hierarchical trees, where one group of equations serves as a
     subequation to another one.

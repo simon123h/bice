@@ -10,7 +10,8 @@ class FiniteElementEquation(Equation):
     and provides some useful routines that are needed for implementing
     ODEs/PDEs in a Finite-Element approach.
     It defaults to using periodic boundaries.
-    A FiniteElementEquation relates to a mesh: it has nodes/elements and can build the related matrices
+    A FiniteElementEquation relates to a mesh: it has nodes/elements and
+    can build the related matrices.
     """
 
     def __init__(self, shape=(1,)):
@@ -203,12 +204,14 @@ class FiniteElementEquation(Equation):
             # make sure the node has storage for the unknowns
             if node.u is None:
                 raise Exception(
-                    "Node #{:d} at x={} has no unknowns assigned! Unable to copy them to equation.u!".format(n, node.x))
+                    "Node #{:d} at x={} has no unknowns assigned! "
+                    "Unable to copy them to equation.u!".format(n, node.x))
             # store the node's unknowns in the new u
             u[..., n] = node.u
         # optionally split the history of unknowns again
         if include_history:
-            self.u_history = [uu for uu in u[1:]]
+            self.u_history = list(u[1:])
+            print(self.u_history)
             u = u[0]
         # assign the new unknowns to the equation
         self.u = u

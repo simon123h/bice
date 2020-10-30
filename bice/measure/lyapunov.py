@@ -1,5 +1,4 @@
 import numpy as np
-from bice.core import Problem
 
 
 class LyapunovExponentCalculator():

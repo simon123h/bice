@@ -102,16 +102,16 @@ class MethodProfile:
         if nested or self.name == "":
             # if not nested, flatten the tree
             if nested:
-                profs = self.nested_profiles
+                profiles = self.nested_profiles
             else:
-                profs = self.flattened_data()
+                profiles = self.flattened_data()
             # sort the nested profiles by total execution time
-            profs = {k: v for k, v in sorted(
-                profs.items(), key=lambda item: sum(item[1].execution_times), reverse=True)}
+            profiles = sorted(profiles.values(), key=lambda item: sum(
+                item.execution_times), reverse=True)
             # print their summary recursively
-            items = profs.items()
-            for i, (_, p) in enumerate(items):
-                p.print_stats(total_time, indentation, nested, last=(i==len(items)-1))
+            for i, p in enumerate(profiles):
+                is_last = i == len(profiles) - 1
+                p.print_stats(total_time, indentation, nested, last=is_last)
 
 
 class Profiler:

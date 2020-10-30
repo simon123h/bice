@@ -45,7 +45,7 @@ class EigenSolver:
         self.latest_eigenvalues = None
         self.latest_eigenvectors = None
 
-    def solve(self, A, M=None, k=None, sigma=1):
+    def solve(self, A, M=None, k=None):
         if k is None:
             # if no number of values was specified, use a direct eigensolver for computing all eigenvalues
             eigenvalues, eigenvectors = scipy.linalg.eig(A, M)
