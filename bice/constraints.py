@@ -96,7 +96,7 @@ class TranslationConstraint(Equation):
         eq_u = u[eq_idx]
         eq_u_old = self.group.u[eq_idx]
         velocity = u[self_idx]
-        # add constraint to residuals of reference equation (velocity is the langrange multiplier)
+        # add constraint to residuals of reference equation (velocity is the lagrange multiplier)
         try:  # if method first_spatial_derivative is implemented, use this
             eq_dudx = eq.first_spatial_derivative(eq_u, self.direction)
         except AttributeError:  # if not, get it from the gradient
