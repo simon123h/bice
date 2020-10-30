@@ -32,9 +32,10 @@ class VolumeConstraint(Equation):
         self_idx = self.group.idx[self]
         eq_idx = self.group.idx[self.ref_eq]
         # optionally split only that part that is referenced by self.variable
-        if self.variable is not None:
-            start = eq_idx.start + self.variable*self.ref_eq.dim
-            eq_idx = slice(start, start + self.ref_eq.dim)
+        if self.variable is not None and len(self.ref_eq.shape) > 1:
+            var_ndofs = np.prod(self.ref_eq.shape[1:])
+            start = eq_idx.start + self.variable * var_ndofs
+            eq_idx = slice(start, start + var_ndofs)
         # employ the constraint equation
         if self.fixed_volume is None:
             # calculate the difference in volumes between current
@@ -88,9 +89,10 @@ class TranslationConstraint(Equation):
         self_idx = self.group.idx[self]
         eq_idx = self.group.idx[self.ref_eq]
         # optionally split only that part that is referenced by self.variable
-        if self.variable is not None:
-            start = eq_idx.start + self.variable*self.ref_eq.dim
-            eq_idx = slice(start, start + self.ref_eq.dim)
+        if self.variable is not None and len(self.ref_eq.shape) > 1:
+            var_ndofs = np.prod(self.ref_eq.shape[1:])
+            start = eq_idx.start + self.variable * var_ndofs
+            eq_idx = slice(start, start + var_ndofs)
         # define some variables
         eq = self.ref_eq
         eq_u = u[eq_idx]

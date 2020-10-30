@@ -43,11 +43,10 @@ class TimePeriodicOrbitHandler(Equation):
 
     # the unknowns in separate arrays for each point in time
     def u_orbit(self):
-        # split the period and reshape to (Nt, N)
-        return self.u[:-1].reshape((self.Nt, self.ref_eq.dim))
+        # split the period and reshape to (Nt, *ref_eq.shape)
+        return self.u[:-1].reshape((self.Nt, *self.ref_eq.shape))
 
     # return the time derivative for a given list of u's at each timestep
-
     def dudt(self, u):
         # calculate central difference
         ul = np.roll(u, 1, axis=0)
@@ -63,28 +62,27 @@ class TimePeriodicOrbitHandler(Equation):
 
     # calculate the rhs of the full system of equations
     def rhs(self, u):
-        # dimension of a single equation
-        N = self.ref_eq.dim
-        # number of timesteps
-        Nt = self.Nt
+        # number of unknowns of a single equation
+        N = self.ref_eq.ndofs
         # split the unknowns into:
         # ... period length
         T = u[-1]
         # ... u's per timestep
-        u = u[:-1].reshape((Nt, N))
+        u = u[:-1].reshape((self.Nt, *self.ref_eq.shape))
         # calculate the time derivative
         dudt = self.dudt(u) / T
         # same for the old variables
         T_old = self.u[-1]
-        u_old = self.u[:-1].reshape((Nt, N))
+        u_old = self.u[:-1].reshape((self.Nt, *self.ref_eq.shape))
         dudt_old = self.dudt(u_old) / T_old
         # mass matrix
         M = self.ref_eq.mass_matrix()
         # setup empty result vector
-        res = np.zeros(Nt*N + 1)
+        res = np.zeros(self.ndofs)
         # add the rhs contributions for each timestep
-        for i in range(Nt):
+        for i in range(self.Nt):
             # 0 = rhs(u) - dudt for each u(t_i)
+            # TODO: .ravel() will be required somewhere here
             res[i*N:(i+1)*N] = self.ref_eq.rhs(u[i]) - M.dot(dudt[i])
             # phase condition: \int_0^1 dt <u, dudt_old> = 0
             # TODO: use a better approximation for dt in integral?
@@ -94,27 +92,25 @@ class TimePeriodicOrbitHandler(Equation):
 
     # calculate the Jacobian of rhs(u)
     def jacobian_INCOMPLETE(self, u):
-        # dimension of a single equation
-        N = self.ref_eq.dim
-        # number of timesteps
-        Nt = len(self.dt)
+        # number of unknowns of a single equation
+        N = self.ref_eq.ndofs
         # split the unknowns into:
         # ... period length
         T = u[-1]
         # ... u's per timestep
-        u = u[:-1].reshape((Nt, N))
+        u = u[:-1].reshape((self.Nt, *self.ref_eq.shape))
         # setup empty result matrix
-        jac = np.zeros((Nt*N + 1, Nt*N + 1))
+        jac = np.zeros((self.ndofs, self.ndofs))
         # calculate jacobian of dudt
         # jac = self.ddudtdu(u) # TODO: this is still missing
         # calculate the time derivative
         dudt = self.dudt(u) / T
         # same for the old variables
         T_old = self.u[-1]
-        u_old = self.u[:-1].reshape((Nt, N))
+        u_old = self.u[:-1].reshape((self.Nt, *self.ref_eq.shape))
         dudt_old = self.dudt(u_old) / T_old
         # add the jacobian contributions of rhs for each timestep
-        for i in range(Nt):
+        for i in range(self.Nt):
             # 0 = ref_eq.jacobian(u) for each u(t_i)
             jac[i*N:(i+1)*N, i*N:(i+1)*N] += self.ref_eq.jacobian(u[i])
             # phase condition: d [\int_0^1 dt <u, dudt_old>] du = \int_0^1 dt dudt_old
@@ -124,22 +120,21 @@ class TimePeriodicOrbitHandler(Equation):
         # no T-dependency in phase condition, so jac[-1, -1] = 0
 
     # adapt the time mesh to the solution
+    # TODO: test this
     def adapt(self):
-        # dimension of a single equation
-        N = self.ref_eq.dim
-        # number of timesteps
-        Nt = len(self.dt)
+        # number of unknowns of a single equation
+        N = self.ref_eq.ndofs
         # split the unknowns into:
         # ... period length
         T = self.u[-1]
         # ... u's per timestep
-        u = self.u[:-1].reshape((Nt, N))
+        u = self.u[:-1].reshape((self.Nt, *self.ref_eq.shape))
         # calculate the time derivative
         dudt = self.dudt(u)
         # estimate for the relative error in the time derivative
         # TODO: maybe there is something better than this
         error_estimate = np.array(
-            [np.linalg.norm(dudt[i]) / np.linalg.norm(u[i]) for i in range(Nt)])
+            [np.linalg.norm(dudt[i]) / np.linalg.norm(u[i]) for i in range(self.Nt)])
         # define error tolerances
         min_error = 1e-5
         max_error = 1e-3
@@ -166,7 +161,7 @@ class TimePeriodicOrbitHandler(Equation):
                 i += 1
             i += 1
         # build new u
-        u = np.append(u.reshape(u.size), [T])
+        u = np.append(u.ravel(), [T])
         # update shape of equation
         self.shape = (len(dt)*N + 1,)
         # assign new variables and timesteps

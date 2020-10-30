@@ -16,10 +16,10 @@ class FiniteDifferenceEquation(Equation):
         # second order derivative
         self.laplace = None
         # the spatial coordinates
-        self.x = [np.linspace(0, 1, self.dim, endpoint=False)]
+        self.x = [np.linspace(0, 1, self.shape[-1], endpoint=False)]
 
     def build_FD_matrices(self):
-        N = self.dim
+        N = self.shape[-1]
         # identity matrix
         I = np.eye(N)
         # spatial increment
