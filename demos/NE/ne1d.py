@@ -1,13 +1,12 @@
 #!/usr/bin/python3
-import numpy as np
-import matplotlib.pyplot as plt
 import shutil
 import os
 import sys
+import numpy as np
+import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, PseudospectralEquation
-from bice.time_steppers import RungeKutta4, RungeKuttaFehlberg45, BDF2, BDF
-from bice.constraints import TranslationConstraint, VolumeConstraint
+from bice import Problem, time_steppers
+from bice.pde import PseudospectralEquation
 
 
 class NikolaevskiyEquation(PseudospectralEquation):
@@ -69,10 +68,10 @@ class NikolaevskiyProblem(Problem):
         self.ne = NikolaevskiyEquation(N)
         self.add_equation(self.ne)
         # initialize time stepper
-        # self.time_stepper = RungeKutta4(dt=1e-7)
-        # self.time_stepper = RungeKuttaFehlberg45(dt=1e-7, error_tolerance=1e-4)
-        # self.time_stepper = BDF2(dt=1e-3)
-        self.time_stepper = BDF(self, dt_max=1e-1)
+        # self.time_stepper = time_steppers.RungeKutta4(dt=1e-7)
+        # self.time_stepper = time_steppers.RungeKuttaFehlberg45(dt=1e-7, error_tolerance=1e-4)
+        # self.time_stepper = time_steppers.BDF2(dt=1e-3)
+        self.time_stepper = time_steppers.BDF(self, dt_max=1e-1)
         # assign the continuation parameter
         self.continuation_parameter = (self.ne, "m")
 
@@ -90,26 +89,25 @@ class NikolaevskiyProblem(Problem):
         return np.linalg.norm(self.ne.u)
 
 
+if __name__ == "__main__":
+    # create output folder
+    shutil.rmtree("out", ignore_errors=True)
+    os.makedirs("out/img", exist_ok=True)
 
-# create output folder
-shutil.rmtree("out", ignore_errors=True)
-os.makedirs("out/img", exist_ok=True)
+    # create problem
+    problem = NikolaevskiyProblem(N=64)
+    problem.ne.r = 0.5
+    problem.ne.m = 1.1
 
-# create problem
-problem = NikolaevskiyProblem(N=64)
-problem.ne.r = 0.5
-problem.ne.m = 1.1
+    # create figure
+    fig, ax = plt.subplots(1, 1, figsize=(16, 9))
+    plotID = 0
 
-# create figure
-fig, ax = plt.subplots(1, 1, figsize=(16, 9))
-plotID = 0
-
-# time-stepping
-n = 0
-plotevery = 10
-dudtnorm = 1
-T = 100 / problem.ne.r
-if not os.path.exists("initial_state.dat"):
+    # time-stepping
+    n = 0
+    plotevery = 10
+    dudtnorm = 1
+    T = 100 / problem.ne.r
     while problem.time < T:
         # plot
         if n % plotevery == 0:
@@ -133,34 +131,3 @@ if not os.path.exists("initial_state.dat"):
             break
     # save the state, so we can reload it later
     problem.save("initial_state.dat")
-else:
-    # load the initial state
-    problem.load("initial_state.dat")
-
-# start parameter continuation
-problem.continuation_stepper.ds = 1e-2
-problem.continuation_stepper.ndesired_newton_steps = 3
-problem.settings.neigs = 10
-
-# add constraints
-volume_constraint = VolumeConstraint(problem.ne)
-problem.add_equation(volume_constraint)
-translation_constraint = TranslationConstraint(problem.ne)
-problem.add_equation(translation_constraint)
-
-# create new figure
-plt.close(fig)
-fig, ax = plt.subplots(2, 2, figsize=(16, 9))
-
-n = 0
-plotevery = 10
-while problem.ne.m > 0:
-    # perform continuation step
-    problem.continuation_step()
-    n += 1
-    print("step #:", n, " ds:", problem.continuation_stepper.ds)
-    # plot
-    if n % plotevery == 0:
-        problem.plot(ax)
-        fig.savefig("out/img/{:05d}.svg".format(plotID))
-        plotID += 1

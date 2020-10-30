@@ -1,5 +1,12 @@
-from .problem import Problem
-from .equation import Equation, EquationGroup, FiniteDifferenceEquation, PseudospectralEquation
+"""
+TODO: we shoud have a short description of bice here
+"""
 
-__all__ = ['Problem', 'Equation', 'EquationGroup',
-           'FiniteDifferenceEquation', 'PseudospectralEquation']
+# import core namespace, so we can e.g. use bice.Problem
+from .core import *
+
+__all__ = []
+
+# 'from bice import *' should import everything defined in core.__all__
+from . import core
+__all__.extend(core.__all__)

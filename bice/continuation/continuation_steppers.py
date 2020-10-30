@@ -16,7 +16,8 @@ class ContinuationStepper:
     # perform a continuation step on a problem
     def step(self, problem):
         raise NotImplementedError(
-            "'ContinuationStepper' is an abstract base class - do not use for actual parameter continuation!")
+            "'ContinuationStepper' is an abstract base class - "
+            "do not use for actual parameter continuation!")
 
     # reset the continuation-stepper parameters & storage to default, e.g.,
     # when starting off a new solution point, switching branches or
@@ -46,13 +47,14 @@ class PseudoArclengthContinuation(ContinuationStepper):
 
     def __init__(self, ds=1e-3):
         super().__init__(ds)
-        # if the norm of the step in the newton loop is below this threshold, the method has converged
+        # convergence tolerance for the newton solver in the continuation step
         self.convergence_tolerance = 1e-8
         # maximum number of newton iterations for solving
         self.max_newton_iterations = 30
         # should the step size be adapted while stepping?
         self.adapt_stepsize = True
-        # the desired number of newton iterations for solving, step size is adapted if we over/undershoot this number
+        # the desired number of newton iterations for solving,
+        # step size is adapted if we over/undershoot this number
         self.ndesired_newton_steps = 3
         # the actual number of newton iterations taken in the last continuation step
         self.nnewton_iter_taken = None
@@ -83,7 +85,8 @@ class PseudoArclengthContinuation(ContinuationStepper):
             tangent = np.append(u - problem.history.u(-1),
                                 p - problem.history.continuation_parameter(-1))
             # normalize tangent and adjust sign with respect to continuation direction
-            tangent /= np.linalg.norm(tangent) * np.sign(problem.history.step_size(-1))
+            tangent /= np.linalg.norm(tangent) * \
+                np.sign(problem.history.step_size(-1))
         else:
             # else, we need to calculate the tangent from extended Jacobian in (u, parameter)-space
             jac = problem.jacobian(u)
@@ -177,6 +180,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
     # Solve the linear system A*x = b for x and return x
     def _linear_solve(self, A, b, use_sparse_matrices=False):
         if use_sparse_matrices:
+            # use either solver for sparse matrices...
             return scipy.sparse.linalg.spsolve(scipy.sparse.csr_matrix(A), b)
-        else:
-            return np.linalg.solve(A, b)
+        # ...or simply the one for full rank matrices
+        return np.linalg.solve(A, b)

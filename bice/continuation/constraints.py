@@ -1,5 +1,5 @@
-from .equation import Equation
 import numpy as np
+from bice.core.equation import Equation
 
 
 class VolumeConstraint(Equation):

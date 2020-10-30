@@ -1,14 +1,11 @@
 #!/usr/bin/python3
-import numpy as np
-import matplotlib
-matplotlib.use("GTK3Agg")  # noqa
-import matplotlib.pyplot as plt
 import sys
-sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, Equation
-from bice.time_steppers import Euler, ImplicitEuler, RungeKutta4, BDF, BDF2
-from bice.timeperiodic import TimePeriodicOrbitHandler
 import time
+import matplotlib.pyplot as plt
+import numpy as np
+sys.path.append("../..")  # noqa, needed for relative import of package
+from bice import Problem, Equation, time_steppers
+from bice.continuation import TimePeriodicOrbitHandler
 
 
 # The Lotka-Volterra equations (predator prey model)
@@ -41,11 +38,11 @@ class LotkaVolterra(Problem):
         self.lve = LotkaVolterraEquation()
         self.add_equation(self.lve)
         # time stepper
-        # self.time_stepper = BDF(self)
-        # self.time_stepper = BDF2(dt=1e-1)
-        # self.time_stepper = Euler(dt=5e-4)
-        # self.time_stepper = ImplicitEuler(dt=1e-2)
-        self.time_stepper = RungeKutta4(dt=2e-1)
+        # self.time_stepper = time_steppers.BDF(self)
+        # self.time_stepper = time_steppers.BDF2(dt=1e-1)
+        # self.time_stepper = time_steppers.Euler(dt=5e-4)
+        # self.time_stepper = time_steppers.ImplicitEuler(dt=1e-2)
+        self.time_stepper = time_steppers.RungeKutta4(dt=2e-1)
 
 
 # create problem

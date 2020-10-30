@@ -1,16 +1,15 @@
 #!/usr/bin/python3
-import numpy as np
-import matplotlib.pyplot as plt
 import shutil
 import os
 import sys
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.sparse
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, Equation
-from bice.constraints import *
-from bice.solvers import *
-from bice.time_steppers import *
+from bice import Problem, time_steppers
 from bice.fem import FiniteElementEquation, OneDimMesh
-from bice.profiling import Profiler
+from bice.continuation import VolumeConstraint, TranslationConstraint
+from bice import profile, Profiler
 
 
 class ThinFilmEquation(FiniteElementEquation):
@@ -86,9 +85,9 @@ class ThinFilm(Problem):
         # initialize time stepper
         # self.time_stepper.error_tolerance = 1e1
         # self.time_stepper.dt = 3e-5
-        # self.time_stepper = ImplicitEuler(dt=1e-1)
-        self.time_stepper = BDF2(dt=1e-1)
-        # self.time_stepper = BDF(self)
+        # self.time_stepper = time_steppers.ImplicitEuler(dt=1e-1)
+        self.time_stepper = time_steppers.BDF2(dt=1e-1)
+        # self.time_stepper = time_steppers.BDF(self)
         # assign the continuation parameter
         self.continuation_parameter = (self.volume_constraint, "fixed_volume")
 

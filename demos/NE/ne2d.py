@@ -1,13 +1,13 @@
 #!/usr/bin/python3
-import numpy as np
-import matplotlib.pyplot as plt
 import shutil
 import os
 import sys
+import numpy as np
+import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, PseudospectralEquation
-from bice.time_steppers import RungeKutta4, RungeKuttaFehlberg45, BDF2, BDF
-from bice.constraints import TranslationConstraint, VolumeConstraint
+from bice import Problem, time_steppers
+from bice.pde import PseudospectralEquation
+from bice.continuation import TranslationConstraint, VolumeConstraint
 
 
 class NikolaevskiyEquation(PseudospectralEquation):
@@ -104,10 +104,10 @@ class NikolaevskiyProblem(Problem):
         self.ne = NikolaevskiyEquation(Nx, Ny)
         self.add_equation(self.ne)
         # initialize time stepper
-        # self.time_stepper = RungeKutta4(dt=1e-7)
-        # self.time_stepper = RungeKuttaFehlberg45(dt=1e-7, error_tolerance=1e-4)
-        # self.time_stepper = BDF2(dt=1e-3)
-        self.time_stepper = BDF(self, dt_max=1e-1)
+        # self.time_stepper = time_steppers.RungeKutta4(dt=1e-7)
+        # self.time_stepper = time_steppers.RungeKuttaFehlberg45(dt=1e-7, error_tolerance=1e-4)
+        # self.time_stepper = time_steppers.BDF2(dt=1e-3)
+        self.time_stepper = time_steppers.BDF(self, dt_max=1e-1)
         # assign the continuation parameter
         self.continuation_parameter = (self.ne, "m")
 

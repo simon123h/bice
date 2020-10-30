@@ -1,5 +1,5 @@
 import numpy as np
-from .equation import Equation
+from bice.core.equation import Equation
 
 
 class BifurcationConstraint(Equation):
@@ -85,7 +85,7 @@ class BifurcationConstraint(Equation):
             k = u1[i]
             u1[i] = k + eps
             # calculate the original Jacobian of the problem
-            # NOTE: oookay... here we'd also need N times evaluation of the Jacobian... that's slow as well
+            # NOTE: okay, here we'd also need N times evaluation of the Jacobian, that's also slow
             Gu1 = self.original_jacobian(u1)
             # NOTE: the following line is not general, wrt. self_idx
             J[:, i] = np.matmul(Gu1-Gu, phi) / eps
@@ -108,8 +108,8 @@ class BifurcationConstraint(Equation):
         J[:, self_idx.stop-1] = (f1 - f0) / eps
 
         # last row: d(res2)/du = ([0]*N, phi_old, 0)
-        J[self_idx.stop -
-            1] = np.concatenate((np.zeros(phi_old.size), phi_old, np.array([0])))
+        J[self_idx.stop-1] = np.concatenate(
+            (np.zeros(phi_old.size), phi_old, np.array([0])))
 
         return J
 

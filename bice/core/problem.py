@@ -1,10 +1,9 @@
 import numpy as np
-from .equation import EquationGroup, Equation
-from .time_steppers import RungeKutta4
-from .continuation_steppers import PseudoArclengthContinuation
+from bice.time_steppers.runge_kutta import RungeKutta4
+from bice.continuation.continuation_steppers import PseudoArclengthContinuation
+from .equation import Equation, EquationGroup
 from .solvers import NewtonSolver, EigenSolver
 from .solution import Solution, BifurcationDiagram
-from .bifurcations import BifurcationConstraint
 from .profiling import profile
 
 
@@ -122,7 +121,8 @@ class Problem():
     # The method will only calculate as many eigenvalues as requested with self.settings.neigs
     @profile
     def solve_eigenproblem(self):
-        return self.eigen_solver.solve(self.jacobian(self.u), self.mass_matrix(), k=self.settings.neigs)
+        return self.eigen_solver.solve(
+            self.jacobian(self.u), self.mass_matrix(), k=self.settings.neigs)
 
     # Integrate in time with the assigned time-stepper
     @profile
@@ -147,7 +147,7 @@ class Problem():
         # if desired, solve the eigenproblem
         if self.settings.neigs > 0:
             # solve the eigenproblem
-            eigenvalues, eigenvectors = self.solve_eigenproblem()
+            eigenvalues, _ = self.solve_eigenproblem()
             # count number of positive eigenvalues
             sol.nunstable_eigenvalues = len([ev for ev in np.real(
                 eigenvalues) if ev > self.settings.eigval_zero_tolerance])
@@ -226,7 +226,8 @@ class Problem():
             self.continuation_stepper.ds = ds * (pos - pos_old)
             try:
                 # Note that we do not update the history, so the tangent remains unchanged
-                # TODO: instead of continuation, we could also update (u, p) and do newton_solve(), may be more stable
+                # TODO: instead of continuation, we could also update (u, p) and do newton_solve()
+                #       may be more stable
                 self.continuation_stepper.step(self)
             except np.linalg.LinAlgError as err:
                 print("Warning: error while trying to locate a bifurcation point:")
@@ -256,8 +257,8 @@ class Problem():
         if not np.iscomplexobj(self.u):
             eigenvector = eigenvector.real
         # create the bifurcation constraint and add it to the problem
-        bifurcation_constraint = BifurcationConstraint(
-            eigenvector, self.continuation_parameter)
+        from bice.continuation import BifurcationConstraint
+        bifurcation_constraint = BifurcationConstraint(eigenvector, self.continuation_parameter)
         self.add_equation(bifurcation_constraint)
         # perform a newton solve
         self.newton_solve()

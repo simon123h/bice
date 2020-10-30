@@ -1,14 +1,14 @@
 #!/usr/bin/python3
-import numpy as np
-import matplotlib.pyplot as plt
 import shutil
 import os
 import sys
+import numpy as np
+import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, Equation, FiniteDifferenceEquation, PseudospectralEquation
-from bice.time_steppers import RungeKutta4, RungeKuttaFehlberg45, BDF2
-from bice.constraints import TranslationConstraint, VolumeConstraint
-from bice.profiling import profile, Profiler
+from bice import Problem, time_steppers
+from bice.pde import PseudospectralEquation
+from bice.continuation import TranslationConstraint, VolumeConstraint
+from bice import profile, Profiler
 
 
 class CahnHilliardEquation(PseudospectralEquation):
@@ -63,9 +63,9 @@ class CahnHilliardProblem(Problem):
         self.che = CahnHilliardEquation(N, L)
         self.add_equation(self.che)
         # initialize time stepper
-        self.time_stepper = RungeKuttaFehlberg45(dt=1e-3)
+        self.time_stepper = time_steppers.RungeKuttaFehlberg45(dt=1e-3)
         self.time_stepper.error_tolerance = 1e-7
-        #self.time_stepper = RungeKutta4(dt=5e-3)
+        #self.time_stepper = time_steppers.RungeKutta4(dt=5e-3)
         self.time_stepper.max_rejections = 100
         # assign the continuation parameter
         self.continuation_parameter = (self.che, "a")
