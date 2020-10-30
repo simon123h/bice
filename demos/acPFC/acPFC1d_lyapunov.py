@@ -18,7 +18,9 @@ os.makedirs("out/img", exist_ok=True)
 problem = acPFCProblem(N=256, L=16*np.pi)
 
 # create figure
-fig, ax = plt.subplots(1, 1, figsize=(16, 9))
+fig = plt.figure(figsize=(16, 9))
+ax_exponents = fig.add_subplot(121)
+ax_largest = fig.add_subplot(122)
 plotID = 0
 
 # time-stepping
@@ -30,7 +32,7 @@ if not os.path.exists("initial_state.dat"):
     while problem.time < T:
         # plot
         if n % plotevery == 0:
-            problem.plot(ax)
+            problem.plot(ax_exponents)
             fig.savefig("out/img/{:05d}.svg".format(plotID))
             plotID += 1
             print("step #: {:}".format(n))
@@ -60,18 +62,22 @@ lyapunov = LyapunovExponentCalculator(
     problem, nexponents=10, epsilon=1e-6, dt=0.1)
 
 last10 = np.zeros((10, 10))
+largest = []
 
 while True:
     lyapunov.step()
     problem.dealias()
     last10[:-1] = last10[1:]
     last10[-1] = lyapunov.exponents
-    ax.clear()
+    largest += [np.max(lyapunov.exponents)]
+    ax_largest.clear()
+    ax_exponents.clear()
     ccount = 0.
     for exponents in last10:
-        ax.plot(exponents, marker='.', color='{:.1f}'.format(1 - ccount/10.), ls='')
+        ax_exponents.plot(exponents, marker='.', color='{:.1f}'.format(1 - ccount/10.), ls='')
         ccount += 1
-    ax.plot(lyapunov.exponents, marker="o")
+    ax_exponents.plot(lyapunov.exponents, marker="o")
+    ax_largest.plot(largest)
     fig.savefig("out/img/{:05d}.svg".format(plotID))
     plotID += 1
     print("Lyapunov exponents:", lyapunov.exponents)
