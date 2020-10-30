@@ -11,6 +11,7 @@ from bice.continuation import VolumeConstraint, TranslationConstraint
 from bice import NewtonSolver, MyNewtonSolver
 from bice import profile, Profiler
 
+
 class ThinFilmEquation(FiniteElementEquation):
     r"""
      Finite element implementation of the (steady) 1-dimensional Thin-Film Equation

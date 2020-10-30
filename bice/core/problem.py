@@ -258,7 +258,8 @@ class Problem():
             eigenvector = eigenvector.real
         # create the bifurcation constraint and add it to the problem
         from bice.continuation import BifurcationConstraint
-        bifurcation_constraint = BifurcationConstraint(eigenvector, self.continuation_parameter)
+        bifurcation_constraint = BifurcationConstraint(
+            eigenvector, self.continuation_parameter)
         self.add_equation(bifurcation_constraint)
         # perform a newton solve
         self.newton_solve()
