@@ -37,12 +37,11 @@ class CahnHilliardEquation(PseudospectralEquation):
         u3_k = np.fft.rfft(u**3)
         result_k = -self.ksquare * \
             (self.kappa*self.ksquare*u_k + self.a*u_k + u3_k)
-        result = np.fft.irfft(result_k).real
-        return result
+        return np.fft.irfft(result_k)
 
     def first_spatial_derivative(self, u, direction=0):
         du_dx = 1j*self.k[direction]*np.fft.rfft(u)
-        return np.fft.irfft(du_dx).real
+        return np.fft.irfft(du_dx)
 
 
 class CahnHilliardProblem(Problem):
@@ -65,7 +64,7 @@ class CahnHilliardProblem(Problem):
         N = len(u_k)
         k = int(N * fraction)
         u_k[k + 1:-k] = 0
-        self.che.u = np.fft.irfft(u_k).real
+        self.che.u = np.fft.irfft(u_k)
 
 
 # create output folder

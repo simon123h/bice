@@ -28,31 +28,26 @@ class CahnHilliardEquation(PseudospectralEquation):
         # to deal with several dimensions with different discretization/lengths
         self.x = [np.linspace(-L/2, L/2, N), np.linspace(-L/2, L/2, N)]
         self.build_kvectors(real_fft=True)
+        self.rshape = (N, N)
         # initial condition
-        #self.u = (np.random.random((N, N))-0.5)*0.02
+        # self.u = (np.random.random((N, N))-0.5)*0.02
         mx, my = np.meshgrid(*self.x)
         self.u = np.cos(np.sqrt(mx**2 + my**2)/(L/4)) - 0.1
 
     # definition of the CHE (right-hand side)
     @profile
     def rhs(self, u):
-        # TODO: can we make this any faster?
-        N0 = u.size
-        u2 = u.reshape((self.x[0].size, self.x[1].size))
+        u2 = u.reshape(self.rshape)
         u_k = np.fft.rfft2(u2)
-        u3_k = np.fft.rfft2(u2*u2*u2)
+        u3_k = np.fft.rfft2(u2**3)
         result_k = -self.ksquare * \
             (self.kappa * self.ksquare * u_k + self.a * u_k + u3_k)
-        result = np.fft.irfft2(result_k).real
-        return result.reshape(N0)
+        return np.fft.irfft2(result_k).ravel()
 
     @profile
     def first_spatial_derivative(self, u, direction=0):
-        N0 = u.size
-        u2 = u.reshape((self.x[0].size, self.x[1].size))
-        du_dx = 1j*self.k[direction]*np.fft.rfft2(u2)
-        du_dx = np.fft.irfft2(du_dx).real
-        return du_dx.reshape(N0)
+        du_dx = 1j*self.k[direction]*np.fft.rfft2(u.reshape(self.rshape))
+        return np.fft.irfft2(du_dx).ravel()
 
 
 class CahnHilliardProblem(Problem):

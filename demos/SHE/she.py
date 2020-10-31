@@ -39,7 +39,7 @@ class SwiftHohenbergEquation(PseudospectralEquation):
     @profile
     def rhs(self, u):
         u_k = np.fft.rfft(u)
-        return np.fft.irfft((self.r - (self.kc**2 - self.k[0]**2)**2) * u_k).real + self.v * u**2 - self.g * u**3
+        return np.fft.irfft((self.r - (self.kc**2 - self.k[0]**2)**2) * u_k) + self.v * u**2 - self.g * u**3
 
 
 class SwiftHohenbergEquationFD(FiniteDifferenceEquation):
@@ -97,7 +97,7 @@ class SwiftHohenbergProblem(Problem):
         N = len(u_k)
         k = int(N*fraction)
         u_k[k+1:-k] = 0
-        self.she.u = np.fft.irfft(u_k).real
+        self.she.u = np.fft.irfft(u_k)
 
 
 # create output folder
