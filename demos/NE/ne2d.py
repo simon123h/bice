@@ -107,10 +107,8 @@ class NikolaevskiyProblem(Problem):
         # assign the continuation parameter
         self.continuation_parameter = (self.ne, "m")
 
-    # set higher modes to null, for numerical stability
+    # reset zero-mode, for conservation of volume
     def dealias(self, fraction=1./2.):
-        # TODO: fix for 2d
-        # pass
         u_k = np.fft.rfft(self.ne.u)
         u_k[0] = 0
         self.ne.u = np.fft.irfft(u_k)
