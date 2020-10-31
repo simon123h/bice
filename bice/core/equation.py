@@ -125,13 +125,7 @@ class Equation:
             ax.set_xlabel("x")
             ax.set_ylabel("y")
             mx, my = np.meshgrid(x[0], x[1])
-            # deal with the shape of u
-            if len(self.shape) == 1:
-                u = self.u
-            else:
-                # plot only the first variable
-                u = self.u[0]
-            u = u.reshape((x[0].size, x[1].size))
+            u = self.u.reshape((x[0].size, x[1].size))
             ax.pcolormesh(mx, my, u)
 
 

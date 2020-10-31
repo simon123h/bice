@@ -55,10 +55,11 @@ class CahnHilliardProblem(Problem):
         self.che = CahnHilliardEquation(N, L)
         self.add_equation(self.che)
         # initialize time stepper
-        self.time_stepper = time_steppers.RungeKuttaFehlberg45(dt=1e-3)
-        self.time_stepper.error_tolerance = 1e-7
-        #self.time_stepper = time_steppers.RungeKutta4(dt=5e-3)
-        self.time_stepper.max_rejections = 100
+        # self.time_stepper = time_steppers.RungeKuttaFehlberg45(dt=1e-3)
+        # self.time_stepper.error_tolerance = 1e-6
+        # self.time_stepper.max_rejections = 100
+        self.time_stepper = time_steppers.BDF(self)
+        self.time_stepper.dt = 1e-3
         # assign the continuation parameter
         self.continuation_parameter = (self.che, "a")
 
@@ -70,13 +71,10 @@ os.makedirs("out/img", exist_ok=True)
 # create problem
 problem = CahnHilliardProblem(N=64, L=64)
 
-# create figure
-fig, ax = plt.subplots(2, 2, figsize=(16, 9))
-plotID = 0
-
 # time-stepping
 n = 0
-plotevery = 200
+plotID = 0
+plotevery = 5
 dudtnorm = 1
 mx, my = np.meshgrid(problem.che.x[0], problem.che.x[1])
 
@@ -125,6 +123,9 @@ translation_constraint_x = TranslationConstraint(problem.che, direction=0)
 problem.add_equation(translation_constraint_x)
 translation_constraint_y = TranslationConstraint(problem.che, direction=1)
 problem.add_equation(translation_constraint_y)
+
+# create figure
+fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 
 n = 0
 plotevery = 1
