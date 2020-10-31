@@ -20,7 +20,7 @@ class ThinFilmEquation(PseudospectralEquation):
     """
 
     def __init__(self, N, L):
-        super().__init__()
+        super().__init__(shape=N)
         # parameters: none
         # space and fourier space
         self.x = np.linspace(-L/2, L/2, N, endpoint=False)

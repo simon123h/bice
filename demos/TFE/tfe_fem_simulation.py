@@ -79,7 +79,7 @@ class ThinFilm(Problem):
         self.tfe = ThinFilmEquation(N, L)
         self.add_equation(self.tfe)
         # Generate the volume constraint
-        self.volume_constraint = VolumeConstraint(self.tfe)
+        self.volume_constraint = VolumeConstraint(self.tfe, variable=0)
         # Generate the translation constraint
         self.translation_constraint = TranslationConstraint(self.tfe)
         # initialize time stepper

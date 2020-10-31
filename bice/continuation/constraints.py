@@ -12,7 +12,7 @@ class VolumeConstraint(Equation):
     multiplier that can be interpreted as an influx into the system.
     """
 
-    def __init__(self, reference_equation, variable=0):
+    def __init__(self, reference_equation, variable=None):
         super().__init__(shape=(1,))
         # on which equation/unknowns should the constraint be imposed?
         self.ref_eq = reference_equation
@@ -32,7 +32,7 @@ class VolumeConstraint(Equation):
         self_idx = self.group.idx[self]
         eq_idx = self.group.idx[self.ref_eq]
         # optionally split only that part that is referenced by self.variable
-        if self.variable is not None and len(self.ref_eq.shape) > 1:
+        if self.variable is not None:
             eq_shape = self.ref_eq.shape[1:]
             var_ndofs = np.prod(eq_shape)
             start = eq_idx.start + self.variable * var_ndofs
