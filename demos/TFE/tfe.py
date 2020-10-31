@@ -5,13 +5,12 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, Equation, time_steppers
-from bice.pde import FiniteDifferenceEquation
-from bice.time_steppers import RungeKuttaFehlberg45, RungeKutta4, BDF2, BDF
+from bice import Problem, time_steppers
+from bice.pde import PseudospectralEquation, FiniteDifferenceEquation
 from bice.continuation import VolumeConstraint, TranslationConstraint
 
 
-class ThinFilmEquation(Equation):
+class ThinFilmEquation(PseudospectralEquation):
     r"""
     Pseudospectral implementation of the 1-dimensional Thin-Film Equation
     equation
@@ -29,7 +28,7 @@ class ThinFilmEquation(Equation):
 
         # space and fourier space
         self.x = np.linspace(-L/2, L/2, N, endpoint=False)
-        self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
+        self.build_kvectors(real_fft=True)
         # initial condition
         # self.u = np.ones(N) * 3
         self.u = 2 * np.cos(self.x*2*np.pi/L) + 1
