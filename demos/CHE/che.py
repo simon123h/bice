@@ -25,7 +25,7 @@ class CahnHilliardEquation(PseudospectralEquation):
         self.kappa = 1.
         # space and fourier space
         self.x = [np.linspace(-L/2, L/2, N)]
-        self.build_kvectors()
+        self.build_kvectors(real_fft=True)
         # initial condition
         #self.u = (np.random.random(N)-0.5)*0.02
         self.u = np.cos(self.x[0]/(L/4)) - 0.1
@@ -33,16 +33,16 @@ class CahnHilliardEquation(PseudospectralEquation):
 
     # definition of the CHE (right-hand side)
     def rhs(self, u):
-        u_k = np.fft.fft(u)
-        u3_k = np.fft.fft(u**3)
+        u_k = np.fft.rfft(u)
+        u3_k = np.fft.rfft(u**3)
         result_k = -self.ksquare * \
             (self.kappa*self.ksquare*u_k + self.a*u_k + u3_k)
-        result = np.fft.ifft(result_k).real
+        result = np.fft.irfft(result_k).real
         return result
 
     def first_spatial_derivative(self, u, direction=0):
-        du_dx = 1j*self.k[direction]*np.fft.fft(u)
-        return np.fft.ifft(du_dx).real
+        du_dx = 1j*self.k[direction]*np.fft.rfft(u)
+        return np.fft.irfft(du_dx).real
 
 
 class CahnHilliardProblem(Problem):
@@ -61,11 +61,11 @@ class CahnHilliardProblem(Problem):
 
     # set higher modes to null, for numerical stability
     def dealias(self, fraction=1./2.):
-        u_k = np.fft.fft(self.che.u)
+        u_k = np.fft.rfft(self.che.u)
         N = len(u_k)
         k = int(N * fraction)
         u_k[k + 1:-k] = 0
-        self.che.u = np.fft.ifft(u_k).real
+        self.che.u = np.fft.irfft(u_k).real
 
 
 # create output folder

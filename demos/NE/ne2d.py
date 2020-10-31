@@ -32,12 +32,8 @@ class NikolaevskiyEquation(PseudospectralEquation):
         self.m = 10  # characteristic system length
         self.ratio = 1  # length ratio Ly/Lx
         # space and fourier space
-        L = 1
-        self.x = [np.linspace(0, L, Nx), np.linspace(0, L, Ny)]
-        kx = np.fft.rfftfreq(Nx, L / (2. * Nx * np.pi))
-        ky = np.fft.fftfreq(Ny, L / (2. * Ny * np.pi))
-        kx, ky = np.meshgrid(kx, ky)
-        self.k = [kx, ky]
+        self.x = [np.linspace(0, 1, Nx), np.linspace(0, 1, Ny)]
+        self.build_kvectors(real_fft=True)
         # initial condition
         self.u = 2*(np.random.rand(Nx*Ny)-0.5) * 1e-5
         # create constraints

@@ -39,6 +39,7 @@ class acPFCEquation(PseudospectralEquation):
         # space and fourier space
         self.x = [np.linspace(-L/2, L/2, N)]
         self.k = [np.fft.rfftfreq(N, L / (2. * N * np.pi))]
+        self.build_kvectors(real_fft=True)
         self.ksquare = self.k[0]**2
 
         # initial guess
