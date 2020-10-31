@@ -22,7 +22,6 @@ class ThinFilmEquation(PseudospectralEquation):
     def __init__(self, N, L):
         super().__init__()
         # we have only a single variable h, so the shape is just (N,)
-        # Note: self.shape = (1, N) would also be possible, it's a matter of taste
         self.shape = (N,)
         # parameters: none
 
@@ -79,7 +78,6 @@ class ThinFilmEquationFD(FiniteDifferenceEquation):
     def __init__(self, N, L):
         super().__init__()
         # we have only a single variable h, so the shape is just (N,)
-        # Note: self.shape = (1, N) would also be possible, it's a matter of taste
         self.shape = (N,)
 
         # parameters: none
