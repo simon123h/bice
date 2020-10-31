@@ -19,8 +19,7 @@ class CahnHilliardEquation(PseudospectralEquation):
     """
 
     def __init__(self, N, L):
-        # the dimension of the 2d equation is N*N and we have a single variable only
-        super().__init__(N*N)
+        super().__init__(shape=(N, N))
         # parameters
         self.a = -0.5
         self.kappa = 1.
@@ -28,7 +27,6 @@ class CahnHilliardEquation(PseudospectralEquation):
         # to deal with several dimensions with different discretization/lengths
         self.x = [np.linspace(-L/2, L/2, N), np.linspace(-L/2, L/2, N)]
         self.build_kvectors(real_fft=True)
-        self.rshape = (N, N)
         # initial condition
         # self.u = (np.random.random((N, N))-0.5)*0.02
         mx, my = np.meshgrid(*self.x)
@@ -37,17 +35,16 @@ class CahnHilliardEquation(PseudospectralEquation):
     # definition of the CHE (right-hand side)
     @profile
     def rhs(self, u):
-        u2 = u.reshape(self.rshape)
-        u_k = np.fft.rfft2(u2)
-        u3_k = np.fft.rfft2(u2**3)
+        u_k = np.fft.rfft2(u)
+        u3_k = np.fft.rfft2(u**3)
         result_k = -self.ksquare * \
             (self.kappa * self.ksquare * u_k + self.a * u_k + u3_k)
-        return np.fft.irfft2(result_k).ravel()
+        return np.fft.irfft2(result_k)
 
     @profile
     def first_spatial_derivative(self, u, direction=0):
-        du_dx = 1j*self.k[direction]*np.fft.rfft2(u.reshape(self.rshape))
-        return np.fft.irfft2(du_dx).ravel()
+        du_dx = 1j*self.k[direction]*np.fft.rfft2(u)
+        return np.fft.irfft2(du_dx)
 
 
 class CahnHilliardProblem(Problem):
@@ -90,8 +87,7 @@ if not os.path.exists("initial_state2D.dat"):
         # plot
         if n % plotevery == 0:
             plt.cla()
-            plt.pcolormesh(mx, my, problem.che.u.reshape(
-                (problem.che.x[0].size, problem.che.x[1].size)), edgecolors='face')
+            plt.pcolormesh(mx, my, problem.che.u, edgecolors='face')
             plt.colorbar()
             plt.savefig("out/img/{:05d}.png".format(plotID))
             plt.close()
@@ -123,10 +119,12 @@ Profiler.print_summary()
 problem.continuation_stepper.ds = -1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
 
-translation_constraint = TranslationConstraint(problem.che)
-problem.add_equation(translation_constraint)
 volume_constraint = VolumeConstraint(problem.che)
 problem.add_equation(volume_constraint)
+translation_constraint_x = TranslationConstraint(problem.che, direction=0)
+problem.add_equation(translation_constraint_x)
+translation_constraint_y = TranslationConstraint(problem.che, direction=1)
+problem.add_equation(translation_constraint_y)
 
 n = 0
 plotevery = 1
