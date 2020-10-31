@@ -91,7 +91,7 @@ class acPFCProblem(Problem):
     # Norm is the L2-norm of the three fields
     def norm(self):
         u = self.acpfc.u
-        N = self.acpfc.dim
+        N = self.acpfc.shape[-1]
         return np.sqrt(np.sum(u[0]**2/N + u[1]**2/N + u[2]**2/N))
 
 
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     L2norms = [problem.norm()]
     times = [problem.time]
     us = [problem.acpfc.u]
-    T = 1000.
+    T = 10000.
     while problem.time < T:
         # plot
         if not n % plotevery:
@@ -154,7 +154,7 @@ if __name__ == "__main__":
     psi2s = us[:, 1, :]
     Ps = us[:, 2, :]
 
-    fig = plt.figure(figsize=(16, 9))
+    fig = plt.figure(1, figsize=(16, 9))
     ax_psi1 = fig.add_subplot(221)
     ax_psi2 = fig.add_subplot(222)
     ax_norm = fig.add_subplot(223)
@@ -164,6 +164,17 @@ if __name__ == "__main__":
     ax_psi2.pcolormesh(times, problem.acpfc.x[0], psi2s.T, cmap='Blues')
     ax_P.pcolormesh(times, problem.acpfc.x[0], Ps.T, cmap='Greens')
     ax_norm.plot(times, L2norms)
+
+    fig_return = plt.figure(2)
+    ax_return = fig_return.add_subplot(211)
+    ax_u0 = fig_return.add_subplot(212)
+
+    u0s = us[:, 0, 0]
+    print(u0s.shape)
+    maxs = u0s[1:-1][np.where(np.logical_and(u0s[1:-1] > u0s[:-2], u0s[1:-1] > u0s[2:]))]
+
+    ax_return.plot(maxs[:-1], maxs[1:], 'k.')
+    ax_u0.plot(times, u0s)
 
     plt.show()
 

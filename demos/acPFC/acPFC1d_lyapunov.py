@@ -66,7 +66,7 @@ largest = []
 
 while True:
     lyapunov.step()
-    problem.dealias()
+    #problem.dealias()
     last10[:-1] = last10[1:]
     last10[-1] = lyapunov.exponents
     largest += [np.max(lyapunov.exponents)]
