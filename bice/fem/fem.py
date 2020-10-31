@@ -14,7 +14,7 @@ class FiniteElementEquation(Equation):
     can build the related matrices.
     """
 
-    def __init__(self, shape=(1,)):
+    def __init__(self, shape=None):
         super().__init__(shape)
         # the mesh
         self.mesh = None
@@ -37,7 +37,7 @@ class FiniteElementEquation(Equation):
 
     @dim.setter
     def dim(self, d):
-        self.shape = self.shape[:-1] + (d,)
+        self.reshape(self.shape[:-1] + (d,))
 
     # the number of independent variables in the equation
     @property

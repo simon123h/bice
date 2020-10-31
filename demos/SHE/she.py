@@ -19,9 +19,7 @@ class SwiftHohenbergEquation(PseudospectralEquation):
     """
 
     def __init__(self, N, L):
-        super().__init__()
-        # we have only a single variable h, so the shape is just (N,)
-        self.shape = (N,)
+        super().__init__(shape=N)
         # parameters
         self.r = -0.013
         self.kc = 0.5
@@ -50,8 +48,6 @@ class SwiftHohenbergEquationFD(FiniteDifferenceEquation):
 
     def __init__(self, N, L):
         super().__init__()
-        # we have only a single variable h, so the shape is just (N,)
-        self.shape = (N,)
         # parameters
         self.r = -0.013
         self.kc = 0.5

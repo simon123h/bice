@@ -9,14 +9,18 @@ class FiniteDifferenceEquation(Equation):
     ODEs/PDEs with a finite difference scheme.
     """
 
-    def __init__(self, shape=(1,)):
+    def __init__(self, shape=None):
         super().__init__(shape)
         # first order derivative
         self.nabla = None
         # second order derivative
         self.laplace = None
         # the spatial coordinates
-        self.x = [np.linspace(0, 1, self.shape[-1], endpoint=False)]
+        if len(self.shape) > 0:
+            self.x = [np.linspace(0, 1, self.shape[-1], endpoint=False)]
+        else:
+            self.x = None
+
 
     def build_FD_matrices(self):
         N = self.shape[-1]

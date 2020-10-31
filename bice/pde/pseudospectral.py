@@ -9,10 +9,14 @@ class PseudospectralEquation(Equation):
     ODEs/PDEs with a pseudospectral scheme.
     """
 
-    def __init__(self, shape=(1,)):
+    def __init__(self, shape=None):
         super().__init__(shape)
         # the spatial coordinates
-        self.x = [np.linspace(0, 1, self.shape[-1])]
+        if len(self.shape) > 0:
+            self.x = [np.linspace(0, 1, self.shape[-1])]
+        else:
+            self.x = None
+        # the wavevector
         self.k = None
         self.ksquare = None
 

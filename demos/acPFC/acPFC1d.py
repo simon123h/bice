@@ -18,8 +18,7 @@ class acPFCEquation(PseudospectralEquation):
     """
 
     def __init__(self, N, L):
-        super().__init__()
-        self.shape = (3, N)
+        super().__init__(shape=(3, N))
 
         # parameters
         self.r = -1.5
@@ -44,8 +43,7 @@ class acPFCEquation(PseudospectralEquation):
 
         # initial guess
         if os.path.exists("initial_state.dat"):
-            self.u = np.loadtxt("initial_state.dat")
-            self.u = self.u.reshape(self.shape)
+            self.u = np.loadtxt("initial_state.dat").reshape(self.shape)
         else:
             psi1 = 1.*np.cos(self.x[0]*self.q1)
             psi2 = 1.4*np.cos(self.x[0]*self.q2)
@@ -127,8 +125,6 @@ if __name__ == "__main__":
         n += 1
         # perform timestep
         problem.time_step()
-        # perform dealiasing
-        #problem.dealias()
         # calculate the new norm
         dudtnorm = np.linalg.norm(problem.rhs(problem.u))
         # add new norm and time and u
@@ -171,4 +167,3 @@ if __name__ == "__main__":
     ax_u0.plot(times, u0s)
 
     plt.show()
-

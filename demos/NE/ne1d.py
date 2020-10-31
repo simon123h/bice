@@ -17,11 +17,9 @@ class NikolaevskiyEquation(PseudospectralEquation):
     """
 
     def __init__(self, N):
-        super().__init__()
         # make sure N is even
         N = int(np.floor(N/2)*2)
-        # we have only a single variable h
-        self.shape = (N,)
+        super().__init__(shape=N)
         # parameters
         self.r = 0.5  # drive
         self.m = 10  # characteristic system length

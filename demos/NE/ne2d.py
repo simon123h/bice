@@ -25,7 +25,7 @@ class NikolaevskiyEquation(PseudospectralEquation):
         self.Nx = Nx
         self.Ny = Ny
         # we have only a single variable h
-        self.shape = (Nx*Ny,)
+        self.reshape(Nx*Ny)
         self.rshape = (Nx, Ny)
         # parameters
         self.r = 0.5  # drive

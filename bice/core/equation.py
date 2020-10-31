@@ -13,32 +13,49 @@ class Equation:
     This is a very fundamental class. Specializations of the Equation class exist for covering
     more intricate types of equations, i.e., particular discretizations for spatial fields, e.g.,
     finite difference schemes or pseudospectral methods.
+    An equation has a 'shape' that should at all times be equal to the shape of the unknowns 'u'.
     """
 
-    def __init__(self, shape=(1,)):
-        # the shape of the equation's unknowns: self.u.shape = self.shape
-        # the shape may either be (N) for a single-variable equation with N values or
-        # (nvariables, N) for a multi-variable (e.g. vector-valued) equation with N values
-        # per independent variable
-        if isinstance(shape, int):
-            shape = (shape,)
-        self.shape = shape
+    def __init__(self, shape=None):
         # The equation's storage for the unknowns
-        self.u = np.zeros(self.shape)
-        # a history of the unknowns, needed for implicit schemes
+        self.u = np.zeros(shape)
+        # we keep our own __shape variable, so that the shape is not unintentionally lost
+        # when the user changes u. If stored shape is undefined, we'll simply fallback to u.shape
+        self.__shape = self.u.shape
+        # a history of the unknowns, needed e.g. for implicit schemes
         self.u_history = []
+        # optional reference to group of equations that this equation belongs to
+        self.group = None
         # Does the equation couple to any other unknowns?
         # If it is coupled, then all unknowns and methods of this equation will have the
         # full dimension of the problem and need to be mapped to the equation's
         # variables accordingly. Otherwise, they only have the dimension of this equation.
         self.is_coupled = False
-        # optional reference to group of equations that this equation belongs to
-        self.group = None
 
     # The total number of unknowns / degrees of freedom of the equation
     @property
     def ndofs(self):
         return np.prod(self.shape)
+
+    # Returns the shape of the equation's unknowns: self.u.shape
+    @property
+    def shape(self):
+        # if no shape is explicitly assigned, just return u.shape
+        if self.__shape is None or len(self.__shape) == 0:
+            return self.u.shape
+        # else, return the assigned shape
+        return self.__shape
+
+    # Change the shape of the equation / the equation's unknowns
+    def reshape(self, shape):
+        # resize the unknowns
+        self.u = np.resize(self.u, shape)
+        # update the internal shape variable
+        self.__shape = self.u.shape
+        # if the equation belongs to a group of equations, redo it's mapping of the unknowns
+        # since the number of unknowns changed
+        if self.group is not None:
+            self.group.map_unknowns()
 
     # Calculate the right-hand side of the equation 0 = rhs(u)
     def rhs(self, u):

@@ -28,12 +28,13 @@ class VolumeConstraint(Equation):
     def rhs(self, u):
         # generate empty vector of residual contributions
         res = np.zeros((u.size))
-        # reference to the indices of the unknowns/equations that we work on
+        # reference to the indices of the unknowns that we work on
         self_idx = self.group.idx[self]
         eq_idx = self.group.idx[self.ref_eq]
         # optionally split only that part that is referenced by self.variable
         if self.variable is not None and len(self.ref_eq.shape) > 1:
-            var_ndofs = np.prod(self.ref_eq.shape[1:])
+            eq_shape = self.ref_eq.shape[1:]
+            var_ndofs = np.prod(eq_shape)
             start = eq_idx.start + self.variable * var_ndofs
             eq_idx = slice(start, start + var_ndofs)
         # employ the constraint equation
@@ -85,29 +86,32 @@ class TranslationConstraint(Equation):
     def rhs(self, u):
         # set up the vector of the residual contributions
         res = np.zeros((u.size))
-        # reference to the indices of the unknowns/equations that we work on
+        # reference to the equation, shape and indices of the unknowns that we work on
+        eq = self.ref_eq
+        eq_shape = eq.shape
+        eq_idx = self.group.idx[eq]
         self_idx = self.group.idx[self]
-        eq_idx = self.group.idx[self.ref_eq]
         # optionally split only that part that is referenced by self.variable
-        if self.variable is not None and len(self.ref_eq.shape) > 1:
-            var_ndofs = np.prod(self.ref_eq.shape[1:])
+        if self.variable is not None:
+            eq_shape = self.ref_eq.shape[1:]
+            var_ndofs = np.prod(eq_shape)
             start = eq_idx.start + self.variable * var_ndofs
             eq_idx = slice(start, start + var_ndofs)
-        # define some variables
-        eq = self.ref_eq
+        # obtain the unknowns
         eq_u = u[eq_idx]
         eq_u_old = self.group.u[eq_idx]
         velocity = u[self_idx]
         # add constraint to residuals of reference equation (velocity is the lagrange multiplier)
         try:  # if method first_spatial_derivative is implemented, use this
-            eq_dudx = eq.first_spatial_derivative(eq_u, self.direction)
+            eq_dudx = eq.first_spatial_derivative(
+                eq_u.reshape(eq_shape), self.direction).ravel()
         except AttributeError:  # if not, get it from the gradient
             eq_dudx = np.gradient(eq_u, eq.x[self.direction])
         res[eq_idx] = velocity * eq_dudx
         # calculate the difference in center of masses between current
         # and previous unknowns of the reference equation
         # res[self_idx] = np.dot(eq.x[self.direction], eq_u-eq_u_old)
-        res[self_idx] = np.dot(eq_dudx, eq_u - eq_u_old)
+        res[self_idx] = np.dot(eq_dudx, (eq_u - eq_u_old))
         return res
 
     def mass_matrix(self):

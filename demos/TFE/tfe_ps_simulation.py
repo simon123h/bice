@@ -21,10 +21,7 @@ class ThinFilmEquation(PseudospectralEquation):
 
     def __init__(self, N, L):
         super().__init__()
-        # we have only a single variable h, so the shape is just (N,)
-        self.shape = (N,)
         # parameters: none
-
         # space and fourier space
         self.x = np.linspace(-L/2, L/2, N, endpoint=False)
         self.build_kvectors(real_fft=True)
@@ -76,12 +73,8 @@ class ThinFilmEquationFD(FiniteDifferenceEquation):
      """
 
     def __init__(self, N, L):
-        super().__init__()
-        # we have only a single variable h, so the shape is just (N,)
-        self.shape = (N,)
-
+        super().__init__(shape=N)
         # parameters: none
-
         # space and fourier space
         self.x = [np.linspace(-L/2, L/2, N)]
         self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
