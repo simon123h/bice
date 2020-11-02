@@ -112,6 +112,7 @@ class Equation:
             x = self.x
         except AttributeError:
             x = [np.arange(self.shape[-1])]
+        # for 1d
         if len(x) == 1:
             ax.set_xlabel("x")
             ax.set_ylabel("solution u(x,t)")
@@ -121,6 +122,7 @@ class Equation:
             else:
                 for n in range(self.shape[0]):
                     ax.plot(x[0], self.u[n])
+        # for 2d
         if len(x) == 2:
             ax.set_xlabel("x")
             ax.set_ylabel("y")

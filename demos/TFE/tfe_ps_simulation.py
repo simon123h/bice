@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
-from bice.pde import PseudospectralEquation, FiniteDifferenceEquation
+from bice.pde import PseudospectralEquation, FiniteDifferencesEquation
 from bice.continuation import VolumeConstraint, TranslationConstraint
 
 
@@ -58,12 +58,12 @@ class ThinFilmEquation(PseudospectralEquation):
             return np.fft.irfft(u_k)
         return u_k
 
-    def first_spatial_derivative(self, u, direction=0):
+    def du_dx(self, u, direction=0):
         du_dx = 1j*self.k*np.fft.rfft(u)
         return np.fft.irfft(du_dx)
 
 
-class ThinFilmEquationFD(FiniteDifferenceEquation):
+class ThinFilmEquationFD(FiniteDifferencesEquation):
     r"""
      Finite difference implementation of the 1-dimensional Thin-Film Equation
      equation
@@ -100,7 +100,7 @@ class ThinFilmEquationFD(FiniteDifferenceEquation):
     def dealias(self, u, real_space=False, ratio=1./2.):
         return u
 
-    def first_spatial_derivative(self, u, direction=0):
+    def du_dx(self, u, direction=0):
         return np.matmul(self.nabla, u)
 
 

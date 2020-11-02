@@ -1,10 +1,10 @@
 import numpy as np
-from bice.core.equation import Equation
+from .pde import PartialDifferentialEquation
 
 
-class FiniteDifferenceEquation(Equation):
+class FiniteDifferencesEquation(PartialDifferentialEquation):
     """
-    The FiniteDifferenceEquation is a subclass of the general Equation
+    The FiniteDifferencesEquation is a subclass of the general Equation
     and provides some useful routines that are needed for implementing
     ODEs/PDEs with a finite difference scheme.
     """
@@ -20,7 +20,6 @@ class FiniteDifferenceEquation(Equation):
             self.x = [np.linspace(0, 1, self.shape[-1], endpoint=False)]
         else:
             self.x = None
-
 
     def build_FD_matrices(self):
         N = self.shape[-1]
@@ -53,3 +52,11 @@ class FiniteDifferenceEquation(Equation):
         self.laplace += 128*np.roll(I, 3, axis=1)
         self.laplace += -9*np.roll(I, 4, axis=1)
         self.laplace /= dx**2 * 5040
+
+    # calculate the spatial derivative du/dx in a given spatial direction
+    def du_dx(self, u=None, direction=0):
+        # if u is not given, use self.u
+        if u is None:
+            u = self.u
+        # multiply with FD nabla matrix
+        return self.nabla.dot(u)

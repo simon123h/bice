@@ -1,12 +1,12 @@
 import numpy as np
-from bice.core.equation import Equation
+from .pde import PartialDifferentialEquation
 
 
-class PseudospectralEquation(Equation):
+class PseudospectralEquation(PartialDifferentialEquation):
     """
-    The PseudospectralEquation is a subclass of the general Equation
+    The PseudospectralEquation is a subclass of the PartialDifferentialEquation
     and provides some useful routines that are needed for implementing
-    ODEs/PDEs with a pseudospectral scheme.
+    PDEs with a pseudospectral scheme.
     """
 
     def __init__(self, shape=None):
@@ -64,3 +64,5 @@ class PseudospectralEquation(Equation):
             kx, ky, kz = np.meshgrid(kx, ky, kz)
             self.k = [kx, ky, kz]
             self.ksquare = kx**2 + ky**2 + kz**2
+
+    # TODO: implement a default du_dx method?

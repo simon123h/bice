@@ -52,7 +52,7 @@ class ThinFilmEquation(FiniteElementEquation):
     def dealias(self, u, real_space=False, ratio=1./2.):
         return u
 
-    def first_spatial_derivative(self, u, direction=0):
+    def du_dx(self, u, direction=0):
         return self.nabla[direction].dot(u)
 
     def plot(self, ax):

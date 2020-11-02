@@ -54,7 +54,7 @@ class ThinFilmEquation(FiniteElementEquation):
     def djp(self, h):
         return 1./h**6 - 1./h**3
 
-    def first_spatial_derivative(self, u, direction=0):
+    def du_dx(self, u, direction=0):
         return self.nabla[direction].dot(u)
 
     def plot(self, ax):

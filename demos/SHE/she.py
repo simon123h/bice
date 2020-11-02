@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
-from bice.pde import FiniteDifferenceEquation, PseudospectralEquation
+from bice.pde import FiniteDifferencesEquation, PseudospectralEquation
 from bice.continuation import TranslationConstraint
 from bice import profile, Profiler
 
@@ -39,7 +39,7 @@ class SwiftHohenbergEquation(PseudospectralEquation):
         return np.fft.irfft((self.r - (self.kc**2 - self.k[0]**2)**2) * u_k) + self.v * u**2 - self.g * u**3
 
 
-class SwiftHohenbergEquationFD(FiniteDifferenceEquation):
+class SwiftHohenbergEquationFD(FiniteDifferencesEquation):
     r"""
     Finite difference implementation of the 1-dimensional Swift-Hohenberg Equation
     equation, a nonlinear PDE

@@ -4,6 +4,7 @@ This file provides a method that determines the drift velocity of the solution u
 partial differential equation.
 
 - - - Derivation of the drift velocity formula - - -
+cf. B. Wallmeyer, master thesis (2014); S. Hartmann, master thesis (2018)
 Consider the field of u(x, t) with spatial coordinates (arbitrary dimension) x and time t.
 Approximate time evolution of the field for infinitesimal small time interval dt:
 u(x, t + dt) = u(x + v dt, t) + v_h dt + Res(x, t) dt
@@ -36,11 +37,9 @@ def calculateDriftVelocity(eq):
     #       --> calculate drift of single variable only
     # TODO: what if len(eq.shape) > 1?
     # calculate the time derivative
-    # TODO: Problem/Equations could have a dedicated dudt() method
-    #       (that we can override e.g. for FEM, where M*rhs != dudt)
-    dudt = eq.mass_matrix().dot(eq.rhs(eq.u))
+    dudt = eq.du_dt(eq.u)
     # calculate the spatial derivatives
-    dudx = [eq.first_spatial_derivative(direction=d) for d in range(sdim)]
+    dudx = [eq.du_dx(eq.u, direction=d) for d in range(sdim)]
     # calculate the average of the spatial derivatives
     dudx_avg = [np.average(dudx[d]) for d in range(sdim)]
     # create the linear system, solution is the drift velocity vector

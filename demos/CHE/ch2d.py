@@ -42,7 +42,7 @@ class CahnHilliardEquation(PseudospectralEquation):
         return np.fft.irfft2(result_k)
 
     @profile
-    def first_spatial_derivative(self, u, direction=0):
+    def du_dx(self, u, direction=0):
         du_dx = 1j*self.k[direction]*np.fft.rfft2(u)
         return np.fft.irfft2(du_dx)
 
