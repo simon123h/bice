@@ -5,13 +5,12 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, Equation, time_steppers
-from bice.pde import FiniteDifferenceEquation
-from bice.time_steppers import RungeKuttaFehlberg45, RungeKutta4, BDF2, BDF
+from bice import Problem, time_steppers
+from bice.pde import PseudospectralEquation, FiniteDifferencesEquation
 from bice.continuation import VolumeConstraint, TranslationConstraint
 
 
-class ThinFilmEquation(Equation):
+class ThinFilmEquation(PseudospectralEquation):
     r"""
     Pseudospectral implementation of the 1-dimensional Thin-Film Equation
     equation
@@ -21,15 +20,11 @@ class ThinFilmEquation(Equation):
     """
 
     def __init__(self, N, L):
-        super().__init__()
-        # we have only a single variable h, so the shape is just (N,)
-        # Note: self.shape = (1, N) would also be possible, it's a matter of taste
-        self.shape = (N,)
+        super().__init__(shape=N)
         # parameters: none
-
         # space and fourier space
         self.x = np.linspace(-L/2, L/2, N, endpoint=False)
-        self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
+        self.build_kvectors(real_fft=True)
         # initial condition
         # self.u = np.ones(N) * 3
         self.u = 2 * np.cos(self.x*2*np.pi/L) + 1
@@ -63,12 +58,12 @@ class ThinFilmEquation(Equation):
             return np.fft.irfft(u_k)
         return u_k
 
-    def first_spatial_derivative(self, u, direction=0):
+    def du_dx(self, u, direction=0):
         du_dx = 1j*self.k*np.fft.rfft(u)
         return np.fft.irfft(du_dx)
 
 
-class ThinFilmEquationFD(FiniteDifferenceEquation):
+class ThinFilmEquationFD(FiniteDifferencesEquation):
     r"""
      Finite difference implementation of the 1-dimensional Thin-Film Equation
      equation
@@ -78,13 +73,8 @@ class ThinFilmEquationFD(FiniteDifferenceEquation):
      """
 
     def __init__(self, N, L):
-        super().__init__()
-        # we have only a single variable h, so the shape is just (N,)
-        # Note: self.shape = (1, N) would also be possible, it's a matter of taste
-        self.shape = (N,)
-
+        super().__init__(shape=N)
         # parameters: none
-
         # space and fourier space
         self.x = [np.linspace(-L/2, L/2, N)]
         self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
@@ -110,7 +100,7 @@ class ThinFilmEquationFD(FiniteDifferenceEquation):
     def dealias(self, u, real_space=False, ratio=1./2.):
         return u
 
-    def first_spatial_derivative(self, u, direction=0):
+    def du_dx(self, u, direction=0):
         return np.matmul(self.nabla, u)
 
 

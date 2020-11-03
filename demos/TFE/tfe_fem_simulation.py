@@ -4,26 +4,25 @@ import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.sparse
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem
+from bice import Problem, time_steppers
 from bice.fem import FiniteElementEquation, OneDimMesh
 from bice.continuation import VolumeConstraint, TranslationConstraint
-from bice import NewtonSolver, MyNewtonSolver
 from bice import profile, Profiler
 
 
 class ThinFilmEquation(FiniteElementEquation):
     r"""
-     Finite element implementation of the (steady) 1-dimensional Thin-Film Equation
+     Finite element implementation of the 1-dimensional Thin-Film Equation
      equation
      dh/dt = d/dx (h^3 d/dx ( - d^2/dx^2 h - Pi(h) ))
-     with dh/dt = 0 and integrated twice.
      with the disjoining pressure:
      Pi(h) = 1/h^3 - 1/h^6
      """
 
     def __init__(self, N, L):
-        super().__init__(N)
+        super().__init__(shape=(2, N))
         # parameters: none
         # setup the mesh
         self.L = L
@@ -31,47 +30,45 @@ class ThinFilmEquation(FiniteElementEquation):
         # initial condition
         h0 = 6
         a = 3/20. / (h0-1)
-        self.u = np.maximum(-a*self.x[0]*self.x[0] + h0, 1)
+        self.u[0] = np.maximum(-a*self.x[0]*self.x[0] + h0, 1)
         # build finite element matrices
         self.build_FEM_matrices()
 
     # definition of the residual integrand
     def residual_def(self, x, u, dudx, test, dtestdx):
-        return dudx[0]*dtestdx[0] - self.djp(u)
+        h = u[0]
+        dFdh = u[1]
+        res = np.zeros(2)
+        res[1] = (-1./h**6 + 1./h**3 - dFdh)*test
+        for d in range(self.mesh.dim):
+            res[0] += -h**3 * dudx[1, d] * dtestdx[d]
+            res[1] += dudx[0, d] * dtestdx[d]
+        return res
 
     # definition of the equation, using finite element method
     def rhs(self, u):
         # call residual assembly loop
-        # return self.assemble_residuals(self.residual_def, u)
-        return -self.laplace.dot(u) - self.M.dot(self.djp(u))
+        return self.assemble_residuals(self.residual_def, u)
 
     # disjoining pressure
     def djp(self, h):
         return 1./h**6 - 1./h**3
 
-    # no dealiasing for the FD version
-    def dealias(self, u, real_space=False, ratio=1./2.):
-        return u
-
-    def first_spatial_derivative(self, u, direction=0):
+    def du_dx(self, u, direction=0):
         return self.nabla[direction].dot(u)
 
     def plot(self, ax):
         ax.set_xlabel("x")
         ax.set_ylabel("solution h(x,t)")
-        ax.plot(self.x[0], self.u, marker="x", label="solution")
-
-        # k = 2 * np.pi / self.L
-        # sin = np.cos(k*self.x[0])
-        # dxx = self.laplace.dot(sin) / self.M.dot(np.ones(self.u.size))
-        # dexx = -np.cos(k*self.x[0])*k*k
-        # ax.plot(self.x[0], dxx, label="numeric")
-        # ax.plot(self.x[0], dexx, label="exact")
-
-        # error_estimate = problem.tfe.refinement_error_estimate()
-        # ax.plot((self.x[0][:-1] + self.x[0][1:])/2, error_estimate, label="error estimate")
-
+        h, dFdh = self.u
+        ax.plot(self.x[0], h, marker="x", label="solution")
+        ax.plot(self.x[0], dFdh, marker="x", label="dFdh")
         ax.legend()
+
+    def mass_matrix(self):
+        dynamics = np.eye(self.nvariables)
+        dynamics[1, 1] = 0
+        return scipy.sparse.kron(dynamics, self.M)
 
 
 class ThinFilm(Problem):
@@ -82,15 +79,17 @@ class ThinFilm(Problem):
         self.tfe = ThinFilmEquation(N, L)
         self.add_equation(self.tfe)
         # Generate the volume constraint
-        self.volume_constraint = VolumeConstraint(self.tfe)
+        self.volume_constraint = VolumeConstraint(self.tfe, variable=0)
         # Generate the translation constraint
         self.translation_constraint = TranslationConstraint(self.tfe)
+        # initialize time stepper
+        # self.time_stepper.error_tolerance = 1e1
+        # self.time_stepper.dt = 3e-5
+        # self.time_stepper = time_steppers.ImplicitEuler(dt=1e-1)
+        self.time_stepper = time_steppers.BDF2(dt=1e-1)
+        # self.time_stepper = time_steppers.BDF(self)
         # assign the continuation parameter
         self.continuation_parameter = (self.volume_constraint, "fixed_volume")
-
-    # set higher modes to null, for numerical stability
-    def dealias(self, fraction=1./2.):
-        self.tfe.u = self.tfe.dealias(self.tfe.u, True)
 
     def norm(self):
         return np.trapz(self.tfe.u, self.tfe.x[0])
@@ -106,7 +105,7 @@ problem = ThinFilm(N=200, L=100)
 # Impose the constraints
 # problem.volume_constraint.fixed_volume = np.trapz(
 #     problem.tfe.u, problem.tfe.x[0])
-problem.add_equation(problem.volume_constraint)
+# problem.add_equation(problem.volume_constraint)
 # problem.add_equation(problem.translation_constraint)
 
 # refinement thresholds
@@ -128,27 +127,36 @@ fig.savefig("out/img/{:05d}.png".format(plotID))
 ax.clear()
 plotID += 1
 
+problem.tfe.mesh.max_refinement_error = 1e-2
+problem.tfe.mesh.min_refinement_error = 1e-3
+problem.tfe.mesh.min_element_dx = 0.1
+problem.tfe.mesh.max_element_dx = 1e10
+
 Profiler.start()
 
-for i in range(10):
-
-    # solve
-    print("solving")
-    problem.newton_solve()
+dudtnorm = 999
+n = 0
+plotevery = 1
+while dudtnorm > 1e-8:
     # plot
-    problem.tfe.plot(ax)
-    fig.savefig("out/img/{:05d}.png".format(plotID))
-    ax.clear()
-    plotID += 1
-    # adapt
-    print("adapting")
-    problem.tfe.adapt()
-    problem.tfe.adapt()
-    # plot
-    problem.tfe.plot(ax)
-    fig.savefig("out/img/{:05d}.png".format(plotID))
-    ax.clear()
-    plotID += 1
-
+    if n % plotevery == 0:
+        problem.plot(ax)
+        fig.savefig("out/img/{:05d}.svg".format(plotID))
+        plotID += 1
+        print("step #: {:}".format(n))
+        print("time:   {:}".format(problem.time))
+        print("dt:     {:}".format(problem.time_stepper.dt))
+        print("|dudt|: {:}".format(dudtnorm))
+    n += 1
+    # perform timestep
+    problem.time_step()
+    # perform mesh adaption
+    # problem.tfe.adapt()
+    # calculate the new norm
+    dudtnorm = np.linalg.norm(problem.rhs(problem.u))
+    # catch divergent solutions
+    if np.max(problem.u) > 1e12:
+        print("Aborted.")
+        break
 
 Profiler.print_summary()

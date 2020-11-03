@@ -17,18 +17,15 @@ class NikolaevskiyEquation(PseudospectralEquation):
     """
 
     def __init__(self, N):
-        super().__init__()
         # make sure N is even
         N = int(np.floor(N/2)*2)
-        # we have only a single variable h
-        self.shape = (N,)
+        super().__init__(shape=N)
         # parameters
         self.r = 0.5  # drive
         self.m = 10  # characteristic system length
         # space and fourier space
-        L = 1
-        self.x = [np.linspace(0, L, N)]
-        self.k = [np.fft.rfftfreq(N, L / (2. * N * np.pi))]
+        self.x = [np.linspace(0, 1, N)]
+        self.build_kvectors(real_fft=True)
         # initial condition
         self.u = 2*(np.random.rand(N)-0.5) * 1e-5
 

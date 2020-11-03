@@ -422,7 +422,6 @@ class ProblemHistory():
         self.__dt = []
 
     # update the history with the current unknowns of the problem
-    @profile
     def update(self, history_type=None):
         # make sure that the history is of correct type, do not mix different types
         if self.type != history_type:
@@ -451,7 +450,6 @@ class ProblemHistory():
         self.__dt = [dval] + self.__dt[:self.max_length-1]
 
     # get the unknowns at some point t in history
-    @profile
     def u(self, t=0):
         # check length of history
         if t >= self.length:

@@ -22,24 +22,16 @@ class NikolaevskiyEquation(PseudospectralEquation):
         # make sure N is even
         Nx = int(np.floor(Nx/2)*2)
         Ny = int(np.floor(Ny/2)*2)
-        self.Nx = Nx
-        self.Ny = Ny
-        # we have only a single variable h
-        self.shape = (Nx*Ny,)
-        self.rshape = (Nx, Ny)
+        self.reshape((Nx, Ny))
         # parameters
         self.r = 0.5  # drive
         self.m = 10  # characteristic system length
         self.ratio = 1  # length ratio Ly/Lx
         # space and fourier space
-        L = 1
-        self.x = [np.linspace(0, L, Nx), np.linspace(0, L, Ny)]
-        kx = np.fft.rfftfreq(Nx, L / (2. * Nx * np.pi))
-        ky = np.fft.fftfreq(Ny, L / (2. * Ny * np.pi))
-        kx, ky = np.meshgrid(kx, ky)
-        self.k = [kx, ky]
+        self.x = [np.linspace(0, 1, Nx), np.linspace(0, 1, Ny)]
+        self.build_kvectors(real_fft=True)
         # initial condition
-        self.u = 2*(np.random.rand(Nx*Ny)-0.5) * 1e-5
+        self.u = 2*(np.random.rand(Nx, Ny)-0.5) * 1e-5
         # create constraints
         self.volume_constraint = VolumeConstraint(self)
         self.translation_constraint_x = TranslationConstraint(
@@ -62,21 +54,19 @@ class NikolaevskiyEquation(PseudospectralEquation):
         ky = self.k[1] / L / self.ratio
         ksq = kx**2 + ky**2
         # fourier transform
-        u_k = np.fft.rfft2(u.reshape(self.rshape))
+        u_k = np.fft.rfft2(u)
         # calculate linear part (in fourier space)
         lin = ksq * (self.r - (1-ksq)**2) * u_k
         # calculate nonlinear part (in real space)
         nonlin = np.fft.irfft2(1j * kx * u_k)**2
         nonlin += np.fft.irfft2(1j * ky * u_k)**2
         # sum up and return
-        return (np.fft.irfft2(lin) - 0.5 * nonlin).ravel()
+        return np.fft.irfft2(lin) - 0.5 * nonlin
 
     # calculate the spatial derivative
-    def first_spatial_derivative(self, u, direction=0):
-        u2 = u.reshape(self.rshape)
-        du_dx = 1j*self.k[direction]*np.fft.rfft2(u2)
-        du_dx = np.fft.irfft2(du_dx)
-        return du_dx.ravel()
+    def du_dx(self, u, direction=0):
+        du_dx = 1j*self.k[direction]*np.fft.rfft2(u)
+        return np.fft.irfft2(du_dx)
 
     # plot the solution
     def plot(self, ax):
@@ -84,10 +74,9 @@ class NikolaevskiyEquation(PseudospectralEquation):
         ax.set_ylabel("y")
         ax.set_aspect("equal")
         x, y = np.meshgrid(self.x[0], self.x[1])
-        h = self.u.reshape(self.rshape)
         Lx = self.L0 * self.m
         Ly = Lx * self.ratio
-        pcol = ax.pcolor(x*Lx, y*Ly, h, cmap="coolwarm", rasterized=True)
+        pcol = ax.pcolor(x*Lx, y*Ly, self.u, cmap="coolwarm", rasterized=True)
         pcol.set_edgecolor('face')
         # put velocity labels into plot
         ax.text(0.02, 0.06, "vx = {:.1g}".format(
@@ -111,13 +100,10 @@ class NikolaevskiyProblem(Problem):
         # assign the continuation parameter
         self.continuation_parameter = (self.ne, "m")
 
-    # set higher modes to null, for numerical stability
-    def dealias(self, fraction=1./2.):
-        # TODO: fix for 2d
-        # pass
-        u_k = np.fft.rfft(self.ne.u)
-        u_k[0] = 0
-        self.ne.u = np.fft.irfft(u_k)
+    # reset zero-mode, for conservation of volume
+    def dealias(self):
+        # subtract volume
+        self.ne.u -= np.mean(self.ne.u)
 
     # Norm is the L2-norm of the NE
     def norm(self):

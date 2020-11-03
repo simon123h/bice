@@ -16,7 +16,7 @@ class TimePeriodicOrbitHandler(Equation):
 
     # reference equation, initial guess for period length, initial number of points in time
     def __init__(self, reference_equation, T, Nt):
-        super().__init__(shape=(Nt*reference_equation.u.size+1))
+        super().__init__(shape=(Nt*reference_equation.ndofs+1))
         # which equation to treat?
         self.ref_eq = reference_equation
         # the list of considered timesteps (in normalized time t' = t / T)
@@ -163,7 +163,7 @@ class TimePeriodicOrbitHandler(Equation):
         # build new u
         u = np.append(u.ravel(), [T])
         # update shape of equation
-        self.shape = (len(dt)*N + 1,)
+        self.reshape(len(dt)*N + 1)
         # assign new variables and timesteps
         self.u = u
         self.dt = dt

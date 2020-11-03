@@ -9,7 +9,6 @@ sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem
 from bice.fem import FiniteElementEquation, TriangleMesh
 from bice.continuation import VolumeConstraint, TranslationConstraint
-from bice import NewtonSolver, MyNewtonSolver
 from bice import profile, Profiler
 
 
@@ -45,7 +44,7 @@ class ThinFilmEquation(FiniteElementEquation):
     def djp(self, h):
         return 1./h**6 - 1./h**3
 
-    def first_spatial_derivative(self, u, direction=0):
+    def du_dx(self, u, direction=0):
         return self.nabla[direction].dot(u)
 
     def plot(self, ax):
@@ -106,9 +105,6 @@ problem.tfe.mesh.max_refinement_error = 0.2
 problem.tfe.mesh.min_refinement_error = 0.07
 problem.tfe.mesh.min_element_dx = 0.5
 problem.tfe.mesh.max_element_dx = 1e10
-
-# problem.newton_solver = MyNewtonSolver()
-# problem.newton_solver.convergence_tolerance = 1e-6
 
 # create figure
 fig, ax = plt.subplots(1, 1, figsize=(9, 9))

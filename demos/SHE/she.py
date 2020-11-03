@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
-from bice.pde import FiniteDifferenceEquation, PseudospectralEquation
+from bice.pde import FiniteDifferencesEquation, PseudospectralEquation
 from bice.continuation import TranslationConstraint
 from bice import profile, Profiler
 
@@ -19,10 +19,7 @@ class SwiftHohenbergEquation(PseudospectralEquation):
     """
 
     def __init__(self, N, L):
-        super().__init__()
-        # we have only a single variable h, so the shape is just (N,)
-        # Note: self.shape = (1, N) would also be possible, it's a matter of taste
-        self.shape = (N,)
+        super().__init__(shape=N)
         # parameters
         self.r = -0.013
         self.kc = 0.5
@@ -30,7 +27,7 @@ class SwiftHohenbergEquation(PseudospectralEquation):
         self.g = 1
         # space and fourier space
         self.x = [np.linspace(-L/2, L/2, N)]
-        self.build_kvectors()
+        self.build_kvectors(real_fft=True)
         # initial condition
         self.u = np.cos(
             2 * np.pi * self.x[0] / 10) * np.exp(-0.005 * self.x[0]**2)
@@ -38,11 +35,11 @@ class SwiftHohenbergEquation(PseudospectralEquation):
     # definition of the SHE (right-hand side)
     @profile
     def rhs(self, u):
-        u_k = np.fft.fft(u)
-        return np.fft.ifft((self.r - (self.kc**2 - self.k[0]**2)**2) * u_k).real + self.v * u**2 - self.g * u**3
+        u_k = np.fft.rfft(u)
+        return np.fft.irfft((self.r - (self.kc**2 - self.k[0]**2)**2) * u_k) + self.v * u**2 - self.g * u**3
 
 
-class SwiftHohenbergEquationFD(FiniteDifferenceEquation):
+class SwiftHohenbergEquationFD(FiniteDifferencesEquation):
     r"""
     Finite difference implementation of the 1-dimensional Swift-Hohenberg Equation
     equation, a nonlinear PDE
@@ -51,9 +48,6 @@ class SwiftHohenbergEquationFD(FiniteDifferenceEquation):
 
     def __init__(self, N, L):
         super().__init__()
-        # we have only a single variable h, so the shape is just (N,)
-        # Note: self.shape = (1, N) would also be possible, it's a matter of taste
-        self.shape = (N,)
         # parameters
         self.r = -0.013
         self.kc = 0.5
@@ -93,11 +87,11 @@ class SwiftHohenbergProblem(Problem):
     # set higher modes to null, for numerical stability
     @profile
     def dealias(self, fraction=1./2.):
-        u_k = np.fft.fft(self.she.u)
+        u_k = np.fft.rfft(self.she.u)
         N = len(u_k)
         k = int(N*fraction)
         u_k[k+1:-k] = 0
-        self.she.u = np.fft.ifft(u_k).real
+        self.she.u = np.fft.irfft(u_k)
 
 
 # create output folder
@@ -130,8 +124,6 @@ if not os.path.exists("initial_state.dat"):
         n += 1
         # perform timestep
         problem.time_step()
-        # perform dealiasing
-        # problem.dealias()
         # calculate the new norm
         dudtnorm = np.linalg.norm(problem.rhs(problem.u))
         # catch divergent solutions

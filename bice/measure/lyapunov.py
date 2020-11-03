@@ -1,5 +1,5 @@
 import numpy as np
-
+from bice.core.profiling import profile
 
 class LyapunovExponentCalculator():
     """
@@ -40,6 +40,7 @@ class LyapunovExponentCalculator():
         self.orthonormalize()
 
     # orthonormalize the set of perturbation vectors using Gram-Schmidt-Orthonormalization
+    @profile
     def orthonormalize(self):
         # construct orthogonal vectors using Gram-Schmidt-method
         for i in range(self.nexponents):
@@ -54,6 +55,7 @@ class LyapunovExponentCalculator():
         return norms
 
     # integrate dt, reorthonormalize and update Lyapunov exponents
+    @profile
     def step(self):
         # if the number of points changed, regenerate the perturbation vectors
         if self.perturbations[0].size != self.problem.u.size:

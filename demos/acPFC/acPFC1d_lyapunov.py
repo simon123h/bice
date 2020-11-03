@@ -8,6 +8,7 @@ sys.path.append("../..")  # noqa, needed for relative import of package
 from acPFC1d import acPFCProblem
 from bice import time_steppers
 from bice.measure import LyapunovExponentCalculator
+from bice import profile, Profiler
 
 
 # create output folder
@@ -30,47 +31,54 @@ plotID = 0
 n = 0
 plotevery = 10
 dudtnorm = 1
-T = 10000.
-while problem.time < T:
-    # plot
-    if n % plotevery == 0:
-        problem.plot(ax_sol)
-        fig.savefig(filepath + "out/img/{:07d}.svg".format(plotID))
-        plotID += 1
-        print("step #: {:}".format(n))
-        print("time:   {:}".format(problem.time))
-        print("dt:     {:}".format(problem.time_stepper.dt))
-        print("|dudt|: {:}".format(dudtnorm))
-    n += 1
-    # perform timestep
-    problem.time_step()
-    # perform dealiasing
-    #problem.dealias()
-    # calculate the new norm
-    dudtnorm = np.linalg.norm(problem.rhs(problem.u))
-    # catch divergent solutions
-    if np.max(problem.u) > 1e12:
-        print("diverged")
-        break
-# save the state, so we can reload it later
-problem.save("initial_state.dat")
+
+T = 1000.
+if not os.path.exists("initial_state.dat"):
+    while problem.time < T:
+        # plot
+        if n % plotevery == 0:
+            problem.plot(ax_sol)
+            fig.savefig("out/img/{:05d}.svg".format(plotID))
+            plotID += 1
+            print("step #: {:}".format(n))
+            print("time:   {:}".format(problem.time))
+            print("dt:     {:}".format(problem.time_stepper.dt))
+            print("|dudt|: {:}".format(dudtnorm))
+        n += 1
+        # perform timestep
+        problem.time_step()
+        # calculate the new norm
+        dudtnorm = np.linalg.norm(problem.rhs(problem.u))
+        # catch divergent solutions
+        if np.max(problem.u) > 1e12:
+            print("diverged")
+            break
+    # save the state, so we can reload it later
+    problem.save("initial_state.dat")
+else:
+    # load the initial state
+    problem.load("initial_state.dat")
+
 
 # calculate Lyapunov exponents
 problem.time_stepper = time_steppers.BDF2(dt=0.1)
-lyapunov = LyapunovExponentCalculator(
-    problem, nexponents=1, epsilon=1e-6, nintegration_steps=1)
+lyapunov = LyapunovExponentCalculator(problem, nexponents=1, epsilon=1e-6, nintegration_steps=1)
 
-last10 = np.zeros((10, 10))
+last10 = []
 largest = []
 L2norms = [problem.norm()]
 times = [problem.time()]
 
 
+# Profiler.start()
+
+n = 1
+plotevery = 10
 while True:
+    # perform Lyapunov exponent calculation step
     lyapunov.step()
-    #problem.dealias()
-    last10[:-1] = last10[1:]
-    last10[-1] = lyapunov.exponents
+    # store last10 and largest Lyapunov exponents
+    last10 = [lyapunov.exponents] + last10[:9]
     largest += [np.max(lyapunov.exponents)]
 
     L2norms += [problem.norm()]
@@ -90,4 +98,3 @@ while True:
     np.savetxt(filepath[:-1] + "_exponents.dat", largest)
     np.savetxt(filepath[:-1] + "_L2norms.dat", L2norms)
     np.savetxt(filepath[:-1] + "_times.dat", times)
-

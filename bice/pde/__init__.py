@@ -1,9 +1,11 @@
 
-from .finite_differences import FiniteDifferenceEquation
+from .pde import PartialDifferentialEquation
+from .finite_differences import FiniteDifferencesEquation
 from .pseudospectral import PseudospectralEquation
 
 
 __all__ = [
-    "FiniteDifferenceEquation",
+    "PartialDifferentialEquation",
+    "FiniteDifferencesEquation",
     "PseudospectralEquation"
 ]

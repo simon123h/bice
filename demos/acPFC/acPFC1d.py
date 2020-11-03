@@ -18,8 +18,7 @@ class acPFCEquation(PseudospectralEquation):
     """
 
     def __init__(self, N, L):
-        super().__init__()
-        self.shape = (3, N)
+        super().__init__(shape=(3, N))
 
         # parameters
         self.r = -1.5
@@ -38,12 +37,13 @@ class acPFCEquation(PseudospectralEquation):
 
         # space and fourier space
         self.x = [np.linspace(-L/2, L/2, N)]
-        self.build_kvectors()
+        self.k = [np.fft.rfftfreq(N, L / (2. * N * np.pi))]
+        self.build_kvectors(real_fft=True)
+        self.ksquare = self.k[0]**2
 
         # initial guess
         if os.path.exists("initial_state.dat"):
-            self.u = np.loadtxt("initial_state.dat")
-            self.u = self.u.reshape(self.shape)
+            self.u = np.loadtxt("initial_state.dat").reshape(self.shape)
         else:
             psi1 = 1.*np.cos(self.x[0]*self.q1)
             psi2 = 1.4*np.cos(self.x[0]*self.q2)
@@ -51,15 +51,15 @@ class acPFCEquation(PseudospectralEquation):
             self.u = np.array([psi1, psi2, P])
 
     def rhs(self, u):
-        u_k = np.fft.fft(u)
-        psi1_k3 = np.fft.fft((u[0] + self.phi01)**3)
-        psi2_k3 = np.fft.fft((u[1] + self.phi02)**3)
+        u_k = np.fft.rfft(u)
+        psi1_k3 = np.fft.rfft((u[0] + self.phi01)**3)
+        psi2_k3 = np.fft.rfft((u[1] + self.phi02)**3)
         r1 = -self.ksquare * ((self.r + (self.q1**2 - self.ksquare)**2)*u_k[0] + psi1_k3 + self.c*u_k[1]) - 1j*self.v0*self.k[0]*u_k[2]
         r2 = -self.ksquare * ((self.r + (self.q2**2 - self.ksquare)**2)*u_k[1] + psi2_k3 + self.c*u_k[0])
         r3 = -self.C1*self.ksquare * u_k[2] - self.Dr*self.C1*u_k[2] - 1j*self.v0*self.k[0]*u_k[0]
 
         res = np.array([r1, r2, r3])
-        res = np.fft.ifft(res).real
+        res = np.fft.irfft(res)
         return res
 
     def plot(self, ax):
@@ -79,14 +79,6 @@ class acPFCProblem(Problem):
         # initialize time stepper
         self.time_stepper = time_steppers.BDF(self, dt_max=1e-1)
         self.continuation_parameter = (self.acpfc, "phi01")
-
-    def dealias(self, fraction=1./2.):
-        u_k = np.fft.fft(self.acpfc.u)
-        N = len(u_k)
-        k = int(N*fraction)
-        u_k[k+1:] = 0
-        u_k[0] = 0
-        self.acpfc.u = np.fft.ifft(u_k)
 
     # Norm is the L2-norm of the three fields
     def norm(self):
@@ -133,8 +125,6 @@ if __name__ == "__main__":
         n += 1
         # perform timestep
         problem.time_step()
-        # perform dealiasing
-        #problem.dealias()
         # calculate the new norm
         dudtnorm = np.linalg.norm(problem.rhs(problem.u))
         # add new norm and time and u
@@ -177,4 +167,3 @@ if __name__ == "__main__":
     ax_u0.plot(times, u0s)
 
     plt.show()
-
