@@ -42,7 +42,7 @@ while problem.time < T:
     # plot
     if n % plotevery == 0:
         problem.plot(ax_sol)
-        fig.savefig("out/img/{:07d}.svg".format(plotID))
+        fig.savefig(filepath + "out/img/{:07d}.svg".format(plotID))
         plotID += 1
         print("step #: {:}".format(n))
         print("time:   {:}".format(problem.time))
@@ -58,7 +58,7 @@ while problem.time < T:
         print("diverged")
         break
 # save the state, so we can reload it later
-problem.save("initial_state.dat")
+#problem.save("initial_state.dat")
 
 
 # calculate Lyapunov exponents
