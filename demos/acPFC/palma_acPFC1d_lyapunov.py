@@ -16,7 +16,7 @@ import sys
 
 phi01 = float(sys.argv[1])
 
-filepath = "/local0/m_holl20/biceresults/acPFC_lyapunov_phi01{:+01.4f}/".format(phi01).replace('.', '')
+filepath = "acPFC_lyapunov_phi01{:+01.4f}/".format(phi01).replace('.', '')
 shutil.rmtree(filepath + "out", ignore_errors=True)
 os.makedirs(filepath + "out/img", exist_ok=True)
 
