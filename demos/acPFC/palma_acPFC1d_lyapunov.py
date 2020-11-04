@@ -37,7 +37,7 @@ n = 0
 plotevery = 10
 dudtnorm = 1
 
-T = 100000.
+T = 10000.
 while problem.time < T:
     # plot
     if n % plotevery == 0:
