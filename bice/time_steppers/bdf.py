@@ -60,6 +60,10 @@ class BDF(TimeStepper):
         def f(t, u):
             self.problem.time = t
             return self.problem.rhs(u)
+        # create wrapper for the jacobian
+        def jac(t, u):
+            self.problem.time = t
+            return self.problem.jacobian(u)
         # create instance of scipy.integrate.BDF
         self.bdf = scipy.integrate.BDF(
-            f, self.problem.time, self.problem.u, self.problem.time+1e18, max_step=self.dt_max, rtol=self.rtol, atol=self.atol, vectorized=False)
+            f, self.problem.time, self.problem.u, self.problem.time+1e18, jac=jac, max_step=self.dt_max, rtol=self.rtol, atol=self.atol, vectorized=False)

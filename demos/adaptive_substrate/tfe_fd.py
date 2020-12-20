@@ -3,11 +3,13 @@ import shutil
 import os
 import sys
 import numpy as np
+from scipy.sparse import diags
 import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
 from bice.continuation import VolumeConstraint, TranslationConstraint
+from bice.core.profiling import Profiler
 
 
 class ThinFilmEquationFD(FiniteDifferencesEquation):
@@ -28,16 +30,22 @@ class ThinFilmEquationFD(FiniteDifferencesEquation):
         # initial condition
         self.u = 2 * np.cos(self.x[0] * 2 * np.pi / L) + 3
         # build finite difference matrices
-        self.build_FD_matrices()
-        # self.u = np.ones(N) * 3
-        #self.x = self.x[0]
-        # self.u = np.maximum(10 * np.cos(self.x / 5), 1)
+        self.build_FD_matrices(sparse=True)
 
     # definition of the equation, using finite difference method
     def rhs(self, h):
         djp = 1./h**6 - 1./h**3
-        dFdh = -np.matmul(self.laplace, h) - djp
-        return np.matmul(self.nabla, h**3 * np.matmul(self.nabla, dFdh))
+        dFdh = -self.laplace.dot(h) - djp
+        return self.nabla.dot(h**3 * self.nabla.dot(dFdh))
+
+    def jacobian(self, h):
+        Q = diags(h**3)
+        dQdh = diags(3 * h**2)
+        djp = 1./h**6 - 1./h**3
+        dFdh = diags(-self.laplace.dot(h) - djp)
+        ddjpdh = diags(3./h**4 - 6./h**7)
+        ddFdhdh = -self.laplace - ddjpdh
+        return self.nabla.dot(dQdh * self.nabla.dot(dFdh) + Q * self.nabla.dot(ddFdhdh))
 
     def du_dx(self, u, direction=0):
         return np.matmul(self.nabla, u)
@@ -52,7 +60,7 @@ class ThinFilm(Problem):
         self.tfe = ThinFilmEquationFD(N, L)
         self.add_equation(self.tfe)
         # initialize time stepper
-        self.time_stepper = time_steppers.BDF(self)  # better for FD
+        self.time_stepper = time_steppers.BDF(self)
         # Generate the volume constraint
         self.volume_constraint = VolumeConstraint(self.tfe)
         self.volume_constraint.fixed_volume = 0
@@ -76,9 +84,11 @@ problem = ThinFilm(N=256, L=100)
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 plotID = 0
 
+Profiler.start()
+
 # time-stepping
 n = 0
-plotevery = 1
+plotevery = 999
 dudtnorm = 1
 while dudtnorm > 1e-8:
     # plot
@@ -86,20 +96,20 @@ while dudtnorm > 1e-8:
         problem.plot(ax)
         fig.savefig("out/img/{:05d}.svg".format(plotID))
         plotID += 1
-        print("step #: {:}".format(n))
-        print("time:   {:}".format(problem.time))
-        print("dt:     {:}".format(problem.time_stepper.dt))
-        print("|dudt|: {:}".format(dudtnorm))
+    print("step #: {:}".format(n))
+    print("time:   {:}".format(problem.time))
+    print("dt:     {:}".format(problem.time_stepper.dt))
+    print("|dudt|: {:}".format(dudtnorm))
     n += 1
     # perform timestep
     problem.time_step()
     # calculate the new norm
     dudtnorm = np.linalg.norm(problem.rhs(problem.u))
 
+Profiler.print_summary()
+
 # save the state, so we can reload it later
 problem.save("initial_state.dat")
-
-exit()
 
 # # load the initial state
 # problem.load("initial_state.dat")
