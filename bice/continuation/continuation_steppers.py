@@ -223,6 +223,7 @@ class DeflatedContinuation(ContinuationStepper):
 
         # save initial guess
         u0 = problem.u  # TODO: is there a better choice for the initial guess?
+        u0 = problem.u * 0.01
 
         # search for unknown solutions in a loop, will break when no solution found
         while True:
@@ -230,7 +231,9 @@ class DeflatedContinuation(ContinuationStepper):
             try:
                 # call Newton solver with deflated rhs
                 # TODO: include deflated Jacobian
+                print("solving")
                 u_new = problem.newton_solver.solve(deflated_rhs, u0)
+                print("solved")
                 # add new solution to known solutions
                 self.known_solutions.append(u_new)
             except scipy.optimize.NoConvergence:  # TODO: support other Newton solver's exceptions
