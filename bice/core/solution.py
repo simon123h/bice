@@ -162,7 +162,9 @@ class BifurcationDiagram:
 
     # create a new branch
     def new_branch(self):
-        self.branches.append(Branch())
+        branch = Branch()
+        self.branches.append(branch)
+        return branch
 
     # return the latest branch in the diagram
     def current_branch(self):

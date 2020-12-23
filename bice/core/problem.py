@@ -1,6 +1,6 @@
 import numpy as np
 from bice.time_steppers.runge_kutta import RungeKutta4
-from bice.continuation.continuation_steppers import PseudoArclengthContinuation
+from bice.continuation import PseudoArclengthContinuation, DeflatedContinuation
 from .equation import Equation, EquationGroup
 from .solvers import NewtonSolver, EigenSolver
 from .solution import Solution, BifurcationDiagram
@@ -135,6 +135,12 @@ class Problem():
     # Perform a parameter continuation step
     @profile
     def continuation_step(self):
+        # check if a DeflatedContinuation stepper was assigned
+        if isinstance(self.continuation_stepper, DeflatedContinuation):
+            # call deflated continuation subroutine
+            self.__deflated_continuation_step()
+            return
+        # else, proceed with the 'usual, branch-oriented' continuation
         # update the history with the current state
         self.history.update(history_type="continuation")
         # perform the step with a continuation stepper
@@ -167,8 +173,44 @@ class Problem():
                 # TODO: store bifurcation points separately?
                 # TODO: add the original solution point back to the branch?
 
-    # return the value of the continuation parameter
+    # Perform a deflated continuation step
+    def __deflated_continuation_step(self):
+        # perform the step with a deflated continuation stepper
+        self.continuation_stepper.step(self)
+        # loop over found solutions
+        for u in self.continuation_stepper.known_solutions:
+            # get branch that is closest to the solution in the bifurcation diagram
+            branches = [branch for branch in self.bifurcation_diagram.branches if len(
+                branch.solutions) > 0]
+            if len(branches) < 2:
+                branch = self.bifurcation_diagram.current_branch()
+            else:
+                closest_branch = None
+                minimal_distance = -1
+                for branch in branches:
+                    latest_u = branch.solutions[-1].u
+                    distance = np.linalg.norm(u - latest_u)
+                    if distance < minimal_distance or closest_branch is None:
+                        closest_branch = branch
+                        minimal_distance = distance
+            if minimal_distance < 1e-1:
+                branch = closest_branch
+            else:
+                branch = self.bifurcation_diagram.new_branch()
+            # add the solution to the branch
+            self.u = u
+            sol = Solution(self)
+            branch.add_solution_point(sol)
+            # TODO: update history?
+            # if desired, solve the eigenproblem
+            if self.settings.neigs > 0:
+                # solve the eigenproblem
+                eigenvalues, _ = self.solve_eigenproblem()
+                # count number of positive eigenvalues
+                sol.nunstable_eigenvalues = len([ev for ev in np.real(
+                    eigenvalues) if ev > self.settings.eigval_zero_tolerance])
 
+    # return the value of the continuation parameter
     def get_continuation_parameter(self):
         # if no continuation parameter set, return None
         if self.continuation_parameter is None:

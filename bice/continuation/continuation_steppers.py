@@ -171,12 +171,6 @@ class PseudoArclengthContinuation(ContinuationStepper):
                 self.ds = min(
                     abs(self.ds)*self.ds_increase_factor, self.ds_max)*np.sign(self.ds)
 
-    # reset the continuation-stepper parameters & storage to default, e.g.,
-    # when starting off a new solution point, switching branches or
-    # switching the principal continuation parameter
-    def factory_reset(self):
-        pass
-
     # Solve the linear system A*x = b for x and return x
     def _linear_solve(self, A, b, use_sparse_matrices=False):
         if use_sparse_matrices:
@@ -184,3 +178,70 @@ class PseudoArclengthContinuation(ContinuationStepper):
             return scipy.sparse.linalg.spsolve(scipy.sparse.csr_matrix(A), b)
         # ...or simply the one for full rank matrices
         return np.linalg.solve(A, b)
+
+
+class DeflatedContinuation(ContinuationStepper):
+    """
+    Deflated continuation stepper
+    """
+
+    def __init__(self, ds=1e-3):
+        super().__init__(ds)
+        # list of known solutions, that will be suppressed using the deflation operator
+        self.known_solutions = []
+        # the order of the norm that will be used for the deflation operator
+        self.norm_ord = 2
+
+    # deflation operator for given u
+    def deflation_operator(self, u):
+        return 1. / np.prod([np.linalg.norm(uk - u, ord=self.norm_ord)
+                             for uk in self.known_solutions])
+
+    # Jacobian of deflation operator for given u
+    def deflation_operator_jac(self, u):
+        # TODO: implement
+        return 0
+
+    # perform deflated continuation step
+    def step(self, problem):
+        # clear list of known solutions
+        self.known_solutions = []
+
+        # deflated rhs: multiplication of original rhs with deflation operator
+        def deflated_rhs(u):
+            # multiply with rhs and return
+            return self.deflation_operator(u) * problem.rhs(u)
+
+        # Jacobian of deflated rhs
+        def deflated_jacobian(u):
+            # obtain rhs, jacobian, deflation operator and operator derivative
+            rhs = problem.rhs(u)
+            jac = problem.jacobian(u)
+            def_op = self.deflation_operator(u)
+            ddef_op = self.deflation_operator_jac(u)
+            return scipy.sparse.diags(ddef_op * rhs) + def_op * jac
+
+        # save initial guess
+        u0 = problem.u  # TODO: is there a better choice for the initial guess?
+
+        # search for unknown solutions in a loop, will break when no solution found
+        while True:
+            # try to solve problem with Newton solver, starting from u0
+            try:
+                # call Newton solver with deflated rhs
+                # TODO: include deflated Jacobian
+                u_new = problem.newton_solver.solve(deflated_rhs, u0)
+                # add new solution to known solutions
+                self.known_solutions.append(u_new)
+            except scipy.optimize.NoConvergence:  # TODO: support other Newton solver's exceptions
+                # did not converge! Possibly, there are no unknown solutions left
+                break
+
+        # check if any solutions were found
+        if len(self.known_solutions) == 0:
+            # TODO: raise exception?
+            print("Warning: deflated continuation found no solutions at all!")
+
+        # increase value of continuation parameter by ds
+        p = problem.get_continuation_parameter()
+        problem.set_continuation_parameter(p + self.ds)
