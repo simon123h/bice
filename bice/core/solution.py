@@ -194,6 +194,7 @@ class BifurcationDiagram:
         # plot every branch separately
         for branch in self.branches:
             p, norm = branch.data()
+            # ax.plot(p, norm, "o", color="C0")
             ax.plot(p, norm, "--", color="C0")
             p, norm = branch.data(only="stable")
             ax.plot(p, norm, color="C0")

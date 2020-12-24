@@ -105,13 +105,14 @@ else:
     problem.load("initial_state.dat")
 
 # start parameter continuation
-problem.continuation_stepper.ds = 1e-3
+problem.continuation_stepper = DeflatedContinuation()
+problem.continuation_stepper.ds = 1e-5
+problem.continuation_stepper.max_solutions = 6
 problem.settings.always_locate_bifurcations = False
 problem.settings.neigs = 20
 
 constraint = TranslationConstraint(problem.she)
 problem.add_equation(constraint)
-problem.continuation_stepper = DeflatedContinuation()
 
 n = 0
 plotevery = 1
@@ -120,7 +121,8 @@ while problem.she.r > -0.016:
     # perform continuation step
     problem.continuation_step()
     n += 1
-    print("step #:", n, " ds:", problem.continuation_stepper.ds)
+    print("step #:", n, " #sols:", len(
+        problem.continuation_stepper.known_solutions))
     # plot
     if n % plotevery == 0:
         problem.plot(ax)

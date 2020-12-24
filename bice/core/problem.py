@@ -176,30 +176,29 @@ class Problem():
     # Perform a deflated continuation step
     def __deflated_continuation_step(self):
         # perform the step with a deflated continuation stepper
-        self.continuation_stepper.step(self)
+        converged = self.continuation_stepper.step(self)
         # loop over found solutions
-        for u in self.continuation_stepper.known_solutions:
+        if converged:
+            # create new solution point
+            sol = Solution(self)
             # get branch that is closest to the solution in the bifurcation diagram
             branches = [branch for branch in self.bifurcation_diagram.branches if len(
                 branch.solutions) > 0]
-            if len(branches) < 2:
-                branch = self.bifurcation_diagram.current_branch()
+            if len(branches) == 0:
+                branch = self.bifurcation_diagram.new_branch()
             else:
                 closest_branch = None
-                minimal_distance = -1
+                closest_distance = -1
                 for branch in branches:
-                    latest_u = branch.solutions[-1].u
-                    distance = np.linalg.norm(u - latest_u)
-                    if distance < minimal_distance or closest_branch is None:
+                    distance = abs(sol.norm - branch.solutions[-1].norm)
+                    if distance < closest_distance or closest_branch is None:
                         closest_branch = branch
-                        minimal_distance = distance
-            if minimal_distance < 1e-1:
-                branch = closest_branch
-            else:
-                branch = self.bifurcation_diagram.new_branch()
+                        closest_distance = distance
+                if closest_distance < 1e-2: # TODO: this threshold must not be hardcoded!
+                    branch = closest_branch
+                else:
+                    branch = self.bifurcation_diagram.new_branch()
             # add the solution to the branch
-            self.u = u
-            sol = Solution(self)
             branch.add_solution_point(sol)
             # TODO: update history?
             # if desired, solve the eigenproblem

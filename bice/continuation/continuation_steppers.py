@@ -189,13 +189,18 @@ class DeflatedContinuation(ContinuationStepper):
         super().__init__(ds)
         # list of known solutions, that will be suppressed using the deflation operator
         self.known_solutions = []
+        self.prev_known_solutions = []
         # the order of the norm that will be used for the deflation operator
         self.norm_ord = 2
+        # small constant in the deflation operator, for numerical stability
+        self.deflation_shift = 1e-2
+        # maximum number of solutions
+        self.max_solutions = 8
 
     # deflation operator for given u
     def deflation_operator(self, u):
         return 1. / np.prod([np.linalg.norm(uk - u, ord=self.norm_ord)
-                             for uk in self.known_solutions])
+                             for uk in self.known_solutions]) + self.deflation_shift
 
     # Jacobian of deflation operator for given u
     def deflation_operator_jac(self, u):
@@ -204,47 +209,60 @@ class DeflatedContinuation(ContinuationStepper):
 
     # perform deflated continuation step
     def step(self, problem):
-        # clear list of known solutions
-        self.known_solutions = []
 
         # deflated rhs: multiplication of original rhs with deflation operator
         def deflated_rhs(u):
             # multiply with rhs and return
             return self.deflation_operator(u) * problem.rhs(u)
 
-        # Jacobian of deflated rhs
-        def deflated_jacobian(u):
-            # obtain rhs, jacobian, deflation operator and operator derivative
-            rhs = problem.rhs(u)
-            jac = problem.jacobian(u)
-            def_op = self.deflation_operator(u)
-            ddef_op = self.deflation_operator_jac(u)
-            return scipy.sparse.diags(ddef_op * rhs) + def_op * jac
+        # # Jacobian of deflated rhs
+        # def deflated_jacobian(u):
+        #     # obtain rhs, jacobian, deflation operator and operator derivative
+        #     rhs = problem.rhs(u)
+        #     jac = problem.jacobian(u)
+        #     def_op = self.deflation_operator(u)
+        #     ddef_op = self.deflation_operator_jac(u)
+        #     return scipy.sparse.diags(ddef_op * rhs) + def_op * jac
 
-        # save initial guess
-        u0 = problem.u  # TODO: is there a better choice for the initial guess?
-        u0 = problem.u * 0.01
+        # initial guess
+        i = len(self.known_solutions)
+        if i < len(self.prev_known_solutions):
+            u0 = self.prev_known_solutions[i]
+        else:
+            # TODO: there must be a better choice for preconditioning!
+            u0 = problem.u * 1.4
+            # u0 = problem.u + np.random.random(problem.u.shape) * 1e-3
 
-        # search for unknown solutions in a loop, will break when no solution found
-        while True:
-            # try to solve problem with Newton solver, starting from u0
-            try:
-                # call Newton solver with deflated rhs
-                # TODO: include deflated Jacobian
-                print("solving")
-                u_new = problem.newton_solver.solve(deflated_rhs, u0)
-                print("solved")
-                # add new solution to known solutions
-                self.known_solutions.append(u_new)
-            except scipy.optimize.NoConvergence:  # TODO: support other Newton solver's exceptions
-                # did not converge! Possibly, there are no unknown solutions left
-                break
+        # try to solve problem with Newton solver
+        try:
+            # call Newton solver with deflated rhs
+            # TODO: include deflated Jacobian
+            u_new = problem.newton_solver.solve(deflated_rhs, u0)
+            # add new solution to known solutions
+            self.known_solutions.append(u_new)
+            converged = True
+        except:  # TODO: catch a specific exception from Newton solver
+            # did not converge! Possibly, there are no unknown solutions left
+            converged = False
 
+        if len(self.known_solutions) > self.max_solutions:
+            converged = False
+
+        # if a new solution was found, assign the unknowns and return True
+        if converged:
+            problem.u = u_new
+            return True
+
+        # otherwise, no solution was found
+        # increase the continuation parameter by ds
+        p = problem.get_continuation_parameter()
+        problem.set_continuation_parameter(p + self.ds)
         # check if any solutions were found
         if len(self.known_solutions) == 0:
             # TODO: raise exception?
             print("Warning: deflated continuation found no solutions at all!")
-
-        # increase value of continuation parameter by ds
-        p = problem.get_continuation_parameter()
-        problem.set_continuation_parameter(p + self.ds)
+        # clear the known solutions storage
+        self.prev_known_solutions = self.known_solutions
+        self.known_solutions = []
+        # no more solutions found --> return False
+        return False
