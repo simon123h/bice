@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.optimize
+import scipy.sparse as sp
 
 
 class ContinuationStepper:
@@ -97,10 +98,12 @@ class PseudoArclengthContinuation(ContinuationStepper):
             rhs_2 = problem.rhs(u)
             drhs_dp = (rhs_2 - rhs_1) / (2. * self.fd_epsilon)
             problem.set_continuation_parameter(p)
-            jac = np.concatenate((jac, drhs_dp.reshape((N, 1))), axis=1)
+            # jac = np.concatenate((jac, drhs_dp.reshape((N, 1))), axis=1)
+            jac = sp.hstack((jac, drhs_dp.reshape((N, 1))))
             zero = np.zeros(N+1)
             zero[N] = 1  # for solvability
-            jac = np.concatenate((jac, zero.reshape((1, N+1))), axis=0)
+            # jac = np.concatenate((jac, zero.reshape((1, N+1))), axis=0)
+            jac = sp.vstack((jac, zero.reshape((1, N+1))))
             # compute tangent by solving (jac)*tangent=0 and normalize
             tangent = self._linear_solve(
                 jac, zero, problem.settings.use_sparse_matrices)
@@ -125,10 +128,12 @@ class PseudoArclengthContinuation(ContinuationStepper):
             rhs_2 = problem.rhs(u)
             problem.set_continuation_parameter(p)
             drhs_dp = (rhs_2 - rhs_1) / (2. * self.fd_epsilon)
-            jac_ext = np.concatenate((jac, drhs_dp.reshape((N, 1))), axis=1)
+            # jac_ext = np.concatenate((jac, drhs_dp.reshape((N, 1))), axis=1)
+            jac_ext = sp.hstack((jac, drhs_dp.reshape((N, 1))))
             # last row of extended jacobian: tangent vector
-            jac_ext = np.concatenate(
-                (jac_ext, tangent.reshape((1, N+1))), axis=0)
+            # jac_ext = np.concatenate(
+            #     (jac_ext, tangent.reshape((1, N+1))), axis=0)
+            jac_ext = sp.vstack((jac_ext, tangent.reshape((1, N+1))))
             # extended rhs: model's rhs & arclength condition
             arclength_condition = (u - u_old).dot(tangent[:N]) + (p - p_old) * \
                 tangent[N] * self.parameter_arc_length_proportion - self.ds
@@ -173,9 +178,10 @@ class PseudoArclengthContinuation(ContinuationStepper):
 
     # Solve the linear system A*x = b for x and return x
     def _linear_solve(self, A, b, use_sparse_matrices=False):
-        if use_sparse_matrices:
+        if use_sparse_matrices or sp.issparse(A):
             # use either solver for sparse matrices...
-            return scipy.sparse.linalg.spsolve(scipy.sparse.csr_matrix(A), b)
+            A = scipy.sparse.csr_matrix(A)
+            return scipy.sparse.linalg.spsolve(A, b)
         # ...or simply the one for full rank matrices
         return np.linalg.solve(A, b)
 
