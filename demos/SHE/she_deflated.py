@@ -1,4 +1,8 @@
 #!/usr/bin/python3
+"""
+Continuation of localized states in the 1d Swift-Hohenberg Equation using Finite Differences as
+spatial discretization and Deflated Continuation insted of Pseudo-Arclength Continuation.
+"""
 import shutil
 import os
 import sys
