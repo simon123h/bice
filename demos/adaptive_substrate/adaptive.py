@@ -59,7 +59,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         dfbrush += self.T * self.chi * c / (z + H_dry)
         # free energy variations
         dFdh = -self.laplace.dot(h+z) - djp
-        dFdz = -self.laplace.dot(h+z*(1+gamma_bl))
+        dFdz = -self.laplace.dot(h+z*(1+gamma_bl)) + dfbrush
         # absorption term
         M_absorb = self.M * (dFdh - dFdz)
         # dynamic equations
