@@ -27,10 +27,13 @@ class MyNewtonSolver:
 class NewtonSolver:
     # TODO: catch errors, get number of iterations...
     def __init__(self):
-        self.method = "krylov"
+        self.method = "hybr"
 
     def solve(self, f, u, J=None):
-        return scipy.optimize.newton_krylov(f, u)
+        if J is None or self.method == "krylov":
+            # if Jacobian is not given, use krylov approximation
+            return scipy.optimize.newton_krylov(f, u)
+        return scipy.optimize.root(f, u, jac=J, method=self.method).x
 
 
 class EigenSolver:

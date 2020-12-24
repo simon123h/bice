@@ -105,6 +105,7 @@ else:
     problem.load("initial_state.dat")
 
 # start parameter continuation
+# problem.newton_solver.method = "krylov"
 problem.continuation_stepper = DeflatedContinuation()
 problem.continuation_stepper.ds = 1e-5
 problem.continuation_stepper.max_solutions = 6

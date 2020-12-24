@@ -191,21 +191,23 @@ class DeflatedContinuation(ContinuationStepper):
         self.known_solutions = []
         self.prev_known_solutions = []
         # the order of the norm that will be used for the deflation operator
-        self.norm_ord = 2
+        self.p = 2
         # small constant in the deflation operator, for numerical stability
-        self.deflation_shift = 1e-2
+        self.shift = 1e-2
         # maximum number of solutions
         self.max_solutions = 8
 
     # deflation operator for given u
     def deflation_operator(self, u):
-        return 1. / np.prod([np.linalg.norm(uk - u, ord=self.norm_ord)
-                             for uk in self.known_solutions]) + self.deflation_shift
+        return np.prod([np.dot(uk - u, uk - u)**-self.p
+                        for uk in self.known_solutions]) + self.shift
 
     # Jacobian of deflation operator for given u
     def deflation_operator_jac(self, u):
-        # TODO: implement
-        return 0
+        op = self.deflation_operator(u)
+        return self.p * op * 2 * \
+            np.sum([(uk - u) / np.dot(uk - u, uk - u)
+                    for uk in self.known_solutions], axis=0)
 
     # perform deflated continuation step
     def step(self, problem):
@@ -215,29 +217,29 @@ class DeflatedContinuation(ContinuationStepper):
             # multiply with rhs and return
             return self.deflation_operator(u) * problem.rhs(u)
 
-        # # Jacobian of deflated rhs
-        # def deflated_jacobian(u):
-        #     # obtain rhs, jacobian, deflation operator and operator derivative
-        #     rhs = problem.rhs(u)
-        #     jac = problem.jacobian(u)
-        #     def_op = self.deflation_operator(u)
-        #     ddef_op = self.deflation_operator_jac(u)
-        #     return scipy.sparse.diags(ddef_op * rhs) + def_op * jac
+        # Jacobian of deflated rhs
+        def deflated_jacobian(u):
+            # obtain rhs, jacobian, deflation operator and operator derivative
+            rhs = problem.rhs(u)
+            jac = problem.jacobian(u)
+            def_op = self.deflation_operator(u)
+            ddef_op = self.deflation_operator_jac(u)
+            return scipy.sparse.diags(ddef_op * rhs) + def_op * jac
 
         # initial guess
         i = len(self.known_solutions)
         if i < len(self.prev_known_solutions):
             u0 = self.prev_known_solutions[i]
         else:
-            # TODO: there must be a better choice for preconditioning!
-            u0 = problem.u * 1.4
-            # u0 = problem.u + np.random.random(problem.u.shape) * 1e-3
+            # TODO: there must be a better choice!
+            u0 = problem.u * 1.2
+            # u0 = problem.u + np.random.random(problem.u.shape) * 1e-2
 
         # try to solve problem with Newton solver
         try:
             # call Newton solver with deflated rhs
-            # TODO: include deflated Jacobian
-            u_new = problem.newton_solver.solve(deflated_rhs, u0)
+            u_new = problem.newton_solver.solve(
+                deflated_rhs, u0, deflated_jacobian)
             # add new solution to known solutions
             self.known_solutions.append(u_new)
             converged = True
