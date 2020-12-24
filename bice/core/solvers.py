@@ -9,7 +9,7 @@ class MyNewtonSolver:
         self.max_newton_iterations = 30
         self.convergence_tolerance = 1e-8
         self.iteration_count = 0
-        self.verbose = False
+        self.verbosity = 0
 
     def solve(self, f, u, J):
         self.iteration_count = 0
@@ -22,10 +22,13 @@ class MyNewtonSolver:
             u -= du
             self.iteration_count += 1
             # if system converged to new solution, return solution
-            tol = np.linalg.norm(du)
-            if self.verbose:
-                print("Newton step:", self.iteration_count, ", tol:", tol)
-            if np.linalg.norm(du) < self.convergence_tolerance:
+            err = np.linalg.norm(du)
+            if self.verbosity > 1:
+                print("Newton step:", self.iteration_count, ", error:", err)
+            if err < self.convergence_tolerance:
+                if self.verbosity > 0:
+                    print("Newton solver converged after",
+                          self.iteration_count, "iterations, error:", err)
                 return u
         # if we didn't converge, throw an error
         raise np.linalg.LinAlgError(
@@ -42,6 +45,7 @@ class NewtonSolver:
             # if Jacobian is not given, use krylov approximation
             return scipy.optimize.newton_krylov(f, u)
         # TODO: sparse matrices are not supported by scipy's root method :-/
+
         def jac(u):
             j = J(u)
             if scipy.sparse.issparse(j):

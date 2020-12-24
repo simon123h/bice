@@ -237,12 +237,15 @@ class DeflatedContinuation(ContinuationStepper):
 
         # try to solve problem with Newton solver
         try:
-            # call Newton solver with deflated rhs
-            u_new = problem.newton_solver.solve(
-                deflated_rhs, u0, deflated_jacobian)
-            # add new solution to known solutions
-            self.known_solutions.append(u_new)
-            converged = True
+            if len(self.known_solutions) < self.max_solutions:
+                # call Newton solver with deflated rhs
+                u_new = problem.newton_solver.solve(
+                    deflated_rhs, u0, deflated_jacobian)
+                # add new solution to known solutions
+                self.known_solutions.append(u_new)
+                converged = True
+            else:
+                converged = False
         except scipy.optimize.nonlin.NoConvergence:
             # did not converge! Possibly, there are no unknown solutions left
             converged = False

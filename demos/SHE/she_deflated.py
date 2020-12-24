@@ -108,7 +108,7 @@ else:
 # start parameter continuation
 problem.newton_solver = MyNewtonSolver()
 # problem.newton_solver.convergence_tolerance = 1e-2
-problem.newton_solver.verbose = True
+problem.newton_solver.verbosity = 1
 # problem.newton_solver.method = "krylov"
 problem.continuation_stepper = DeflatedContinuation()
 problem.continuation_stepper.ds = 1e-5
@@ -120,13 +120,13 @@ constraint = TranslationConstraint(problem.she)
 problem.add_equation(constraint)
 
 n = 0
-plotevery = 1
+plotevery = 10
 Profiler.start()
 while problem.she.r > -0.016:
     # perform continuation step
     problem.continuation_step()
     n += 1
-    print("step #:", n, " #sols:", len(
+    print("step #:", n, " #solutions:", len(
         problem.continuation_stepper.known_solutions))
     # plot
     if n % plotevery == 0:
@@ -149,7 +149,7 @@ while problem.she.r < -0.002:
     # perform continuation step
     problem.continuation_step()
     n += 1
-    print("step #:", n, " #sols:", len(
+    print("step #:", n, " #solutions:", len(
         problem.continuation_stepper.known_solutions))
     # plot
     if n % plotevery == 0:
