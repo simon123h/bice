@@ -131,7 +131,7 @@ while problem.she.r < -0.012:
     problem.continuation_step()
     n += 1
     print("step #:", n, " #solutions:", len(
-        problem.continuation_stepper.known_solutions))
+        problem.continuation_stepper.deflation.solutions))
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
@@ -154,7 +154,7 @@ while problem.she.r > -0.016:
     problem.continuation_step()
     n += 1
     print("step #:", n, " #solutions:", len(
-        problem.continuation_stepper.known_solutions))
+        problem.continuation_stepper.deflation.solutions))
     # plot
     if n % plotevery == 0:
         problem.plot(ax)

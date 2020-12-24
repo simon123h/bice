@@ -1,0 +1,70 @@
+
+import numpy as np
+import scipy.sparse as sp
+
+"""
+A deflation operator M for deflated continuation.
+Adds singularities to the equation at given solutions u_i
+0 = F(u) --> 0 = M(u) * F(u)
+with
+M(u) = product_i <u_i - u, u_i - u>^-p + shift
+The parameters are:
+  p: some exponent to the norm <u, v>
+  shift: some constant added shift parameter for numerical stability
+"""
+
+
+class DeflationOperator:
+
+    def __init__(self):
+        # the order of the norm that will be used for the deflation operator
+        self.p = 2
+        # small constant in the deflation operator, for numerical stability
+        self.shift = 0.5
+        # list of solutions, that will be suppressed by the deflation operator
+        self.solutions = []
+
+    # obtain the value of the deflation operator for given u
+    def operator(self, u):
+        return np.prod([np.dot(u_i - u, u_i - u)**-self.p
+                        for u_i in self.solutions]) + self.shift
+
+    # Jacobian of deflation operator for given u
+    def D_operator(self, u):
+        op = self.operator(u)
+        return self.p * op * 2 * \
+            np.sum([(uk - u) / np.dot(uk - u, uk - u)
+                    for uk in self.solutions], axis=0)
+
+    # deflate the rhs of some equation or problem
+    def deflated_rhs(self, equation):
+        def new_rhs(u):
+            # multiply rhs with deflation operator
+            return self.operator(u) * equation.rhs(u)
+        # return the function object
+        return new_rhs
+
+    # generate Jacobian of deflated rhs of some equation or problem
+    def deflated_jacobian(self, equation):
+        def new_jac(u):
+            # obtain rhs, jacobian, deflation operator and operator derivative
+            rhs = equation.rhs(u)
+            jac = equation.jacobian(u)
+            op = self.operator(u)
+            D_op = self.D_operator(u)
+            # calculate derivative d/du
+            return sp.diags(D_op * rhs) + op * jac
+        # return the function object
+        return new_jac
+
+    # add a solution to the list of solutions used for deflation
+    def add_solution(self, u):
+        self.solutions.append(u)
+
+    # add a solution to the list of solutions used for deflation
+    def remove_solution(self, u):
+        self.solutions.remove(u)
+
+    # clear the list of solutions used for deflation
+    def clear_solutions(self):
+        self.solutions = []
