@@ -9,6 +9,7 @@ class MyNewtonSolver:
         self.max_newton_iterations = 30
         self.convergence_tolerance = 1e-8
         self.iteration_count = 0
+        self.verbose = False
 
     def solve(self, f, u, J):
         self.iteration_count = 0
@@ -21,6 +22,9 @@ class MyNewtonSolver:
             u -= du
             self.iteration_count += 1
             # if system converged to new solution, return solution
+            tol = np.linalg.norm(du)
+            if self.verbose:
+                print("Newton step:", self.iteration_count, ", tol:", tol)
             if np.linalg.norm(du) < self.convergence_tolerance:
                 return u
         # if we didn't converge, throw an error

@@ -107,10 +107,12 @@ else:
 
 # start parameter continuation
 problem.newton_solver = MyNewtonSolver()
+# problem.newton_solver.convergence_tolerance = 1e-2
+problem.newton_solver.verbose = True
 # problem.newton_solver.method = "krylov"
 problem.continuation_stepper = DeflatedContinuation()
 problem.continuation_stepper.ds = 1e-5
-problem.continuation_stepper.max_solutions = 6
+problem.continuation_stepper.max_solutions = 10
 problem.settings.always_locate_bifurcations = False
 problem.settings.neigs = 20
 
