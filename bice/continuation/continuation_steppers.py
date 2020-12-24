@@ -217,6 +217,7 @@ class DeflatedContinuation(ContinuationStepper):
         try:
             if len(self.deflation.solutions) < self.max_solutions:
                 # call Newton solver with deflated rhs
+                problem.u = u0
                 rhs = self.deflation.deflated_rhs(problem)
                 jac = self.deflation.deflated_jacobian(problem)
                 u_new = problem.newton_solver.solve(rhs, u0, jac)
