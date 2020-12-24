@@ -26,6 +26,8 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         self.chi = 0  # miscibility
         self.D = 1e-4  # brush lateral diffusion constant
         self.M = 1e-3  # absorption constant
+        self.U = 0  # substrate velocity
+        self.alpha = 0  # substrate inclination
         # spatial coordinate
         self.x = [np.linspace(-L/2, L/2, N)]
         # initial condition
@@ -68,8 +70,63 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         # combine and return
         return np.array([dhdt, dzdt])
 
-    def mass_matrix(self):
-        return np.eye(2)
+    def jacobian2(self, u):
+        # expand unknowns
+        h, z = u
+        # dry brush height
+        H_dry = self.sigma * self.Nlk
+        # polymer volume fraction (polymer concentration)
+        c = H_dry / (H_dry + z)
+        # disjoining pressure
+        djp = 5/3 * (self.theta * self.h_p)**2 * \
+            (self.h_p**3 / h**6 - c / h**3)
+        # adaptive brush-liquid surface tension
+        gamma_bl = self.gamma_bl * c
+        # mobilities
+        Qhh = h**3
+        Qzz = self.D * z
+        # brush energy derivative
+        dfbrush = self.T * (self.sigma**2 / c + c + np.log(1 - c))
+        # include miscibility effects
+        dfbrush += self.T * self.chi * c / (z + H_dry)
+        # free energy variations
+        dFdh = -self.laplace.dot(h+z) - djp
+        dFdz = -self.laplace.dot(h+z*(1+gamma_bl)) + dfbrush
+        # abbreviations
+        nabla = self.nabla
+        laplace = self.laplace
+        # mobility derivatives
+        Qhh = diags(h**3)
+        dQhh_dh = diags(3 * h**2)
+        Qzz = diags(self.D * z)
+        dQzz_dz = self.D
+        # brush energy derivatives
+        dc_dz = -c / (H_dry + z)
+        dgamma_bl_dz = self.gamma_bl * dc_dz
+        ddfbrush_dz = self.T * (self.sigma**2 / H_dry +
+                                dc_dz + 1/(1-c) * dc_dz)
+        ddfbrush_dz += -2 * self.T * self.chi * H_dry / (z + H_dry)**3
+        # disjoining pressure derivatives
+        djp_pf = 5/3 * (self.theta * self.h_p)**2
+        ddjp_dh = djp_pf * (c * 3 / h**4 - self.h_p**3 * 6 / h**7)
+        ddjp_dz = -djp_pf * dc_dz / h**3
+        # free energy variation derivatives
+        ddFdh_dh = -laplace - ddjp_dh
+        ddFdh_dz = -laplace - ddjp_dz
+        ddFdz_dh = -laplace
+        ddFdz_dz = -laplace*(1+gamma_bl+z*dgamma_bl_dz) + ddfbrush_dz
+        # absorption term derivative
+        dM_absorb_dh = self.M * (ddFdh_dh - ddFdz_dh)
+        dM_absorb_dz = self.M * (ddFdh_dz - ddFdz_dz)
+        # derivatives of dynamic equations
+        ddhdt_dh = nabla.dot(dQhh_dh * nabla.dot(dFdh) +
+                             Qhh * nabla.dot(ddFdh_dh)) - dM_absorb_dh
+        ddhdt_dz = nabla.dot(Qhh * nabla.dot(ddFdh_dz)) - dM_absorb_dz
+        ddzdt_dh = nabla.dot(Qzz * nabla.dot(ddFdz_dh)) + dM_absorb_dh
+        ddzdt_dz = nabla.dot(dQzz_dz * nabla.dot(dFdz) +
+                             Qzz * nabla.dot(ddFdz_dz)) + dM_absorb_dz
+        # combine and return
+        return np.array([[ddhdt_dh, ddhdt_dz], [ddzdt_dh, ddzdt_dz]])
 
     def du_dx(self, u, direction=0):
         h, z = u
@@ -122,7 +179,7 @@ Profiler.start()
 
 # time-stepping
 n = 0
-plotevery = 10
+plotevery = 100
 dudtnorm = 1
 while dudtnorm > 1e-8:
     # plot
