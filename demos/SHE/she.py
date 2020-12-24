@@ -39,6 +39,11 @@ class SwiftHohenbergEquation(PseudospectralEquation):
         u_k = np.fft.rfft(u)
         return np.fft.irfft((self.r - (self.kc**2 - self.k[0]**2)**2) * u_k) + self.v * u**2 - self.g * u**3
 
+    # definition of spatial derivative for translation constraint
+    def du_dx(self, u, direction=0):
+        du_dx = 1j*self.k[direction]*np.fft.rfft(u)
+        return np.fft.irfft(du_dx)
+
 
 class SwiftHohenbergEquationFD(FiniteDifferencesEquation):
     r"""
