@@ -157,10 +157,10 @@ class ThinFilm(Problem):
         # self.time_stepper = time_steppers.BDF2()
         self.time_stepper = time_steppers.BDF(self)
         # Generate the volume constraint
-        self.volume_constraint = VolumeConstraint(self.tfe)
+        self.volume_constraint = VolumeConstraint(self.tfe, variable=0)
         self.volume_constraint.fixed_volume = 0
         # Generate the translation constraint
-        self.translation_constraint = TranslationConstraint(self.tfe)
+        self.translation_constraint = TranslationConstraint(self.tfe, variable=0)
         # assign the continuation parameter
         self.continuation_parameter = (self.volume_constraint, "fixed_volume")
 
@@ -174,7 +174,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=512, L=10)
+problem = ThinFilm(N=256, L=10)
 
 # create figure
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
@@ -184,56 +184,55 @@ Profiler.start()
 
 # time-stepping
 n = 0
-plotevery = 100
+plotevery = 10
 dudtnorm = 1
-while dudtnorm > 1e-8:
+if not os.path.exists("initial_state.dat"):
+    while dudtnorm > 1e-8:
+        # plot
+        if n % plotevery == 0:
+            problem.plot(ax)
+            fig.savefig("out/img/{:05d}.svg".format(plotID))
+            plotID += 1
+        print("step #: {:}".format(n))
+        print("time:   {:}".format(problem.time))
+        print("dt:     {:}".format(problem.time_stepper.dt))
+        print("|dudt|: {:}".format(dudtnorm))
+        n += 1
+        # perform timestep
+        problem.time_step()
+        # calculate the new norm
+        dudtnorm = np.linalg.norm(problem.rhs(problem.u))
+    Profiler.print_summary()
+    # save the state, so we can reload it later
+    problem.save("initial_state.dat")
+else:
+    # load the initial state
+    problem.load("initial_state.dat")
+
+# start parameter continuation
+problem.continuation_stepper.ds = 1e-2
+problem.continuation_stepper.ndesired_newton_steps = 3
+
+# Impose the constraints
+problem.volume_constraint.fixed_volume = np.trapz(
+    problem.tfe.u[0], problem.tfe.x[0])
+problem.add_equation(problem.volume_constraint)
+problem.add_equation(problem.translation_constraint)
+
+problem.continuation_stepper.convergence_tolerance = 1e-10
+
+n = 0
+plotevery = 1
+while problem.volume_constraint.fixed_volume < 1000:
+    # perform continuation step
+    problem.continuation_step()
+    # perform dealiasing
+    problem.dealias()
+    n += 1
+    print("step #:", n, " ds:", problem.continuation_stepper.ds)
+    #print('largest EVs: ', problem.eigen_solver.latest_eigenvalues[:3])
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
         fig.savefig("out/img/{:05d}.svg".format(plotID))
         plotID += 1
-    print("step #: {:}".format(n))
-    print("time:   {:}".format(problem.time))
-    print("dt:     {:}".format(problem.time_stepper.dt))
-    print("|dudt|: {:}".format(dudtnorm))
-    n += 1
-    # perform timestep
-    problem.time_step()
-    # calculate the new norm
-    dudtnorm = np.linalg.norm(problem.rhs(problem.u))
-
-Profiler.print_summary()
-
-# save the state, so we can reload it later
-problem.save("initial_state.dat")
-
-# # load the initial state
-# problem.load("initial_state.dat")
-
-# # start parameter continuation
-# problem.continuation_stepper.ds = 1e-2
-# problem.continuation_stepper.ndesired_newton_steps = 3
-
-# # Impose the constraints
-# problem.volume_constraint.fixed_volume = np.trapz(
-#     problem.tfe.u, problem.tfe.x[0])
-# problem.add_equation(problem.volume_constraint)
-# problem.add_equation(problem.translation_constraint)
-
-# problem.continuation_stepper.convergence_tolerance = 1e-10
-
-# n = 0
-# plotevery = 1
-# while problem.volume_constraint.fixed_volume < 1000:
-#     # perform continuation step
-#     problem.continuation_step()
-#     # perform dealiasing
-#     problem.dealias()
-#     n += 1
-#     print("step #:", n, " ds:", problem.continuation_stepper.ds)
-#     #print('largest EVs: ', problem.eigen_solver.latest_eigenvalues[:3])
-#     # plot
-#     if n % plotevery == 0:
-#         problem.plot(ax)
-#         fig.savefig("out/img/{:05d}.svg".format(plotID))
-#         plotID += 1
