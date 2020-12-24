@@ -193,7 +193,7 @@ class DeflatedContinuation(ContinuationStepper):
         # the order of the norm that will be used for the deflation operator
         self.p = 2
         # small constant in the deflation operator, for numerical stability
-        self.shift = 1e-2
+        self.shift = 0.5
         # maximum number of solutions
         self.max_solutions = 30
 
@@ -260,6 +260,8 @@ class DeflatedContinuation(ContinuationStepper):
         if converged:
             problem.u = u_new
             return
+
+        # TODO: step size adaption
 
         # otherwise, no solution was found
         # increase the continuation parameter by ds
