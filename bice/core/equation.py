@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.sparse as sp
 from .profiling import profile
 
 
@@ -259,16 +260,22 @@ class EquationGroup:
             shape = u.shape if eq.is_coupled else eq.shape
             return eq.jacobian(u.reshape(shape))
         # otherwise, we need to assemble the matrix
-        J = np.zeros((self.ndofs, self.ndofs), dtype=u.dtype)
+        J = sp.csr_matrix((self.ndofs, self.ndofs), dtype=u.dtype)
         # add the Jacobian of each equation
+        J_uncoupled = []
         for eq in self.equations:
             if eq.is_coupled:
                 # coupled equations work on the full set of variables
                 J += eq.jacobian(u)
+                # add dummy matrix to J_uncoupled
+                J_uncoupled.append(sp.csr_matrix((eq.ndofs, eq.ndofs)))
             else:
                 # uncoupled equations simply work on their own variables, so we do a mapping
                 idx = self.idx[eq]
-                J[idx, idx] += eq.jacobian(u[idx].reshape(eq.shape))
+                eq_jac = eq.jacobian(u[idx].reshape(eq.shape))
+                J_uncoupled.append(eq_jac)
+        # add contributions of uncoupled equations
+        J += sp.block_diag(J_uncoupled, format="csr")
         # all entries assembled, return
         return J
 
@@ -279,16 +286,20 @@ class EquationGroup:
         if len(self.equations) == 1:
             return self.equations[0].mass_matrix()
         # otherwise, we need to assemble the matrix
-        M = np.zeros((self.ndofs, self.ndofs))
+        M = sp.csr_matrix((self.ndofs, self.ndofs))
         # add the entries of each equation
+        M_uncoupled = []
         for eq in self.equations:
             if eq.is_coupled:
                 # coupled equations work on the full set of variables
                 M += eq.mass_matrix()
+                # add dummy matrix to M_uncoupled
+                M_uncoupled.append(sp.csr_matrix((eq.ndofs, eq.ndofs)))
             else:
                 # uncoupled equations simply work on their own variables, so we do a mapping
-                idx = self.idx[eq]
-                M[idx, idx] += eq.mass_matrix()
+                M_uncoupled.append(eq.mass_matrix())
+        # add contributions of uncoupled equations
+        M += sp.block_diag(M_uncoupled, format="csr")
         # all entries assembled, return
         return M
 

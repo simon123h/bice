@@ -243,7 +243,7 @@ class DeflatedContinuation(ContinuationStepper):
             # add new solution to known solutions
             self.known_solutions.append(u_new)
             converged = True
-        except:  # TODO: catch a specific exception from Newton solver
+        except scipy.optimize.nonlin.NoConvergence:  # TODO: catch a specific exception from Newton solver
             # did not converge! Possibly, there are no unknown solutions left
             converged = False
 

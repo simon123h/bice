@@ -13,7 +13,11 @@ class MyNewtonSolver:
     def solve(self, f, u, J):
         self.iteration_count = 0
         while self.iteration_count < self.max_newton_iterations:
-            du = np.linalg.solve(J(u), f(u))
+            jac = J(u)
+            if scipy.sparse.issparse(jac):
+                du = scipy.sparse.linalg.spsolve(jac, f(u))
+            else:
+                du = np.linalg.solve(jac, f(u))
             u -= du
             self.iteration_count += 1
             # if system converged to new solution, return solution
@@ -33,7 +37,13 @@ class NewtonSolver:
         if J is None or self.method == "krylov":
             # if Jacobian is not given, use krylov approximation
             return scipy.optimize.newton_krylov(f, u)
-        return scipy.optimize.root(f, u, jac=J, method=self.method).x
+        # TODO: sparse matrices are not supported by scipy's root method :-/
+        def jac(u):
+            j = J(u)
+            if scipy.sparse.issparse(j):
+                j = j.toarray()
+            return j
+        return scipy.optimize.root(f, u, jac=jac, method=self.method).x
 
 
 class EigenSolver:

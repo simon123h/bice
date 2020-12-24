@@ -10,6 +10,7 @@ from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
 from bice.continuation import TranslationConstraint, DeflatedContinuation
 from bice import profile, Profiler
+from bice import MyNewtonSolver
 
 
 class SwiftHohenbergEquationFD(FiniteDifferencesEquation):
@@ -105,6 +106,7 @@ else:
     problem.load("initial_state.dat")
 
 # start parameter continuation
+problem.newton_solver = MyNewtonSolver()
 # problem.newton_solver.method = "krylov"
 problem.continuation_stepper = DeflatedContinuation()
 problem.continuation_stepper.ds = 1e-5

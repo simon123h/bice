@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.sparse as sp
 from bice.core.equation import Equation
 
 
@@ -50,6 +51,11 @@ class VolumeConstraint(Equation):
         # Add the constraint to the reference equation: unknown influx is the Langrange multiplier
         res[eq_idx] = u[self_idx]
         return res
+
+    def jacobian(self, u):
+        # TODO: implement analytical / semi-analytical Jacobian
+        # convert FD Jacobian to sparse matrix
+        return sp.csr_matrix(super().jacobian(u))
 
     def mass_matrix(self):
         # couples to no time-derivatives
@@ -113,6 +119,11 @@ class TranslationConstraint(Equation):
         # res[self_idx] = np.dot(eq.x[self.direction], eq_u-eq_u_old)
         res[self_idx] = np.dot(eq_dudx, (eq_u - eq_u_old))
         return res
+
+    def jacobian(self, u):
+        # TODO: implement analytical / semi-analytical Jacobian
+        # convert FD Jacobian to sparse matrix
+        return sp.csr_matrix(super().jacobian(u))
 
     def mass_matrix(self):
         # couples to no time-derivatives
