@@ -36,24 +36,22 @@ class DeflationOperator:
             np.sum([(uk - u) / np.dot(uk - u, uk - u)
                     for uk in self.solutions], axis=0)
 
-    # deflate the rhs of some equation or problem
-    def deflated_rhs(self, equation):
+    # deflate the rhs of some equation
+    def deflated_rhs(self, rhs):
         def new_rhs(u):
             # multiply rhs with deflation operator
-            return self.operator(u) * equation.rhs(u)
+            return self.operator(u) * rhs(u)
         # return the function object
         return new_rhs
 
     # generate Jacobian of deflated rhs of some equation or problem
-    def deflated_jacobian(self, equation):
+    def deflated_jacobian(self, rhs, jacobian):
         def new_jac(u):
-            # obtain rhs, jacobian, deflation operator and operator derivative
-            rhs = equation.rhs(u)
-            jac = equation.jacobian(u)
+            # obtain operator and operator derivative
             op = self.operator(u)
             D_op = self.D_operator(u)
             # calculate derivative d/du
-            return sp.diags(D_op * rhs) + op * jac
+            return sp.diags(D_op * rhs(u)) + op * jacobian(u)
         # return the function object
         return new_jac
 
