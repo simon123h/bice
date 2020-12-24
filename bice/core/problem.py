@@ -176,38 +176,35 @@ class Problem():
     # Perform a deflated continuation step
     def __deflated_continuation_step(self):
         # perform the step with a deflated continuation stepper
-        converged = self.continuation_stepper.step(self)
-        # loop over found solutions
-        if converged:
-            # create new solution point
-            sol = Solution(self)
-            # get branch that is closest to the solution in the bifurcation diagram
-            branches = [branch for branch in self.bifurcation_diagram.branches if len(
-                branch.solutions) > 0]
-            if len(branches) == 0:
-                branch = self.bifurcation_diagram.new_branch()
+        self.continuation_stepper.step(self)
+        # create new solution point
+        sol = Solution(self)
+        # get branch that is closest to the solution in the bifurcation diagram
+        branches = [branch for branch in self.bifurcation_diagram.branches if len(
+            branch.solutions) > 0]
+        if len(branches) == 0:
+            branch = self.bifurcation_diagram.new_branch()
+        else:
+            closest_branch = None
+            closest_distance = -1
+            for branch in branches:
+                distance = abs(sol.norm - branch.solutions[-1].norm)
+                if distance < closest_distance or closest_branch is None:
+                    closest_branch = branch
+                    closest_distance = distance
+            if closest_distance < 1e-2: # TODO: this threshold must not be hardcoded!
+                branch = closest_branch
             else:
-                closest_branch = None
-                closest_distance = -1
-                for branch in branches:
-                    distance = abs(sol.norm - branch.solutions[-1].norm)
-                    if distance < closest_distance or closest_branch is None:
-                        closest_branch = branch
-                        closest_distance = distance
-                if closest_distance < 1e-2: # TODO: this threshold must not be hardcoded!
-                    branch = closest_branch
-                else:
-                    branch = self.bifurcation_diagram.new_branch()
-            # add the solution to the branch
-            branch.add_solution_point(sol)
-            # TODO: update history?
-            # if desired, solve the eigenproblem
-            if self.settings.neigs > 0:
-                # solve the eigenproblem
-                eigenvalues, _ = self.solve_eigenproblem()
-                # count number of positive eigenvalues
-                sol.nunstable_eigenvalues = len([ev for ev in np.real(
-                    eigenvalues) if ev > self.settings.eigval_zero_tolerance])
+                branch = self.bifurcation_diagram.new_branch()
+        # add the solution to the branch
+        branch.add_solution_point(sol)
+        # if desired, solve the eigenproblem
+        if self.settings.neigs > 0:
+            # solve the eigenproblem
+            eigenvalues, _ = self.solve_eigenproblem()
+            # count number of positive eigenvalues
+            sol.nunstable_eigenvalues = len([ev for ev in np.real(
+                eigenvalues) if ev > self.settings.eigval_zero_tolerance])
 
     # return the value of the continuation parameter
     def get_continuation_parameter(self):

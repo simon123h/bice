@@ -195,7 +195,7 @@ class DeflatedContinuation(ContinuationStepper):
         # small constant in the deflation operator, for numerical stability
         self.shift = 1e-2
         # maximum number of solutions
-        self.max_solutions = 8
+        self.max_solutions = 30
 
     # deflation operator for given u
     def deflation_operator(self, u):
@@ -232,7 +232,7 @@ class DeflatedContinuation(ContinuationStepper):
             u0 = self.prev_known_solutions[i]
         else:
             # TODO: there must be a better choice!
-            u0 = problem.u * 1.2
+            u0 = problem.u * 1.3
             # u0 = problem.u + np.random.random(problem.u.shape) * 1e-2
 
         # try to solve problem with Newton solver
@@ -243,17 +243,20 @@ class DeflatedContinuation(ContinuationStepper):
             # add new solution to known solutions
             self.known_solutions.append(u_new)
             converged = True
-        except scipy.optimize.nonlin.NoConvergence:  # TODO: catch a specific exception from Newton solver
+        except scipy.optimize.nonlin.NoConvergence:
+            # did not converge! Possibly, there are no unknown solutions left
+            converged = False
+        except np.linalg.LinAlgError:
             # did not converge! Possibly, there are no unknown solutions left
             converged = False
 
         if len(self.known_solutions) > self.max_solutions:
             converged = False
 
-        # if a new solution was found, assign the unknowns and return True
+        # if a new solution was found, assign the unknowns and return
         if converged:
             problem.u = u_new
-            return True
+            return
 
         # otherwise, no solution was found
         # increase the continuation parameter by ds
@@ -266,5 +269,5 @@ class DeflatedContinuation(ContinuationStepper):
         # clear the known solutions storage
         self.prev_known_solutions = self.known_solutions
         self.known_solutions = []
-        # no more solutions found --> return False
-        return False
+        # do a new continuation step with increased parameter
+        self.step(problem)
