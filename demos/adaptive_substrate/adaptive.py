@@ -3,6 +3,7 @@ import shutil
 import os
 import sys
 import numpy as np
+import scipy.sparse as sp
 from scipy.sparse import diags
 import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
@@ -70,7 +71,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         # combine and return
         return np.array([dhdt, dzdt])
 
-    def jacobian2(self, u):
+    def jacobian(self, u):
         # expand unknowns
         h, z = u
         # dry brush height
@@ -108,13 +109,14 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         ddfbrush_dz += -2 * self.T * self.chi * H_dry / (z + H_dry)**3
         # disjoining pressure derivatives
         djp_pf = 5/3 * (self.theta * self.h_p)**2
-        ddjp_dh = djp_pf * (c * 3 / h**4 - self.h_p**3 * 6 / h**7)
-        ddjp_dz = -djp_pf * dc_dz / h**3
+        ddjp_dh = diags(djp_pf * (c * 3 / h**4 - self.h_p**3 * 6 / h**7))
+        ddjp_dz = diags(-djp_pf * dc_dz / h**3)
         # free energy variation derivatives
         ddFdh_dh = -laplace - ddjp_dh
         ddFdh_dz = -laplace - ddjp_dz
         ddFdz_dh = -laplace
-        ddFdz_dz = -laplace*(1+gamma_bl+z*dgamma_bl_dz) + ddfbrush_dz
+        ddFdz_dz = -laplace - laplace * \
+            diags(gamma_bl+z*dgamma_bl_dz) + diags(ddfbrush_dz)
         # absorption term derivative
         dM_absorb_dh = self.M * (ddFdh_dh - ddFdz_dh)
         dM_absorb_dz = self.M * (ddFdh_dz - ddFdz_dz)
@@ -126,18 +128,20 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         ddzdt_dz = nabla.dot(dQzz_dz * nabla.dot(dFdz) +
                              Qzz * nabla.dot(ddFdz_dz)) + dM_absorb_dz
         # combine and return
-        return np.array([[ddhdt_dh, ddhdt_dz], [ddzdt_dh, ddzdt_dz]])
+        return sp.vstack((sp.hstack((ddhdt_dh, ddhdt_dz)),
+                          sp.hstack((ddzdt_dh, ddzdt_dz))))
 
     def du_dx(self, u, direction=0):
         h, z = u
         return np.matmul(self.nabla, h)
 
     def plot(self, ax):
+        ax.set_ylim((0, 1.2))
         ax.set_xlabel("x")
         ax.set_ylabel("solution h(x,t)")
         h, xi = self.u
-        ax.plot(self.x[0], h+xi, marker="+", markersize=5, label="liquid")
-        ax.plot(self.x[0], xi, marker="+", markersize=5, label="substrate")
+        ax.plot(self.x[0], h+xi, markersize=5, label="liquid")
+        ax.plot(self.x[0], xi, markersize=5, label="substrate")
         ax.legend()
 
 
@@ -150,6 +154,7 @@ class ThinFilm(Problem):
         self.tfe = AdaptiveSubstrateEquation(N, L)
         self.add_equation(self.tfe)
         # initialize time stepper
+        # self.time_stepper = time_steppers.BDF2()
         self.time_stepper = time_steppers.BDF(self)
         # Generate the volume constraint
         self.volume_constraint = VolumeConstraint(self.tfe)
@@ -169,7 +174,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=256, L=10)
+problem = ThinFilm(N=512, L=10)
 
 # create figure
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
