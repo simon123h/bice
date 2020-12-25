@@ -329,6 +329,7 @@ class Problem():
         # perturb unknowns in direction of eigenvector
         self.u = self.u + amplitude * np.linalg.norm(self.u) * eigenvector
         # self.new_branch()
+        # TODO: deflate the original solution and newton_solve?
 
     # create a new branch in the bifurcation diagram and prepare for a new continuation
     def new_branch(self):
