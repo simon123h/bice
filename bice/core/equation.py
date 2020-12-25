@@ -97,8 +97,7 @@ class Equation:
     # M * du/dt = rhs(u)
     def mass_matrix(self):
         # default case: assume the identity matrix I (--> du/dt = rhs(u))
-        # NOTE: could be a scipy.sparse matrix
-        return np.eye(self.ndofs)
+        return sp.eye(self.ndofs)
 
     # adapt the equation to the solution (mesh refinement or similar).
     # May be overridden for specific types of equations,
