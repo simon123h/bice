@@ -3,7 +3,28 @@ import scipy.sparse as sp
 from bice.core.equation import Equation
 
 
-class VolumeConstraint(Equation):
+class ConstraintEquation(Equation):
+    """
+    Abstract base class for constraint type equations.
+    For simple implementation of PDE constraints and less redundant code.
+    """
+
+    def __init__(self, shape=(1,)):
+        # default shape: (1,)
+        super().__init__(shape=shape)
+        # constraints typically couple to some other equation
+        self.is_coupled = True
+
+    def mass_matrix(self):
+        # constraint usually couples to no time-derivatives
+        return 0
+
+    def plot(self, ax):
+        # nothing to plot
+        pass
+
+
+class VolumeConstraint(ConstraintEquation):
     """
     A volume constraint (or mass constraint) assures the conservation of
     the integral of the unknowns of some given equation when solving the system.
@@ -57,16 +78,8 @@ class VolumeConstraint(Equation):
         # convert FD Jacobian to sparse matrix
         return sp.csr_matrix(super().jacobian(u))
 
-    def mass_matrix(self):
-        # couples to no time-derivatives
-        return 0
 
-    def plot(self, ax):
-        # nothing to plot
-        pass
-
-
-class TranslationConstraint(Equation):
+class TranslationConstraint(ConstraintEquation):
     """
     A translation constraint assures that the center of mass of some
     reference equation's unknowns does not move when solving the system.
@@ -121,14 +134,10 @@ class TranslationConstraint(Equation):
         return res
 
     def jacobian(self, u):
+        # contributions:
+        # - d constraint eq. / du
+        # - d bulk eq. / d u
+        # - d bulk eq. / d lagrange mul
         # TODO: implement analytical / semi-analytical Jacobian
         # convert FD Jacobian to sparse matrix
         return sp.csr_matrix(super().jacobian(u))
-
-    def mass_matrix(self):
-        # couples to no time-derivatives
-        return 0
-
-    def plot(self, ax):
-        # nothing to plot
-        pass
