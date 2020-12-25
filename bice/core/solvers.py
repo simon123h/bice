@@ -60,7 +60,7 @@ class EigenSolver:
         # The shift used for the shift-invert method in the iterative eigensolver.
         # If shift != None, the eigensolver will find the eigenvalues near the
         # value of the shift first
-        self.shift = 0
+        self.shift = 0.01
         # store results of the latest computation
         # NOTE: this is currently only needed for plotting the problem
         self.latest_eigenvalues = None
