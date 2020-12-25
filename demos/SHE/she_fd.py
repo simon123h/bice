@@ -9,11 +9,11 @@ import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
+from bice.continuation import ConstraintEquation
 from bice import profile, Profiler
-from bice import Equation
 
 
-class SwiftHohenbergEquationFD(FiniteDifferencesEquation):
+class SwiftHohenbergEquation(FiniteDifferencesEquation):
     r"""
     Finite difference implementation of the 1-dimensional Swift-Hohenberg Equation
     equation, a nonlinear PDE
@@ -52,17 +52,15 @@ class SwiftHohenbergProblem(Problem):
     def __init__(self, N, L):
         super().__init__()
         # Add the Swift-Hohenberg equation to the problem
-        self.she = SwiftHohenbergEquationFD(N, L)
+        self.she = SwiftHohenbergEquation(N, L)
         self.add_equation(self.she)
         # initialize time stepper
-        self.time_stepper = time_steppers.BDF(self) 
+        self.time_stepper = time_steppers.BDF(self)
         # assign the continuation parameter
         self.continuation_parameter = (self.she, "r")
 
 
-
-
-class TranslationConstraint(Equation):
+class TranslationConstraint(ConstraintEquation):
 
     def __init__(self, reference_equation):
         # call parent constructor
@@ -71,45 +69,45 @@ class TranslationConstraint(Equation):
         self.ref_eq = reference_equation
         # initialize unknowns (velocity vector) to zero
         self.u = np.zeros(1)
-        # the constraint equation couples to some other equation of the problem
-        self.is_coupled = True
 
     def rhs(self, u):
         # set up the vector of the residual contributions
         res = np.zeros((u.size))
         # reference to the equation, shape and indices of the unknowns that we work on
         eq = self.ref_eq
-        eq_shape = eq.shape
         eq_idx = self.group.idx[eq]
         self_idx = self.group.idx[self]
-        # optionally split only that part that is referenced by self.variable
         # obtain the unknowns
         eq_u = u[eq_idx]
         eq_u_old = self.group.u[eq_idx]
         velocity = u[self_idx]
         # add constraint to residuals of reference equation (velocity is the lagrange multiplier)
-        eq_dudx = eq.nabla.dot(eq_u)
-        res[eq_idx] = velocity * eq_dudx
-        # calculate the difference in center of masses between current
-        # and previous unknowns of the reference equation
+        res[eq_idx] = velocity * eq.nabla.dot(eq_u)
+        # add the constraint equation
         res[self_idx] = np.dot(eq.x[0], eq_u-eq_u_old)
         # res[self_idx] = np.dot(eq_dudx, (eq_u - eq_u_old))
         return res
 
+    @profile
     def jacobian(self, u):
-        # TODO: implement analytical / semi-analytical Jacobian
-        # convert FD Jacobian to sparse matrix
-        return sp.csr_matrix(super().jacobian(u))
-
-    def mass_matrix(self):
-        # couples to no time-derivatives
-        return 0
-
-    def plot(self, ax):
-        # nothing to plot
-        pass
-
-
+        # reference to the equation, shape and indices of the unknowns that we work on
+        eq = self.ref_eq
+        eq_idx = self.group.idx[eq]
+        self_idx = self.group.idx[self]
+        # obtain the unknowns
+        eq_u = u[eq_idx]
+        # eq_u_old = self.group.u[eq_idx]
+        velocity = u[self_idx][0]
+        # contribution of d(eq) / du
+        deq_du = velocity * eq.nabla
+        # contribution of d(eq) / dvelocity
+        deq_dv = eq.nabla.dot(eq_u).reshape((eq_u.size, 1))
+        # contribution of d(constraint) / du
+        dcnstr_du = eq.x[0].reshape((1, eq_u.size))
+        # contribution of d(constraint) / dvelocity
+        dcnstr_dv = None
+        # stack everything together and return
+        return sp.bmat([[deq_du, deq_dv], [dcnstr_du, dcnstr_dv]])
 
 
 # create output folder
