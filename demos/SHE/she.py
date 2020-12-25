@@ -84,13 +84,13 @@ class SwiftHohenbergProblem(Problem):
     def __init__(self, N, L):
         super().__init__()
         # Add the Swift-Hohenberg equation to the problem
-        self.she = SwiftHohenbergEquation(N, L)
-        # self.she = SwiftHohenbergEquationFD(N, L)
+        # self.she = SwiftHohenbergEquation(N, L)
+        self.she = SwiftHohenbergEquationFD(N, L)
         self.add_equation(self.she)
         # initialize time stepper
-        self.time_stepper = time_steppers.RungeKuttaFehlberg45(dt=1e-3)
-        self.time_stepper.error_tolerance = 1e-7
-        # self.time_stepper = time_steppers.BDF2(dt=1e-3) # better for FD
+        # self.time_stepper = time_steppers.RungeKuttaFehlberg45(dt=1e-3)
+        # self.time_stepper.error_tolerance = 1e-7
+        self.time_stepper = time_steppers.BDF(self)  # better for FD
         # assign the continuation parameter
         self.continuation_parameter = (self.she, "r")
 
@@ -156,7 +156,7 @@ constraint = TranslationConstraint(problem.she)
 problem.add_equation(constraint)
 
 n = 0
-plotevery = 5
+plotevery = 20
 Profiler.start()
 while problem.she.r > -0.016:
     # perform continuation step
@@ -169,7 +169,7 @@ while problem.she.r > -0.016:
         fig.savefig("out/img/{:05d}.svg".format(plotID))
         plotID += 1
 
-Profiler.print_summary(nested=False)
+Profiler.print_summary(nested=True)
 
 # load the initial state and add extra dof for translation constraint
 problem.remove_equation(constraint)

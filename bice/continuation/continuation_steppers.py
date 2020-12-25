@@ -117,7 +117,6 @@ class PseudoArclengthContinuation(ContinuationStepper):
 
         converged = False
         count = 0
-        # TODO: use problem.newton_solver instead of homebrewed newton solver
         while not converged and count < self.max_newton_iterations:
             # build extended jacobian in (u, parameter)-space
             problem.set_continuation_parameter(p)
@@ -129,11 +128,8 @@ class PseudoArclengthContinuation(ContinuationStepper):
             rhs_2 = problem.rhs(u)
             problem.set_continuation_parameter(p)
             drhs_dp = (rhs_2 - rhs_1) / (2. * self.fd_epsilon)
-            # jac_ext = np.concatenate((jac, drhs_dp.reshape((N, 1))), axis=1)
             jac_ext = sp.hstack((jac, drhs_dp.reshape((N, 1))))
             # last row of extended jacobian: tangent vector
-            # jac_ext = np.concatenate(
-            #     (jac_ext, tangent.reshape((1, N+1))), axis=0)
             jac_ext = sp.vstack((jac_ext, tangent.reshape((1, N+1))))
             # extended rhs: model's rhs & arclength condition
             arclength_condition = (u - u_old).dot(tangent[:N]) + (p - p_old) * \
