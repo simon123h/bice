@@ -92,6 +92,9 @@ class PseudoArclengthContinuation(ContinuationStepper):
         else:
             # else, we need to calculate the tangent from extended Jacobian in (u, parameter)-space
             jac = problem.jacobian(u)
+            # TODO: detect if jacobian is sparse and decide whether to use np / sp methods
+            if not sp.issparse(jac):
+                jac = sp.coo_matrix(jac)
             # last column of extended jacobian: d(rhs)/d(parameter), calculate it with FD
             problem.set_continuation_parameter(p - self.fd_epsilon)
             rhs_1 = problem.rhs(u)
@@ -99,11 +102,9 @@ class PseudoArclengthContinuation(ContinuationStepper):
             rhs_2 = problem.rhs(u)
             drhs_dp = (rhs_2 - rhs_1) / (2. * self.fd_epsilon)
             problem.set_continuation_parameter(p)
-            # jac = np.concatenate((jac, drhs_dp.reshape((N, 1))), axis=1)
             jac = sp.hstack((jac, drhs_dp.reshape((N, 1))))
             zero = np.zeros(N+1)
             zero[N] = 1  # for solvability
-            # jac = np.concatenate((jac, zero.reshape((1, N+1))), axis=0)
             jac = sp.vstack((jac, zero.reshape((1, N+1))))
             # compute tangent by solving (jac)*tangent=0 and normalize
             tangent = self._linear_solve(
@@ -121,6 +122,8 @@ class PseudoArclengthContinuation(ContinuationStepper):
             # build extended jacobian in (u, parameter)-space
             problem.set_continuation_parameter(p)
             jac = problem.jacobian(u)
+            if not sp.issparse(jac):
+                jac = sp.coo_matrix(jac)
             # last column of extended jacobian: d(rhs)/d(parameter) - calculate with FD
             problem.set_continuation_parameter(p - self.fd_epsilon)
             rhs_1 = problem.rhs(u)
