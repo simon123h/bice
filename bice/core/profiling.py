@@ -36,7 +36,8 @@ def profile(method):
         result = method(*args, **kw)
         te = time.time()
         # save the execution time to the current profile
-        current_profile.execution_times.append(te - ts)
+        current_profile.execution_time += te - ts
+        current_profile.ncalls += 1
         # we're out of the method, reset current profile to parent
         Profiler.current_profile = parent_profile
         # return the result of the method
@@ -54,7 +55,9 @@ class MethodProfile:
         # name of the method
         self.name = name
         # list of all the measured execution times
-        self.execution_times = []
+        self.execution_time = 0
+        # the total number of calls
+        self.ncalls = 0
         # any nested method's and their profiles
         self.nested_profiles = {}
 
@@ -63,7 +66,7 @@ class MethodProfile:
         # empty result dict
         data = {}
         # add own execution times to the result dict
-        if len(self.execution_times) > 0:
+        if self.execution_time > 0:
             data[self.name] = self
         # for each nested MethodProfile...
         for _, p in self.nested_profiles.items():
@@ -72,16 +75,17 @@ class MethodProfile:
                 # append the data to the result dict
                 if name not in data:
                     data[name] = MethodProfile(name)
-                data[name].execution_times += ps.execution_times
+                data[name].execution_time += ps.execution_time
+                data[name].ncalls += ps.ncalls
         # return the dict
         return data
 
     # print the stats on this method's profile and all the nested methods recursively
     def print_stats(self, total_time, indentation=0, nested=True, last=False):
-        if len(self.execution_times) > 0:
+        if self.execution_time > 0:
             # calculate stats
-            Ncalls = len(self.execution_times)
-            T_tot = sum(self.execution_times)
+            Ncalls = self.ncalls
+            T_tot = self.execution_time
             T_rel = T_tot / total_time
             # if nested: generate tree view for name
             if nested:
@@ -105,8 +109,8 @@ class MethodProfile:
             else:
                 profiles = self.flattened_data()
             # sort the nested profiles by total execution time
-            profiles = sorted(profiles.values(), key=lambda item: sum(
-                item.execution_times), reverse=True)
+            profiles = sorted(profiles.values(), key=lambda item:
+                              item.execution_time, reverse=True)
             # print their summary recursively
             for i, p in enumerate(profiles):
                 is_last = i == len(profiles) - 1
