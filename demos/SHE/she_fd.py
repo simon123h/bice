@@ -164,7 +164,7 @@ problem.add_equation(constraint)
 n = 0
 plotevery = 20
 Profiler.start()
-while problem.she.r > -0.016 and n < 20:
+while problem.she.r > -0.016:
     # perform continuation step
     problem.continuation_step()
     n += 1
