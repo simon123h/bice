@@ -38,7 +38,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         z = 0*s + 0.1
         self.u = np.array([h, z])
         # build finite difference matrices
-        self.build_FD_matrices(sparse=True)
+        self.build_FD_matrices()
 
     # definition of the equation, using finite difference method
     def rhs(self, u):

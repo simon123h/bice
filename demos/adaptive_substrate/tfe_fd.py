@@ -30,7 +30,7 @@ class ThinFilmEquationFD(FiniteDifferencesEquation):
         # initial condition
         self.u = 2 * np.cos(self.x[0] * 2 * np.pi / L) + 3
         # build finite difference matrices
-        self.build_FD_matrices(sparse=True)
+        self.build_FD_matrices()
 
     # definition of the equation, using finite difference method
     def rhs(self, h):
