@@ -26,11 +26,47 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         else:
             self.x = None
 
+    # 4th order differentiation matrices for 1d, but with periodic boundaries
+    # TODO: find a way to do this with findiff
+    def build_periodic_FD_matrices(self):
+        N = self.shape[-1]
+        # identity matrix
+        I = np.eye(N)
+        # spatial increment
+        dx = self.x[0][1] - self.x[0][0]
+        # nabla operator: d/dx
+        self.nabla = np.zeros((N, N))
+        self.nabla += -3*np.roll(I, -4, axis=1)
+        self.nabla += 32*np.roll(I, -3, axis=1)
+        self.nabla += -168*np.roll(I, -2, axis=1)
+        self.nabla += 672*np.roll(I, -1, axis=1)
+        self.nabla -= 672*np.roll(I, 1, axis=1)
+        self.nabla -= -168*np.roll(I, 2, axis=1)
+        self.nabla -= 32*np.roll(I, 3, axis=1)
+        self.nabla -= -3*np.roll(I, 4, axis=1)
+        self.nabla /= dx * 840
+        # nabla operator: d^2/dx^2
+        self.laplace = np.zeros((N, N))
+        self.laplace += -9*np.roll(I, -4, axis=1)
+        self.laplace += 128*np.roll(I, -3, axis=1)
+        self.laplace += -1008*np.roll(I, -2, axis=1)
+        self.laplace += 8064*np.roll(I, -1, axis=1)
+        self.laplace += -14350*np.roll(I, 0, axis=1)
+        self.laplace += 8064*np.roll(I, 1, axis=1)
+        self.laplace += -1008*np.roll(I, 2, axis=1)
+        self.laplace += 128*np.roll(I, 3, axis=1)
+        self.laplace += -9*np.roll(I, 4, axis=1)
+        self.laplace /= dx**2 * 5040
+        # convert to sparse matrices
+        self.nabla = scipy.sparse.csr_matrix(self.nabla)
+        self.laplace = scipy.sparse.csr_matrix(self.laplace)
+
     # generate differentiation matrices using finite difference scheme.
     # Arguments:
     #  - acc: stencil accuracy (integer)
     #  - max_order: maximum derivative order (integer)
     #  - uniform: is the spatial grid uniform or non-uniform? (boolean)
+
     def build_FD_matrices(self, acc=4, max_order=2, uniform=True):
         # shape of x-array
         xshape = tuple([len(x) for x in self.x])
