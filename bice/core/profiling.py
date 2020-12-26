@@ -83,7 +83,6 @@ class MethodProfile:
             Ncalls = len(self.execution_times)
             T_tot = sum(self.execution_times)
             T_rel = T_tot / total_time
-            T_rel_stddev = np.std(self.execution_times) / total_time
             # if nested: generate tree view for name
             if nested:
                 corn = "└" if last else "├"
@@ -92,8 +91,8 @@ class MethodProfile:
             else:
                 name = self.name
             # pretty print the stats
-            print("{:<70} {:10.3f}s {:11.2%}  ±{:6.2%} {:8d}".format(
-                name, T_tot, T_rel, T_rel_stddev, Ncalls))
+            print("{:<70} {:10.3f}s {:11.2%} {:8d}".format(
+                name, T_tot, T_rel, Ncalls))
             # if nested view: increase indentation for nested methods and use relative total time
             if nested:
                 indentation += 1
@@ -149,8 +148,8 @@ class Profiler:
         total_time = time.time() - Profiler.__start_time
         # print the header
         print("Profiler results:")
-        print("{:<70} {:>11} {:>11} {:>17}".format(
+        print("{:<70} {:>11} {:>11} {:>8}".format(
             "method name", "total", "relative", "#calls"))
-        print("-"*112)
+        print("-"*103)
         # print the stats of each call recursively, starting with the root call
         Profiler.__root_profile.print_stats(total_time, nested=nested)
