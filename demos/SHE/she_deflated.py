@@ -88,7 +88,7 @@ if not os.path.exists("initial_state.dat"):
         # plot
         if n % plotevery == 0:
             problem.plot(ax)
-            fig.savefig("out/img/{:05d}.svg".format(plotID))
+            fig.savefig("out/img/{:05d}.png".format(plotID))
             plotID += 1
             print("step #: {:}".format(n))
             print("time:   {:}".format(problem.time))
@@ -135,7 +135,7 @@ while problem.she.r < -0.012:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
-        fig.savefig("out/img/{:05d}.svg".format(plotID))
+        fig.savefig("out/img/{:05d}.png".format(plotID))
         plotID += 1
 
 Profiler.print_summary(nested=False)
@@ -158,5 +158,5 @@ while problem.she.r > -0.016:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
-        fig.savefig("out/img/{:05d}.svg".format(plotID))
+        fig.savefig("out/img/{:05d}.png".format(plotID))
         plotID += 1
