@@ -84,6 +84,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
         # check if we know at least the two previous continuation points
         if problem.history.length > 1 and problem.history.type == "continuation":
             # if yes, we can approximate the tangent in phase-space from the history points
+            # TODO: use higher order polynomial predictor?
             tangent = np.append(u - problem.history.u(-1),
                                 p - problem.history.continuation_parameter(-1))
             # normalize tangent and adjust sign with respect to continuation direction
