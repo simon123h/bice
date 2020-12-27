@@ -192,7 +192,7 @@ class Problem():
                 if distance < closest_distance or closest_branch is None:
                     closest_branch = branch
                     closest_distance = distance
-            if closest_distance < 1e-2: # TODO: this threshold must not be hardcoded!
+            if closest_distance < 1e-2:  # TODO: this threshold must not be hardcoded!
                 branch = closest_branch
             else:
                 branch = self.bifurcation_diagram.new_branch()
@@ -305,14 +305,16 @@ class Problem():
         self.remove_equation(bifurcation_constraint)
 
     # attempt to switch branches in a bifurcation
-    def switch_branch(self, ev_index=None, amplitude=1e-3):
+    def switch_branch(self, ev_index=None, amplitude=1e-3, locate=True):
         # try to converge onto a bifurcation nearby
-        converged = self.locate_bifurcation(ev_index)
+        if locate:
+            converged = self.locate_bifurcation(ev_index)
+        else:
+            converged = True
         if not converged:
-            # TODO: raise error?
             print(
                 "Failed to converge onto a bifurcation point! Branch switching aborted.")
-            return
+            return False
         # recover eigenvalues and -vectors from the eigensolver
         eigenvalues = self.eigen_solver.latest_eigenvalues
         eigenvectors = self.eigen_solver.latest_eigenvectors
@@ -328,8 +330,10 @@ class Problem():
             eigenvector = eigenvector.real
         # perturb unknowns in direction of eigenvector
         self.u = self.u + amplitude * np.linalg.norm(self.u) * eigenvector
-        # self.new_branch()
         # TODO: deflate the original solution and newton_solve?
+        # create a new branch in the bifurcation diagram
+        self.new_branch()
+        return True
 
     # create a new branch in the bifurcation diagram and prepare for a new continuation
     def new_branch(self):
@@ -366,8 +370,6 @@ class Problem():
     def log(self, *args, **kwargs):
         if self.settings.verbose:
             print(*args, **kwargs)
-        else:
-            print(self.settings.verbose)
 
     # Plot everything to the given axes.
     # Axes may be given explicitly of as a list of axes, that is then expanded.
@@ -434,6 +436,59 @@ class Problem():
                         eigvec_ax.set_ylabel("first eigenvector")
                     # reassign the correct unknowns to the problem
                     self.u = u_old
+
+    # automatically generate a full bifurcation diagram within the given bounds
+    # branch switching will be performed automatically up to the given maximum recursion level
+    def generate_bifurcationdiagram(self, ax, parameter_lims=(-1e9, 1e9), norm_lims=(-1e9, 1e9), max_recursion=4, plotevery=None):
+        import matplotlib.pyplot as plt
+        # perform continuation of current branch until bounds are exceeded
+        branch = self.bifurcation_diagram.current_branch()
+        n = 0
+        norm = self.norm()
+        param = self.get_continuation_parameter()
+        while param > parameter_lims[0] and param < parameter_lims[1] and norm > norm_lims[0] and norm < norm_lims[1]:
+            # do continuation step
+            self.continuation_step()
+            # get new parameter and norm values
+            param = self.get_continuation_parameter()
+            norm = self.norm()
+            n += 1
+            sol = self.bifurcation_diagram.current_solution()
+            # print status
+            print("Branch #{:d}, Step #{:d}, ds={:.2e}, #+EVs: {:d}".format(
+                branch.id, n, self.continuation_stepper.ds, sol.nunstable_eigenvalues))
+            if sol.is_bifurcation():
+                print(
+                    "Bifurcation found! #Null-EVs: {:d}".format(sol.neigenvalues_crossed))
+            # plot every few steps
+            if plotevery is not None and n % plotevery == 0:
+                self.plot(ax)
+                plt.ion()
+                plt.show()
+                plt.pause(0.001)
+        # return if no more recursion is allowed
+        if max_recursion < 1:
+            return
+        # if recursion is allowed, perform continuation of bifurcated branches
+        # get all bifurcation points on the current branch
+        bifurcations = self.bifurcation_diagram.current_branch().bifurcations()
+        # for each bifurcation point
+        for bif in bifurcations:
+            # load the bifurcation point into the problem
+            self.u = bif.u
+            self.set_continuation_parameter(bif.p)
+            self.history.clear()
+            # attempt branch switching to new branch
+            converged = self.switch_branch(locate=False)
+            # skip this bifurcation, if we failed to converge onto the bifurcation point
+            if not converged:
+                continue
+            # recursively generate a bifurcation diagram from the new branch
+            self.generate_bifurcationdiagram(ax=ax,
+                                             parameter_lims=parameter_lims,
+                                             norm_lims=norm_lims,
+                                             max_recursion=max_recursion-1,
+                                             plotevery=plotevery)
 
 
 class ProblemHistory():
