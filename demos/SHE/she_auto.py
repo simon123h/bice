@@ -15,6 +15,7 @@ from bice import profile, Profiler
 # matplotlib.use("QT5Agg")
 matplotlib.use("Tkagg")
 
+
 class SwiftHohenbergEquation(FiniteDifferencesEquation):
     r"""
     Finite difference implementation of the 1-dimensional Swift-Hohenberg Equation
@@ -150,10 +151,10 @@ problem.add_equation(constraint)
 Profiler.start()
 
 # automatically generate bifurcation diagram
-problem.generate_bifurcationdiagram(ax=ax,
-                                    parameter_lims=(-0.016, -0.012),
+problem.generate_bifurcationdiagram(parameter_lims=(-0.016, -0.012),
                                     max_recursion=1,
                                     max_steps=1e3,
+                                    ax=ax,
                                     plotevery=60)
 
 
