@@ -155,8 +155,11 @@ class Problem():
             # solve the eigenproblem
             eigenvalues, _ = self.solve_eigenproblem()
             # count number of positive eigenvalues
-            sol.nunstable_eigenvalues = len([ev for ev in np.real(
-                eigenvalues) if ev > self.settings.eigval_zero_tolerance])
+            tol = self.settings.eigval_zero_tolerance
+            sol.nunstable_eigenvalues = len(
+                [ev for ev in eigenvalues if np.real(ev) > tol])
+            sol.nunstable_imaginary_eigenvalues = len(
+                [ev for ev in eigenvalues if np.real(ev) > tol and abs(np.imag(ev)) > tol])
         # optionally locate bifurcations
         if self.settings.always_locate_bifurcations and sol.is_bifurcation():
             u_old = self.u.copy()

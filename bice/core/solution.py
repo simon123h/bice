@@ -36,8 +36,12 @@ class Solution:
         self.norm = problem.norm()
         # number of true positive eigenvalues
         self.nunstable_eigenvalues = None
+        # number of true positive and imaginary eigenvalues
+        self.nunstable_imaginary_eigenvalues = None
         # optional reference to the corresponding branch
         self.branch = None
+        # cache for the bifurcation type
+        self.__bifurcation_type = None
 
     # how many eigenvalues have crossed the imaginary axis with this solution?
     @property
@@ -56,6 +60,24 @@ class Solution:
         # return the difference in unstable eigenvalues to the previous solution
         return self.nunstable_eigenvalues - bps[index].nunstable_eigenvalues
 
+    # how many eigenvalues have crossed the imaginary axis with this solution?
+    @property
+    def nimaginary_eigenvalues_crossed(self):
+        # if we do not know the number of unstable eigenvalues, we have no result
+        if self.nunstable_imaginary_eigenvalues is None:
+            return None
+        # else, compare with the nearest previous neighbor that has info on eigenvalues
+        # get branch points with eigenvalue info
+        bps = [
+            s for s in self.branch.solutions if s.nunstable_imaginary_eigenvalues is not None]
+        # find index of previous solution
+        index = bps.index(self) - 1
+        if index < 0:
+            # if there is no previous solution with info on eigenvalues, we have no result
+            return None
+        # return the difference in unstable eigenvalues to the previous solution
+        return self.nunstable_imaginary_eigenvalues - bps[index].nunstable_imaginary_eigenvalues
+
     # is the solution stable?
     def is_stable(self):
         # if we don't know the number of eigenvalues, return None
@@ -69,7 +91,34 @@ class Solution:
 
     # is the solution point a bifurcation?
     def is_bifurcation(self):
-        return self.neigenvalues_crossed not in [None, 0]
+        # get bifurcation type (possibly from cache)
+        bif_type = self.bifurcation_type()
+        # if it is not a regular point, return True
+        return bif_type not in [None, ""]
+
+    # what type of bifurcation is the solution
+    def bifurcation_type(self, update=False):
+        # check if bifurcation type is cached
+        if self.__bifurcation_type is not None and not update:
+            return self.__bifurcation_type
+        # check for number of eigenvalues that crossed zero
+        nev_crossed = self.neigenvalues_crossed
+        # if unknown or no eigenvalues crossed zero, the point is no bifurcation
+        if nev_crossed in [None, 0]:
+            self.__bifurcation_type = ""
+            return self.__bifurcation_type
+        # otherwise it is some kind of bifurcation point (BP)
+        # self.__bifurcation_type = "BP"
+        # use +/- signs corresponding to their null-eigenvalues as type for regular bifurcations
+        n = nev_crossed
+        self.__bifurcation_type = "+"*n if n > 0 else "-"*(-n)
+        # check for Hopf bifurcations by number of imaginary eigenvalues that crossed zero
+        nev_imag_crossed = self.nimaginary_eigenvalues_crossed
+        # if it is not unknown or zero or one, this must be a Hopf point
+        if nev_imag_crossed not in [None, 0, 1]:
+            self.__bifurcation_type = "HP"
+        # return type
+        return self.__bifurcation_type
 
     # get access to the previous solution in the branch
     def get_neighboring_solution(self, distance):
@@ -200,12 +249,9 @@ class BifurcationDiagram:
             ax.plot(p, norm, linewidth=1.8, color="C0")
             p, norm = branch.data(only="bifurcations")
             ax.plot(p, norm, "*", color="C2")
-            # annotate bifurcations with +/- signs corresponding to their null-eigenvalues
-            bifs = [
-                s for s in branch.solutions if s.neigenvalues_crossed not in [None, 0]]
-            for bif in bifs:
-                s = bif.neigenvalues_crossed
-                s = "+"*s if s > 0 else "-"*(-s)
+            # annotate bifurcations with their types
+            for bif in branch.bifurcations():
+                s = bif.bifurcation_type()
                 ax.annotate(" "+s, (bif.p, bif.norm))
         ax.plot(np.nan, np.nan, "*", color="C2", label="bifurcations")
         ax.set_xlabel("continuation parameter")
