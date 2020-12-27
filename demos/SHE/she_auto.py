@@ -12,7 +12,7 @@ from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
 from bice.continuation import ConstraintEquation
 from bice import profile, Profiler
-matplotlib.use("QT5Agg")
+matplotlib.use("Tkagg")
 
 class SwiftHohenbergEquation(FiniteDifferencesEquation):
     r"""
@@ -153,7 +153,7 @@ problem.generate_bifurcationdiagram(ax=ax,
                                     parameter_lims=(-0.016, -0.012),
                                     max_recursion=1,
                                     max_steps=1e3,
-                                    plotevery=60)
+                                    plotevery=30)
 
 
 Profiler.print_summary()
