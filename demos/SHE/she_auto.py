@@ -151,6 +151,7 @@ Profiler.start()
 # automatically generate bifurcation diagram
 problem.generate_bifurcationdiagram(ax=ax,
                                     parameter_lims=(-0.016, -0.012),
+                                    norm_lims=(-0.016, 1.4),
                                     max_recursion=1,
                                     plotevery=30)
 

@@ -439,13 +439,14 @@ class Problem():
 
     # automatically generate a full bifurcation diagram within the given bounds
     # branch switching will be performed automatically up to the given maximum recursion level
-    def generate_bifurcationdiagram(self, ax, parameter_lims=(-1e9, 1e9), norm_lims=(-1e9, 1e9), max_recursion=4, plotevery=None):
+    def generate_bifurcationdiagram(self, ax, parameter_lims=(-1e9, 1e9), norm_lims=(-1e9, 1e9), max_recursion=4, max_steps=1e9, plotevery=None):
         import matplotlib.pyplot as plt
         # perform continuation of current branch until bounds are exceeded
         branch = self.bifurcation_diagram.current_branch()
         n = 0
         norm = self.norm()
         param = self.get_continuation_parameter()
+        u0 = self.u.copy()
         while param > parameter_lims[0] and param < parameter_lims[1] and norm > norm_lims[0] and norm < norm_lims[1]:
             # do continuation step
             self.continuation_step()
@@ -453,8 +454,14 @@ class Problem():
             param = self.get_continuation_parameter()
             norm = self.norm()
             n += 1
-            sol = self.bifurcation_diagram.current_solution()
+            # if maximum number of steps exceeded, abort
+            if n > max_steps:
+                break
+            # if we are close to the intial solution, the branch is likely a circle, then abort
+            if n > 20 and np.linalg.norm(self.u - u0) < 1e-4:
+                break
             # print status
+            sol = self.bifurcation_diagram.current_solution()
             print("Branch #{:d}, Step #{:d}, ds={:.2e}, #+EVs: {:d}".format(
                 branch.id, n, self.continuation_stepper.ds, sol.nunstable_eigenvalues))
             if sol.is_bifurcation():
