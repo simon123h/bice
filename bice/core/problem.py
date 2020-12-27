@@ -159,6 +159,8 @@ class Problem():
                 eigenvalues) if ev > self.settings.eigval_zero_tolerance])
         # optionally locate bifurcations
         if self.settings.always_locate_bifurcations and sol.is_bifurcation():
+            u_old = self.u.copy()
+            p_old = self.get_continuation_parameter()
             # try to locate the exact bifurcation point
             converged = self.locate_bifurcation()
             if converged:
@@ -170,8 +172,10 @@ class Problem():
                 # adapt the number of unstable eigenvalues from the point that
                 # overshot the bifurcation
                 new_sol.nunstable_eigenvalues = sol.nunstable_eigenvalues
-                # TODO: store bifurcation points separately?
                 # TODO: add the original solution point back to the branch?
+            # reset the state to the original solution, assures continuation in right direction
+            self.u = u_old
+            self.set_continuation_parameter(p_old)
 
     # Perform a deflated continuation step
     def __deflated_continuation_step(self):
@@ -496,6 +500,7 @@ class Problem():
                                              parameter_lims=parameter_lims,
                                              norm_lims=norm_lims,
                                              max_recursion=max_recursion-1,
+                                             max_steps=max_steps,
                                              plotevery=plotevery)
 
 
