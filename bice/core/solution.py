@@ -195,9 +195,9 @@ class BifurcationDiagram:
         for branch in self.branches:
             p, norm = branch.data()
             # ax.plot(p, norm, "o", color="C0")
-            ax.plot(p, norm, "--", color="C0")
+            ax.plot(p, norm, linewidth=0.7, color="C0")
             p, norm = branch.data(only="stable")
-            ax.plot(p, norm, color="C0")
+            ax.plot(p, norm, linewidth=1.8, color="C0")
             p, norm = branch.data(only="bifurcations")
             ax.plot(p, norm, "*", color="C2")
             # annotate bifurcations with +/- signs corresponding to their null-eigenvalues
