@@ -486,10 +486,12 @@ class Problem():
         if max_recursion < 1:
             return
         # if recursion is allowed, perform continuation of bifurcated branches
-        # get all bifurcation points on the current branch
-        bifurcations = self.bifurcation_diagram.current_branch().bifurcations()
         # for each bifurcation point
-        for bif in bifurcations:
+        for bif in branch.bifurcations():
+            # Hopf branches cannot yet be followed reliably, skip
+            # TODO: change this once we have better support for Hopf branches
+            if bif.bifurcation_type() == "HP":
+                continue
             # load the bifurcation point into the problem
             self.u = bif.u
             self.set_continuation_parameter(bif.p)
