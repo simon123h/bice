@@ -1,5 +1,6 @@
 import numpy as np
 import findiff as fd
+import fd_boundary_conditions as fdbc
 import scipy.sparse
 from .pde import PartialDifferentialEquation
 
