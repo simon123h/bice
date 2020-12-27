@@ -2,6 +2,7 @@
 import shutil
 import os
 import sys
+import matplotlib
 import numpy as np
 from scipy.sparse import diags
 import scipy.sparse as sp
@@ -11,7 +12,7 @@ from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
 from bice.continuation import ConstraintEquation
 from bice import profile, Profiler
-
+matplotlib.use("QT5Agg")
 
 class SwiftHohenbergEquation(FiniteDifferencesEquation):
     r"""
