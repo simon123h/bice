@@ -458,7 +458,8 @@ class Problem():
             if n > max_steps:
                 break
             # if we are close to the intial solution, the branch is likely a circle, then abort
-            if n > 20 and np.linalg.norm(self.u - u0) < 1e-4:
+            distance = np.linalg.norm(self.u - u0) / np.linalg.norm(self.u)
+            if n > 20 and distance < 1e-2:
                 break
             # print status
             sol = self.bifurcation_diagram.current_solution()
