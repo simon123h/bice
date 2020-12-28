@@ -1,8 +1,10 @@
 import numpy as np
 import findiff
 import scipy.sparse as sp
+from scipy.interpolate import interp1d
 import numdifftools.fornberg as fornberg
 from .pde import PartialDifferentialEquation
+from bice.core import profile
 
 
 class FiniteDifferencesEquation(PartialDifferentialEquation):
@@ -30,6 +32,11 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
             self.x = None
         # the boundary conditions, defaults to periodic BC
         self.bc = PeriodicBC()
+        # mesh adaption settings
+        self.max_refinement_error = 1e-1
+        self.min_refinement_error = 1e-3
+        self.min_dx = 1e-3
+        self.max_dx = 2
 
     # build finite difference differentiation matrices using Fornberg (1988) algorithm
     def build_FD_matrices(self, boundary_conditions=None, approx_order=None, max_order=2, premultiply_bc=True):
@@ -66,6 +73,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # premultiply operators with boundary matrices: ddx --> ddx * Q
         # NOTE: this neglects the constant (G) of the affine transformation Q*u + G
         if premultiply_bc:
+            self.bc.premultiplied = True
             for order in range(0, max_order+1):
                 self.ddx[order] = self.ddx[order].dot(self.bc.Q)
             # check if G is not 0 (inhomogeneous BC)
@@ -81,12 +89,83 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
                       "or:\n"
                       "  du_dx = nabla.dot(bc.pad(u))\n"
                       "where bc is the boundary conditions object.\n")
+        else:
+            self.bc.premultiplied = False
 
         # special names for some operators:
         # nabla operator: d^1/dx^1
         self.nabla = self.ddx[1]
         # laplace operator: d^2/dx^2
         self.laplace = self.ddx[2]
+
+    # perform adaption of the grid to the solution
+    # TODO: support higher dimensions than 1d
+    @profile
+    def adapt(self):
+        # calculate error estimate
+        error_estimate = self.refinement_error_estimate()
+        # adapt the mesh
+        x_old = self.x[0]
+        x_new = []
+        i = 0
+        while i < len(x_old):
+            x = x_old[i]
+            # exclude boundaries
+            if not (0 < i < len(x_old) - 1):
+                x_new.append(x)
+                i += 1
+                continue
+            # unrefinement
+            err = error_estimate[i]
+            dx = x_old[i+1]-x_old[i-1]
+            if err < self.min_refinement_error and dx < self.max_dx:
+                x_new.append(x_old[i+1])
+                i += 2
+                continue
+            # refinement
+            dx = (x - x_old[i-1])/2
+            if err > self.max_refinement_error and dx > self.min_dx:
+                x_new.append((x + x_old[i-1])/2)
+            x_new.append(x)
+            i += 1
+        x_new = np.array(x_new)
+        # interpolate unknowns to new grid points
+        nvars = self.shape[0] if len(self.shape) > 1 else 1
+        if nvars > 1:
+            u_new = np.array([np.interp(x_new, x_old, self.u[n])
+                              for n in range(nvars)])
+        else:
+            u_new = np.interp(x_new, x_old, self.u)
+        # update shape, u and x
+        self.reshape(u_new.shape)
+        self.u = u_new
+        self.x = [x_new]
+        # interpolate history to new grid points
+        for t, u in enumerate(self.u_history):
+            if nvars > 1:
+                self.u_history[t] = np.array([np.interp(x_new, x_old, u[n])
+                                              for n in range(nvars)])
+            else:
+                self.u_history[t] = np.interp(x_new, x_old, u)
+        # re-build the FEM matrices
+        self.build_FD_matrices(premultiply_bc=self.bc.premultiplied)
+
+    # estimate the error made in each grid point
+    @profile
+    def refinement_error_estimate(self):
+        # calculate integral of curvature:
+        # error = | \int d^2 u / dx^2 * test(x) dx |
+        # NOTE: overwrite this method, if different weights of the curvatures are needed
+        err = 0
+        dx = np.diff(self.x[0])
+        dx = [max(dx[i], dx[i+1]) for i in range(len(dx)-1)]
+        dx = np.concatenate(([0], dx, [0]))
+        nvars = self.shape[0] if len(self.shape) > 1 else 1
+        for n in range(nvars):
+            u = self.u[n] if len(self.shape) > 1 else self.u
+            curv = self.laplace.dot(self.bc.pad(u))
+            err += np.abs(curv*dx)
+        return err
 
 
 class FDBoundaryConditions:
@@ -121,6 +200,8 @@ class FDBoundaryConditions:
         self.Q = None
         # constant (affine) part
         self.G = 0
+        # are the boundary conditions Q already multiplied with the differentiation operators?
+        self.premultiplied = False
 
     # build the matrix and constant part for the affine transformation u_padded = Q*u + G
     def update(self, x, approx_order):
@@ -132,6 +213,10 @@ class FDBoundaryConditions:
 
     # transform a vector u to the boundary padded vector
     def pad(self, u):
+        # if Q is already multiplied to operators, mapping is not required
+        if self.premultiplied:
+            return u
+        # else, do the mapping
         return self.Q.dot(u) + self.G
 
     # pad vector of node values with the x-values of the ghost nodes

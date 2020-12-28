@@ -36,8 +36,8 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         h0 = 6
         a = 3/20. / (h0-1)
         x = self.x[0]
-        # self.u[0] = self.x[0] * 0 + 2 + np.sin(4*np.pi*x/L)
-        self.u[0] = np.maximum(-a*x**2 + h0, 1)
+        self.u[0] = self.x[0] * 0 + 2 + np.sin(4*np.pi*x/L)
+        # self.u[0] = np.maximum(-a*x**2 + h0, 1)
         # build the boundary conditions
         bc = PeriodicBC()
         # bc = NeumannBC()
@@ -94,10 +94,8 @@ class ThinFilm(Problem):
         # Generate the translation constraint
         self.translation_constraint = TranslationConstraint(self.tfe)
         # initialize time stepper
-        # self.time_stepper = time_steppers.RungeKutta4(dt=1e-3)
-        # self.time_stepper = time_steppers.RungeKuttaFehlberg45(dt=1e-4)
-        self.time_stepper = time_steppers.BDF2(dt=1)
-        # self.time_stepper = time_steppers.ImplicitEuler(dt=1e-5)
+        self.time_stepper = time_steppers.BDF2(dt=10)
+        # self.time_stepper = time_steppers.ImplicitEuler(dt=1e-2)
         # self.time_stepper = time_steppers.BDF(self)
         # assign the continuation parameter
         self.continuation_parameter = (self.volume_constraint, "fixed_volume")
@@ -141,6 +139,7 @@ if not os.path.exists("initial_state2.dat"):
         n += 1
         # perform timestep
         problem.time_step()
+        problem.adapt()
         # calculate the new norm
         dudtnorm = np.linalg.norm(problem.rhs(problem.u))
         # catch divergent solutions

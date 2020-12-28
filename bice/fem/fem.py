@@ -178,11 +178,11 @@ class FiniteElementEquation(Equation):
         # calculate integral of curvature:
         # error = | \int d^2 u / dx^2 * test(x) dx |
         # NOTE: overwrite this method, if different weights of the curvatures are needed
-        curvature = 0
+        err = 0
         for n in range(self.nvariables):
-            u = self.u if len(self.shape) == 1 else self.u[n]
-            curvature += np.abs(self.laplace.dot(u))
-        return curvature
+            u = self.u[n] if len(self.shape) > 1 else self.u
+            err += np.abs(self.laplace.dot(u))
+        return err
 
     # copy the unknowns u to the values in the mesh nodes
     @profile
