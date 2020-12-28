@@ -81,7 +81,7 @@ class ThinFilmEquationFD(FiniteDifferencesEquation):
         # initial condition
         self.u = 2 * np.cos(self.x[0] * 2 * np.pi / L) + 3
         # build finite difference matrices
-        self.build_FD_matrices()
+        self.build_FD_matrices(approx_order=3)
         # self.u = np.ones(N) * 3
         #self.x = self.x[0]
         # self.u = np.maximum(10 * np.cos(self.x / 5), 1)
