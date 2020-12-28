@@ -36,7 +36,7 @@ class HeatEquation(FiniteDifferencesEquation):
         nbc = NeumannBC(vals=(0.01, 0.01))
         pbc = PeriodicBC()
         # build finite difference matrices
-        self.build_FD_matrices(boundary_conditions=dbc,
+        self.build_FD_matrices(boundary_conditions=nbc,
                                premultiply_bc=False,
                                approx_order=2)
 
