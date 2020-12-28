@@ -11,7 +11,7 @@ from bice.pde import FiniteDifferencesEquation
 from bice.pde.finite_differences import RobinBC, PeriodicBC, NeumannBC, DirichletBC
 from bice.continuation import VolumeConstraint, TranslationConstraint
 from bice import profile, Profiler
-from bice.core.solvers import NewtonSolver, MyNewtonSolver
+from bice.core.solvers import NewtonKrylovSolver, MyNewtonSolver
 
 
 class ThinFilmEquation(FiniteDifferencesEquation):
@@ -53,11 +53,10 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         eq2 = -self.laplace.dot(h) - djp - dFdh
         return np.array([eq1, eq2])
 
-    def jacobian2(self, u):
+    def jacobian(self, u):
         h, dFdh = u
         ddjpdh = 3./h**4 - 6./h**7
         eq1dh = self.nabla.dot(sp.diags(3 * h**2 * self.nabla.dot(dFdh)))
-        # TODO: is this correct?
         eq1dF = self.nabla.dot(sp.diags(h**3) * self.nabla)
         eq2dh = -self.laplace - sp.diags(ddjpdh)
         eq2dF = -self.ddx[0]
@@ -94,15 +93,15 @@ class ThinFilm(Problem):
         # Generate the translation constraint
         self.translation_constraint = TranslationConstraint(self.tfe)
         # initialize time stepper
-        self.time_stepper = time_steppers.BDF2(dt=10)
+        self.time_stepper = time_steppers.BDF2(dt=0.02)
         # self.time_stepper = time_steppers.ImplicitEuler(dt=1e-2)
         # self.time_stepper = time_steppers.BDF(self)
         # assign the continuation parameter
         self.continuation_parameter = (self.volume_constraint, "fixed_volume")
-        # self.newton_solver = MyNewtonSolver()
-        # self.newton_solver.convergence_tolerance = 1e-2
-        # self.newton_solver.max_newton_iterations = 100
-        # self.newton_solver.verbosity = 2
+        self.newton_solver = MyNewtonSolver()
+        self.newton_solver.convergence_tolerance = 1e-2
+        self.newton_solver.max_newton_iterations = 100
+        self.newton_solver.verbosity = 0
 
     def norm(self):
         return np.trapz(self.tfe.u, self.tfe.x[0])
@@ -123,7 +122,7 @@ Profiler.start()
 
 # time-stepping
 n = 0
-plotevery = 1
+plotevery = 100
 dudtnorm = 1
 if not os.path.exists("initial_state2.dat"):
     while dudtnorm > 1e-8:

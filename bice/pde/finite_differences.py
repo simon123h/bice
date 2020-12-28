@@ -98,6 +98,12 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # laplace operator: d^2/dx^2
         self.laplace = self.ddx[2]
 
+    # Jacobian of the equation
+    def jacobian(self, u):
+        # FD Jacobians are typically sparse, so we convert to a sparse matrix
+        return sp.csr_matrix(super().jacobian(u))
+    
+
     # perform adaption of the grid to the solution
     # TODO: support higher dimensions than 1d
     @profile
