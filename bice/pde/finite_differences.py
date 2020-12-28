@@ -1,7 +1,6 @@
 import numpy as np
-import findiff as fd
-import fd_boundary_conditions as fdbc
-import scipy.sparse
+import scipy.sparse as sp
+import numdifftools.fornberg as fornberg
 from .pde import PartialDifferentialEquation
 
 
@@ -21,15 +20,83 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         self.nabla = None
         # second order derivative
         self.laplace = None
+        # approximation order of the finite differences
+        self.approx_order = 2
         # the spatial coordinates
         if len(self.shape) > 0:
             self.x = [np.linspace(0, 1, self.shape[-1], endpoint=False)]
         else:
             self.x = None
+        # the boundary conditions, defaults to cheap homogeneous Dirichlet
+        self.bc = None
 
-    # 4th order differentiation matrices for 1d, but with periodic boundaries
-    # TODO: find a way to do this with findiff
+    # build finite difference differentiation matrices using Fornberg (1988) algorithm
+    def build_FD_matrices(self, approx_order=2):
+        # number of grid points
+        N = self.shape[-1]
+        # spatial increment
+        # TODO: support for higher dimensions than 1d
+        dx = self.x[0][1] - self.x[0][0]
+        # accuracy / order of the FD scheme
+        self.approx_order = approx_order
+        order = approx_order
+
+        # stencil grid points
+        stencil_x = np.arange(-order, order+1) * dx
+
+        # nabla operator: d/dx
+        # get weights for stencil from Fornberg algorithm
+        stencil_weights = fornberg.fd_weights(x=stencil_x, x0=0, n=1)
+        self.nabla = 0
+        for k, w in enumerate(stencil_weights):
+            self.nabla += w * sp.eye(N, N+2*order, k=k)
+
+        # laplace operator: d^2/dx^2
+        # get weights for stencil from Fornberg algorithm
+        stencil_weights = fornberg.fd_weights(x=stencil_x, x0=0, n=2)
+        self.laplace = 0
+        for k, w in enumerate(stencil_weights):
+            self.laplace += w * sp.eye(N, N+2*order, k=k)
+
+    # Create Robin boundary conditions for the equation
+    def robin_BC(self, a=(0, 0), b=(1, 1), c=(0, 0)):
+        # number of grid points
+        N = self.shape[-1]
+        # spatial increment
+        dx = self.x[0][1] - self.x[0][0]
+        self.bc = RobinBC(N, dx, a=a, b=b, c=c, approx_order=self.approx_order)
+
+    # Create Dirichlet boundary conditions for the equation
+    def dirichlet_BC(self, vals=(0, 0)):
+        # number of grid points
+        N = self.shape[-1]
+        # spatial increment
+        dx = self.x[0][1] - self.x[0][0]
+        self.bc = RobinBC(N, dx, a=(1, 1), b=(0, 0), c=vals,
+                          approx_order=self.approx_order)
+
+    # Create Neumann boundary conditions for the equation
+    def neumann_BC(self, vals=(0, 0)):
+        # number of grid points
+        N = self.shape[-1]
+        # spatial increment
+        dx = self.x[0][1] - self.x[0][0]
+        self.bc = RobinBC(N, dx, b=(1, 1), c=vals,
+                          approx_order=self.approx_order)
+
+    # Create Neumann boundary conditions for the equation
+    def periodic_BC(self, premultiply_matrices=True):
+        # number of grid points
+        N = self.shape[-1]
+        self.bc = PeriodicBC(N, approx_order=self.approx_order)
+        # premultiply differentiation matrices with boundary conditions, only possible if bc.G = 0
+        # will break any other boundary conditions until FD matrices are re-generated
+        if premultiply_matrices:
+            self.nabla = self.nabla.dot(self.bc.Q)
+            self.laplace = self.laplace.dot(self.bc.Q)
+
     def build_periodic_FD_matrices(self):
+        # TODO: merge with above method and PeriodicBC
         N = self.shape[-1]
         # identity matrix
         I = np.eye(N)
@@ -58,103 +125,96 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         self.laplace += 128*np.roll(I, 3, axis=1)
         self.laplace += -9*np.roll(I, 4, axis=1)
         self.laplace /= dx**2 * 5040
+
         # convert to sparse matrices
-        self.nabla = scipy.sparse.csr_matrix(self.nabla)
-        self.laplace = scipy.sparse.csr_matrix(self.laplace)
+        self.nabla = sp.csr_matrix(self.nabla)
+        self.laplace = sp.csr_matrix(self.laplace)
 
-    # generate differentiation matrices using finite difference scheme.
-    # Arguments:
-    #  - acc: stencil accuracy (integer)
-    #  - max_order: maximum derivative order (integer)
-    #  - uniform: is the spatial grid uniform or non-uniform? (boolean)
 
-    def build_FD_matrices(self, acc=4, max_order=2, uniform=True):
-        # shape of x-array
-        xshape = tuple([len(x) for x in self.x])
-        # 0th order derivative d^0 / dx^0 = 1
-        self.ddx = [[1 for _ in self.x]]
-        # generate differentiation matrices for orders 1 ... max_order
-        for order in range(1, max_order+1):
-            self.ddx.append([])
-            # for each spatial dimension
-            for dim, x in enumerate(self.x):
-                x = self.x[dim]
-                # distinguish between uniform and non-uniform grids
-                dx = x[1] - x[0] if uniform else x
-                # generate differentiation matrix for desired order and dimension
-                diff_mat = fd.FinDiff(dim, dx, order, acc=acc).matrix(xshape)
-                self.ddx[order].append(diff_mat)
+class FDBoundaryConditions:
+    """
+    Boundary conditions for FD are actually an affine transformation and consist of the matrix Q and
+    the vector G. Suppose we have a central FD scheme of order o and the unknowns u are discretized
+    to N grid points. Then, the FD matrix D_x is a (N x (N+2*o))-matrix, that works on the unknowns
+    vector padded with ghost points:
+    u_padded = (ghost, ghost, u_0, u_1, ..., u_{N-1}, ghost, ghost)
+    We define a linear operator that maps the unknowns to the padded unknowns: u_padded = Q * u
+    The differentiation with the FD matrix is then: d_x u = D_x * Q * u.
+    For inhomogeneous boundaries, one needs to add a constant part to the differentiation:
+    d_x u = D_x * (Q * u + G)
+    The boundary matrix is a wrapper class for the matrix Q and vector G
+    """
+    # NOTE: the boundary conditions currently only support 1d grids!
 
-        # generate nabla operator (gradient)
-        self.nabla = self.ddx[1]
-        if len(self.nabla) == 1:
-            self.nabla = self.nabla[0]
+    def __init__(self, N, approx_order=2):
+        # approximation order of the FD scheme
+        self.approx_order = approx_order
+        # linear part (matrix)
+        # maps u to padded boundary u (gp, gp, u0, u1, ...., u(N-1), gp, gp)
+        self.Q = sp.eye(N+2*approx_order, N, k=-approx_order)
+        # constant (affine) part
+        self.G = 0
 
-        # generate Laplace operator
-        self.laplace = sum(self.ddx[2])
+    # transform a vector u to the boundary padded vector
+    def pad(self, u):
+        return self.Q.dot(u) + self.G
 
-    # calculate the spatial derivative du/dx in a given spatial direction
-    def du_dx(self, u=None, direction=0):
-        # if u is not given, use self.u
-        if u is None:
-            u = self.u
-        # multiply with FD nabla matrix
-        return self.nabla.dot(u)
 
-    # generate a FinDiff boundary conditions object
-    # needs to be converted to matrices manually before using in rhs
-    def boundary_conditions(self):
-        # shape of x-array
-        xshape = tuple([len(x) for x in self.x])
-        # generate boundary conditions object
-        return fd.BoundaryConditions(xshape)
+class RobinBC(FDBoundaryConditions):
+    """
+    Robin boundary conditions: a*u(x_b) + b*u'(x_b) = c at the boundaries x_b
+    a, b, c are tuples with values for (left, right) boundaries.
+    """
 
-    # build boundary matrices to impose Neumann/Dirichlet boundary conditions
-    # in the rhs of a finite differences equation
-    # Arguments:
-    #  - dirichlet_map: list of boolean tuples (left, right) that determine
-    #                   whether to use Dirichlet (true) or Neumann (false)
-    #                   boundary conditions on the left and right boundaries
-    #                   of the respective dimension
-    # - boundary_value: the value of the Dirichlet / Neumann condition at the
-    #                    boundary, e.g., u(x=bound) = value or u'(x=bound) = value
-    # - uniform: whether the spatial grid is uniform or non-uniform
-    # TODO: untested, might possibly be wrong! See FinDiff documentation on boundary conditions:
-    #       https://github.com/maroba/findiff
-    def build_boundary_matrices(self, dirichlet_map, boundary_value, uniform=True):
-        # generate boundary conditions object
-        bc = self.boundary_conditions()
-        # tuple of slices for each dimension
-        full_idx = tuple([slice(len(x)) for x in self.x])
-        # for each spatial dimension
-        for dim, x in enumerate(self.x):
-            x = self.x[dim]
-            # distinguish between uniform and non-uniform grids
-            dx = x[1] - x[0] if uniform else x
-            # should left and right boundaries have dirichlet or neumann conditions?
-            dirichlet_left, dirichlet_right = dirichlet_map[dim]
-            value_left, value_right = boundary_value[dim]
-            # differentiation operator for neumann conditions
-            ddx = fd.FinDiff(dim, dx, 1)
-            # left side
-            idx = list(full_idx)
-            idx[dim] = 0
-            idx = tuple(idx)
-            if dirichlet_left:  # dirichlet
-                bc[idx] = value_left
-            else:  # neumann
-                bc[idx] = ddx, value_left
-            # right side side
-            idx = list(full_idx)
-            idx[dim] = 0
-            idx = tuple(idx)
-            if dirichlet_right:  # dirichlet
-                bc[idx] = value_right
-            else:  # neumann
-                bc[idx] = ddx, value_right
-        # convert boundary matrix to sparse csr format
-        Q = bc.lhs.tocsr()
-        # convert boundary weight array to 1d array
-        G = bc.rhs.toarray().ravel()
-        # return boundary matrix and weights
-        return Q, G
+    def __init__(self, N, dx=1, a=(0, 0), b=(1, 1), c=(0, 0), approx_order=2):
+        super().__init__(N, approx_order=approx_order)
+        order = approx_order
+        # expand coefficients for left and right
+        al, ar = a
+        bl, br = b
+        cl, cr = c
+        # obtain FD stencil from Fornberg (1988) algorithm
+        self.stencil = fornberg.fd_weights(x=np.arange(1, order+2), x0=1, n=1)
+        # generate linear part Q and constant part G
+        # cf. RobinBC in https://github.com/SciML/DiffEqOperators.jl
+        # linear part (Q)
+        s = self.stencil
+        top = np.zeros((order, N))
+        top[-1, :order] = -s[1:] / (al*dx/bl + s[0]) if bl != 0 else 0*s[1:]
+        I = sp.eye(N)
+        bot = np.zeros((order, N))
+        bot[0, -order:] = s[:0:-1] / (ar*dx/br - s[0]) if br != 0 else 0*s[1:]
+        self.Q = sp.vstack((top, I, bot))
+        # constant part (G)
+        self.G = np.zeros(N+2*order)
+        self.G[order-1] = cl/(al+bl*s[0]/dx) if cl != 0 else 0
+        self.G[-order] = cr/(ar-br*s[0]/dx) if cr != 0 else 0
+
+
+def DirichletBC(N, dx=1, vals=(0, 0), approx_order=2):
+    """
+    Dirichlet boundary conditions: u(left) = vals[0], u(right) = vals[1]
+    """
+    return RobinBC(N, dx, a=(1, 1), b=(0, 0), c=vals, approx_order=approx_order)
+
+
+def NeumannBC(N, dx=1, vals=(0, 0), approx_order=2):
+    """
+    Neumann boundary conditions: u'(left) = vals[0], u'(right) = vals[1]
+    """
+    return RobinBC(N, dx, a=(0, 0), b=(1, 1), c=vals, approx_order=approx_order)
+
+
+class PeriodicBC(FDBoundaryConditions):
+    """
+    periodic boundary condition
+    """
+
+    def __init__(self, N, approx_order=2):
+        super().__init__(N, approx_order=approx_order)
+        # generate matrix that maps u_i --> u_{i%N} for 1d periodic ghost points
+        top = sp.eye(approx_order, N, k=N-approx_order)
+        bot = sp.eye(approx_order, N, k=0)
+        self.Q = sp.vstack((top, sp.eye(N), bot))
+        # constant part is zero
+        self.G = 0
