@@ -37,8 +37,7 @@ class SwiftHohenbergEquation(FiniteDifferencesEquation):
             np.exp(-0.005 * self.x[0] ** 2)
         # build finite difference matrices
         self.build_FD_matrices(approx_order=3)
-        # apply boundary conditions
-        self.periodic_BC()
+        # build linear operator
         laplace = self.laplace
         self.linear_op = -2 * self.kc**2 * laplace - laplace.dot(laplace)
 

@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
+from bice.pde.finite_differences import DirichletBC, NeumannBC, PeriodicBC
 from bice.continuation import ConstraintEquation
 from bice import profile, Profiler
 
@@ -29,17 +30,18 @@ class HeatEquation(FiniteDifferencesEquation):
         # initial condition
         self.u = np.cos(2 * np.pi * self.x[0] / 10) * \
             np.exp(-0.005 * self.x[0] ** 2)
+        # create boundary conditions
+        dbc = DirichletBC(vals=(0.1, 0.1))
+        nbc = NeumannBC(vals=(0.01, 0.01))
+        pbc = PeriodicBC()
         # build finite difference matrices
-        self.build_FD_matrices()
-        # Apply boundary conditions
-        self.dirichlet_BC(vals=(0.1, 0.1))
-        # self.neumann_BC(vals=(0.01, 0.01))
-        # self.periodic_BC()
+        self.build_FD_matrices(boundary_conditions=dbc, premultiply_bc=False)
 
     # definition of the equation (right-hand side)
     def rhs(self, u):
-        # return -self.nabla.dot(self.bc.pad(u))  # advection equation
-        return self.laplace.dot(self.bc.pad(u))
+        u_pad = self.bc.pad(u)
+        # return -self.nabla.dot(u_pad)  # advection equation
+        return self.laplace.dot(u_pad)
 
     # definition of the Jacobian
     @profile
