@@ -2,6 +2,7 @@ import numpy as np
 import scipy.optimize
 import scipy.sparse
 import scipy.linalg
+from .profiling import profile
 
 
 class MyNewtonSolver:
@@ -11,6 +12,7 @@ class MyNewtonSolver:
         self.iteration_count = 0
         self.verbosity = 0
 
+    @profile
     def solve(self, f, u, J):
         self.iteration_count = 0
         while self.iteration_count < self.max_newton_iterations:
@@ -35,11 +37,12 @@ class MyNewtonSolver:
             "Newton solver did not converge after {:d} iterations!".format(self.iteration_count))
 
 
-class NewtonSolver:
+class NewtonKrylovSolver:
     # TODO: catch errors, get number of iterations...
     def __init__(self):
         self.method = "hybr"
 
+    @profile
     def solve(self, f, u, J=None):
         if J is None or self.method == "krylov":
             # if Jacobian is not given, use krylov approximation
