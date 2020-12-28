@@ -175,12 +175,14 @@ class RobinBC(FDBoundaryConditions):
         # obtain FD stencil from Fornberg (1988) algorithm
         s = fornberg.fd_weights(x=np.arange(1, ao+2), x0=1, n=1)
         # linear part (Q)
+        # TODO: some fix for ao > 1 needed in here!
         top = np.zeros((ao, N))
         top[-1, :ao] = -s[1:] / (al*dx/bl + s[0]) if bl != 0 else 0*s[1:]
         bot = np.zeros((ao, N))
         bot[0, -ao:] = s[:0:-1] / (ar*dx/br - s[0]) if br != 0 else 0*s[1:]
         self.Q = sp.vstack((top, sp.eye(N), bot))
         # constant part (G)
+        # TODO: some fix for ao > 1 needed in here!
         self.G = np.zeros(N+2*ao)
         self.G[ao-1] = cl/(al+bl*s[0]/dx) if cl != 0 else 0
         self.G[-ao] = cr/(ar-br*s[0]/dx) if cr != 0 else 0
@@ -199,4 +201,5 @@ def NeumannBC(vals=(0, 0)):
     """
     Neumann boundary conditions: u'(left) = vals[0], u'(right) = vals[1]
     """
+    # TODO: Neumann conditions fail with approx_order > 1! Fix needed!!
     return RobinBC(a=(0, 0), b=(1, 1), c=vals)

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
-from bice.pde.finite_differences import DirichletBC, NeumannBC, PeriodicBC
+from bice.pde.finite_differences import DirichletBC, NeumannBC, RobinBC, PeriodicBC
 from bice.continuation import ConstraintEquation
 from bice import profile, Profiler
 
@@ -31,11 +31,14 @@ class HeatEquation(FiniteDifferencesEquation):
         self.u = np.cos(2 * np.pi * self.x[0] / 10) * \
             np.exp(-0.005 * self.x[0] ** 2)
         # create boundary conditions
-        dbc = DirichletBC(vals=(0.1, 0.1))
+        dbc = DirichletBC(vals=(0.1, -0.1))
+        # TODO: inhom. Nuemann BC sadly still requires approx_order=1, FIX NEEDED
         nbc = NeumannBC(vals=(0.01, 0.01))
         pbc = PeriodicBC()
         # build finite difference matrices
-        self.build_FD_matrices(boundary_conditions=dbc, premultiply_bc=False)
+        self.build_FD_matrices(boundary_conditions=dbc,
+                               premultiply_bc=False,
+                               approx_order=2)
 
     # definition of the equation (right-hand side)
     def rhs(self, u):
