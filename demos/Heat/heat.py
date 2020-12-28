@@ -25,14 +25,17 @@ class HeatEquation(FiniteDifferencesEquation):
         super().__init__()
         # parameters
         self.k = 1
-        # spatial coordinate
-        self.x = [np.linspace(-L/2, L/2, N)]
+        # create non-uniform grid
+        np.random.seed(4)
+        x = np.cumsum(np.random.random(N)*0.1+0.5)
+        x = x / x[-1] * L
+        self.x = [x-np.mean(x)]
+        # self.x = [np.linspace(-L/2, L/2, N)] # uniform grid
         # initial condition
         self.u = np.cos(2 * np.pi * self.x[0] / 10) * \
             np.exp(-0.005 * self.x[0] ** 2)
         # create boundary conditions
         dbc = DirichletBC(vals=(0.1, -0.1))
-        # TODO: inhom. Nuemann BC sadly still requires approx_order=1, FIX NEEDED
         nbc = NeumannBC(vals=(0.01, 0.01))
         pbc = PeriodicBC()
         # build finite difference matrices

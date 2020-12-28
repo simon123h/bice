@@ -42,8 +42,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # pad x vector with x-values of ghost nodes
         # TODO: support for higher dimensions than 1d
         x = self.x[0]
-        dx = x[1] - x[0]
-        x_pad = np.concatenate(([x[0]-dx], self.x[0], [x[-1]+dx]))
+        x_pad = self.bc.pad_x(x)
         # list of differentiation operators up to desired order d^n / dx^n
         # NOTE: ddx matrices are of shape N x (N+2), because they work on boundary padded vectors
         # trivial 0th order d^0 / dx^0 = 1
@@ -62,7 +61,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
             self.bc = boundary_conditions
         # build boundary condition matrices:
         # affine operator (Q*u + G) maps u to boundary padded vector
-        self.bc.update(N, dx, approx_order=ao)
+        self.bc.update(x, approx_order=ao)
 
         # premultiply operators with boundary matrices: ddx --> ddx * Q
         # NOTE: this neglects the constant (G) of the affine transformation Q*u + G
@@ -124,8 +123,9 @@ class FDBoundaryConditions:
         self.G = 0
 
     # build the matrix and constant part for the affine transformation u_padded = Q*u + G
-    def update(self, N, dx, approx_order):
+    def update(self, x, approx_order):
         # default case: identity matrix (equals homogeneous Dirichlet conditions)
+        N = len(x)
         ao = approx_order
         self.Q = sp.eye(N+2, N, k=-ao)
         self.G = 0
@@ -134,6 +134,12 @@ class FDBoundaryConditions:
     def pad(self, u):
         return self.Q.dot(u) + self.G
 
+    # pad vector of node values with the x-values of the ghost nodes
+    def pad_x(self, x):
+        dxl = x[1] - x[0]
+        dxr = x[-1] - x[-2]
+        return np.concatenate(([x[0]-dxl], x, [x[-1]+dxr]))
+
 
 class PeriodicBC(FDBoundaryConditions):
     """
@@ -141,8 +147,9 @@ class PeriodicBC(FDBoundaryConditions):
     """
 
     # build the matrix and constant part for the affine transformation u_padded = Q*u + G
-    def update(self, N, dx, approx_order):
+    def update(self, x, approx_order):
         # generate matrix that maps u_i --> u_{i%N} for 1d periodic ghost points
+        N = len(x)
         top = sp.eye(1, N, k=N-1)
         bot = sp.eye(1, N, k=0)
         self.Q = sp.vstack((top, sp.eye(N), bot))
@@ -165,24 +172,28 @@ class RobinBC(FDBoundaryConditions):
 
     # build the matrix and constant part for the affine transformation u_padded = Q*u + G
     # cf. RobinBC in https://github.com/SciML/DiffEqOperators.jl
-    def update(self, N, dx, approx_order):
+    def update(self, x, approx_order):
+        N = len(x)
         ao = approx_order
         # expand coefficients for left and right
         al, ar = self.a
         bl, br = self.b
         cl, cr = self.c
-        # obtain FD stencil from Fornberg (1988) algorithm
-        s = fornberg.fd_weights(x=np.arange(1, ao+2), x0=1, n=1)
+        # pad x with the ghost point values
+        x = self.pad_x(x)
+        # obtain FD stencils from Fornberg (1988) algorithm
+        sl = fornberg.fd_weights(x=x[:ao+1], x0=x[0], n=1)
+        sr = fornberg.fd_weights(x=x[-ao-1:], x0=x[-1], n=1)
         # linear part (Q)
         top = np.zeros((1, N))
-        top[-1, :ao] = -s[1:] / (al*dx/bl + s[0]) if bl != 0 else 0*s[1:]
+        top[-1, :ao] = -sl[1:] / (al/bl + sl[0]) if bl != 0 else 0*sl[1:]
         bot = np.zeros((1, N))
-        bot[0, -ao:] = s[:0:-1] / (ar*dx/br - s[0]) if br != 0 else 0*s[1:]
+        bot[0, -ao:] = -sr[:-1] / (ar/br + sr[-1]) if br != 0 else 0*sr[1:]
         self.Q = sp.vstack((top, sp.eye(N), bot))
         # constant part (G)
         self.G = np.zeros(N+2)
-        self.G[0] = cl/(al+bl*s[0]/dx) if cl != 0 else 0
-        self.G[-1] = cr/(ar-br*s[0]/dx) if cr != 0 else 0
+        self.G[0] = cl/(al+bl*sl[0]) if cl != 0 else 0
+        self.G[-1] = cr/(ar+br*sr[-1]) if cr != 0 else 0
         # return the matrices
         return self.Q, self.G
 
@@ -198,5 +209,4 @@ def NeumannBC(vals=(0, 0)):
     """
     Neumann boundary conditions: u'(left) = vals[0], u'(right) = vals[1]
     """
-    # TODO: Neumann conditions fail with approx_order > 1! Fix needed!!
     return RobinBC(a=(0, 0), b=(1, 1), c=vals)
