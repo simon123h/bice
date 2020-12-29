@@ -40,7 +40,7 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         x = self.x[0]
         self.u = np.maximum(self.h0 - 0.0*x, 1)
         # build finite differences matrices
-        self.bc_F = DirichletBC(vals=(self.U*self.h0-self.q, 0))
+        self.bc_F = DirichletBC(vals=(1, 0))
         self.build_FD_matrices(
             boundary_conditions=self.bc_F, premultiply_bc=False)
         self.nabla_F = self.nabla
@@ -62,7 +62,8 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         djp = 0
         # equations
         dFdh = -self.laplace_h.dot(h_pad) - djp
-        dhdt = self.nabla_F.dot(self.bc_F.pad(h3 * self.nabla0.dot(dFdh)))
+        flux = h3 * self.nabla0.dot(dFdh)
+        dhdt = self.nabla_F.dot(self.bc_F.Q.dot(flux) + (self.U*self.h0-self.q)*self.bc_F.G)
         dhdt -= self.U * self.nabla_h.dot(h_pad)
         return dhdt
 
@@ -77,11 +78,11 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         dFdh = -self.laplace_h.dot(h_pad) - djp
         ddFdhdh = -self.laplace_h.dot(self.bc_h.Q) - ddjpdh
         # d(Qh^3*nabla*dFdh)/dh
-        inner = sp.diags(3*h**2 * self.nabla0.dot(dFdh)) + \
+        flux = sp.diags(3*h**2 * self.nabla0.dot(dFdh)) + \
             sp.diags(h3) * self.nabla0.dot(ddFdhdh)
-        inner_pad = self.bc_F.Q.dot(inner)
+        flux_pad = self.bc_F.Q.dot(flux)
         # jacobian
-        jac = self.nabla_F.dot(inner_pad)
+        jac = self.nabla_F.dot(flux_pad)
         jac -= self.U * self.nabla_h.dot(self.bc_h.Q)
         return jac
 
