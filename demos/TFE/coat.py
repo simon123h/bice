@@ -30,8 +30,8 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         super().__init__(shape=(N,))
         # parameters:
         self.U = 0.01  # substrate velocity
-        self.q = 0.1  # influx
-        self.h0 = 20
+        self.q = 0.05  # influx
+        self.h0 = 40
         print("h_LL =", self.q/self.U)
         # setup the mesh
         self.L = L
@@ -59,7 +59,6 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         # disjoining pressure
         h3 = h**3
         djp = 1./h3**2 - 1./h3
-        djp = 0
         # equations
         dFdh = -self.laplace_h.dot(h_pad) - djp
         flux = h3 * self.nabla0.dot(dFdh)
@@ -132,7 +131,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=100, L=500)
+problem = ThinFilm(N=600, L=1500)
 
 # create figure
 fig, ax = plt.subplots(1, figsize=(16, 9))
@@ -142,7 +141,7 @@ Profiler.start()
 
 # time-stepping
 n = 0
-plotevery = 10
+plotevery = 100
 dudtnorm = 1
 if not os.path.exists("initial_state2.dat"):
     while dudtnorm > 1e-8:
