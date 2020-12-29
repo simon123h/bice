@@ -3,6 +3,7 @@ import shutil
 import os
 import sys
 import numpy as np
+import findiff
 import matplotlib.pyplot as plt
 import scipy.sparse as sp
 sys.path.append("../..")  # noqa, needed for relative import of package
@@ -28,28 +29,26 @@ class ThinFilmEquation(FiniteDifferencesEquation):
     def __init__(self, N, L):
         super().__init__(shape=(2, N))
         # parameters:
-        self.U = 0.1  # substrate velocity
-        self.q = 0  # influx
+        self.U = 0.01  # substrate velocity
+        self.q = 0.1  # influx
+        self.h0 = 20
         # setup the mesh
         self.L = L
         self.x = [np.linspace(0, L, N)]
         # initial condition
-        h0 = 6
-        a = 3/20. / (h0-1)
         x = self.x[0]
-        self.u[0] = 20 + 0*x
-        # self.u[0] = np.maximum(-a*x**2 + h0, 1)
+        self.u[0] = self.h0 - 0.01*x
         # build finite differences matrices
-        self.bc_F = RobinBC(a=(0, 0), b=(1, 1), c=(0, -1e-2))
+        self.bc_F = DirichletBC(vals=(self.U*self.h0-self.q, 0))
         self.build_FD_matrices(boundary_conditions=self.bc_F, premultiply_bc=False)
         self.nabla_F = self.nabla
-        self.laplace_F = self.laplace
-        self.bc_h = RobinBC(a=(1, 0), b=(0, 1), c=(20, 0))
+        self.bc_h = RobinBC(a=(1, 0), b=(0, 1), c=(self.h0, 0))
         self.build_FD_matrices(boundary_conditions=self.bc_h, premultiply_bc=False)
         self.nabla_h = self.nabla
         self.laplace_h = self.laplace
-        self.bc_n = DirichletBC()
-        self.build_FD_matrices(boundary_conditions=self.bc_n, premultiply_bc=True)
+        self.nabla0 = findiff.FinDiff(0, x, 1, acc=3).matrix(x.shape)
+
+        print("h_LL =", self.q/self.U / self.h0)
 
 
     # definition of the equation
@@ -57,13 +56,11 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         h, dFdh = u
         # do boundary transformation
         h_pad = self.bc_h.pad(h)
-        dFdh_pad = self.bc_F.pad(dFdh)
         # disjoining pressure
         h3 = h**3
         djp = 1./h3**2 - 1./h3
         # equations
-        # TODO: fix boundary conditions for dFdh
-        eq1 = self.nabla_F.dot(self.bc_F.pad(h3 * self.nabla.dot(dFdh)))
+        eq1 = self.nabla_F.dot(self.bc_F.pad(h3 * self.nabla0.dot(dFdh)))
         eq1 -= self.U * self.nabla_h.dot(h_pad)
         eq2 = -self.laplace_h.dot(h_pad) - djp - dFdh
         return np.array([eq1, eq2])
@@ -86,9 +83,11 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         ax.set_ylabel("solution h(x,t)")
         x = self.x[0] - self.U*problem.time
         h = self.u[0]
-        ax.set_xlim(np.min(x), np.max(x))
-        ax.set_ylim(0, 1.1*np.max(h))
+        dFdh = self.u[1]*1e2
+        # ax.set_xlim(np.min(x), np.max(x))
+        # ax.set_ylim(0, 1.1*np.max(h))
         ax.plot(x, h)
+        ax.plot(x, dFdh)
 
     def mass_matrix(self):
         nvar, ngrid = self.shape
@@ -110,7 +109,7 @@ class ThinFilm(Problem):
         # Generate the translation constraint
         self.translation_constraint = TranslationConstraint(self.tfe)
         # initialize time stepper
-        self.time_stepper = time_steppers.BDF2(dt=100)
+        self.time_stepper = time_steppers.BDF2(dt=1000)
         # self.time_stepper = time_steppers.ImplicitEuler(dt=1e-2)
         # self.time_stepper = time_steppers.BDF(self)
         # assign the continuation parameter
