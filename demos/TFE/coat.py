@@ -9,7 +9,7 @@ import scipy.sparse as sp
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
-from bice.pde.finite_differences import NeumannBC, DirichletBC, RobinBC
+from bice.pde.finite_differences import NeumannBC, DirichletBC, RobinBC, GenericBC
 from bice import profile, Profiler
 from bice.core.solvers import NewtonKrylovSolver, MyNewtonSolver
 
@@ -38,16 +38,20 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         # initial condition
         x = self.x[0]
         self.u = np.maximum(self.h0 - 0.0*x, 1)
-        # build finite differences matrices
-        self.bc = RobinBC(a=(1, 0), b=(0, 1), c=(self.h0, 0))  # boundary conditions for h
+        # build finite differences matrices...
+        # (i) including the flux boundary conditions for h^3 * dF/dh
+        self.bc = DirichletBC(vals=(1, 0))
         self.build_FD_matrices()
         self.nabla_F = self.nabla
-        self.bc = DirichletBC(vals=(1, 0))  # boundary conditions for h^3 * dF/dh
+        # (ii) including the mixed boundary conditions for h (left Dirichlet, right Neumann)
+        self.bc = RobinBC(a=(1, 0), b=(0, 1), c=(self.h0, 0))
         self.build_FD_matrices()
         self.nabla_h = self.nabla
         self.laplace_h = self.laplace
-        # build generic differentiation matrix without boundary effects
-        self.nabla0 = findiff.FinDiff(0, x, 1, acc=3).matrix(x.shape)
+        # (iii) differentiation operators no specific boundary effects
+        self.bc = GenericBC()
+        self.build_FD_matrices()
+        self.nabla0 = self.nabla
 
     # definition of the equation
     def rhs(self, h):

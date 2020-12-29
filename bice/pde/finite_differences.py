@@ -71,7 +71,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         for order in range(0, max_order+1):
             if order == 0:
                 # trivial 0th order d^0 / dx^0 = 1
-                op = sp.eye(N, N+Ngp, k=1)
+                op = sp.eye(N, N+Ngp, k=Ngp//2)
             else:
                 # obtain differentiation matrix from findiff package
                 op = findiff.FinDiff(
