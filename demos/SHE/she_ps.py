@@ -50,7 +50,7 @@ class SwiftHohenbergProblem(Problem):
     def __init__(self, N, L):
         super().__init__()
         # Add the Swift-Hohenberg equation to the problem
-        # self.she = SwiftHohenbergEquation(N, L)
+        self.she = SwiftHohenbergEquation(N, L)
         self.add_equation(self.she)
         # initialize time stepper
         self.time_stepper = time_steppers.RungeKuttaFehlberg45(dt=1e-3)
