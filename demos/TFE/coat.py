@@ -9,8 +9,7 @@ import scipy.sparse as sp
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
-from bice.pde.finite_differences import RobinBC, NeumannBC, DirichletBC
-from bice.continuation import VolumeConstraint, TranslationConstraint
+from bice.pde.finite_differences import NeumannBC, DirichletBC, RobinBC
 from bice import profile, Profiler
 from bice.core.solvers import NewtonKrylovSolver, MyNewtonSolver
 
@@ -59,10 +58,15 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         # disjoining pressure
         h3 = h**3
         djp = 1./h3**2 - 1./h3
-        # equations
+        # free energy variation
         dFdh = -self.laplace_h.dot(h_pad) - djp
+        # bulk flux
         flux = h3 * self.nabla0.dot(dFdh)
-        dhdt = self.nabla_F.dot(self.bc_F.Q.dot(flux) + (self.U*self.h0-self.q)*self.bc_F.G)
+        # boundary flux
+        j_in = self.U*self.h0-self.q
+        # dynamics equation, including flux BC
+        dhdt = self.nabla_F.dot(self.bc_F.Q.dot(flux) + j_in*self.bc_F.G)
+        # advection term
         dhdt -= self.U * self.nabla_h.dot(h_pad)
         return dhdt
 
