@@ -39,54 +39,47 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         x = self.x[0]
         self.u = np.maximum(self.h0 - 0.0*x, 1)
         # build finite differences matrices
-        self.bc_F = DirichletBC(vals=(1, 0))
-        self.build_FD_matrices(
-            boundary_conditions=self.bc_F, premultiply_bc=False)
+        bc_h = RobinBC(a=(1, 0), b=(0, 1), c=(self.h0, 0))  # boundary conditions for h
+        bc_F = DirichletBC(vals=(1, 0))  # boundary conditions for h^3 * dF/dh
+        self.build_FD_matrices(boundary_conditions=bc_h)
         self.nabla_F = self.nabla
-        self.bc_h = RobinBC(a=(1, 0), b=(0, 1), c=(self.h0, 0))
-        self.build_FD_matrices(
-            boundary_conditions=self.bc_h, premultiply_bc=False)
+        self.build_FD_matrices(boundary_conditions=bc_F)
         self.nabla_h = self.nabla
         self.laplace_h = self.laplace
+        # build generic differentiation matrix without boundary effects
         self.nabla0 = findiff.FinDiff(0, x, 1, acc=3).matrix(x.shape)
 
     # definition of the equation
-    def rhs(self, u):
-        h = u
-        # do boundary transformation
-        h_pad = self.bc_h.pad(h)
+    def rhs(self, h):
         # disjoining pressure
         h3 = h**3
         djp = 1./h3**2 - 1./h3
         # free energy variation
-        dFdh = -self.laplace_h.dot(h_pad) - djp
+        dFdh = -self.laplace_h(h) - djp
         # bulk flux
         flux = h3 * self.nabla0.dot(dFdh)
         # boundary flux
         j_in = self.U*self.h0-self.q
-        # dynamics equation, including flux BC
-        dhdt = self.nabla_F.dot(self.bc_F.Q.dot(flux) + j_in*self.bc_F.G)
+        # dynamics equation, scale boundary condition with j_in
+        dhdt = self.nabla_F(flux, j_in)
         # advection term
-        dhdt -= self.U * self.nabla_h.dot(h_pad)
+        dhdt -= self.U * self.nabla_h.dot(h)
         return dhdt
 
-    def jacobian(self, u):
-        h = u
-        h_pad = self.bc_h.pad(h)
+    def jacobian(self, h):
         # disjoining pressure
         h3 = h**3
         djp = 1./h3**2 - 1./h3
         ddjpdh = sp.diags(3./h**4 - 6./h**7)
         # free energy variation
-        dFdh = -self.laplace_h.dot(h_pad) - djp
-        ddFdhdh = -self.laplace_h.dot(self.bc_h.Q) - ddjpdh
+        dFdh = -self.laplace_h(h) - djp
+        ddFdhdh = -self.laplace_h() - ddjpdh
         # d(Qh^3*nabla*dFdh)/dh
         flux = sp.diags(3*h**2 * self.nabla0.dot(dFdh)) + \
             sp.diags(h3) * self.nabla0.dot(ddFdhdh)
-        flux_pad = self.bc_F.Q.dot(flux)
-        # jacobian
-        jac = self.nabla_F.dot(flux_pad)
-        jac -= self.U * self.nabla_h.dot(self.bc_h.Q)
+        # dynamics equation, boundary condition is a constant --> scale with zero
+        jac = self.nabla_F(flux, 0)
+        jac -= self.U * self.nabla_h()
         return jac
 
     def du_dx(self, u, direction=0):
@@ -111,16 +104,12 @@ class ThinFilm(Problem):
         # Add the Thin-Film equation to the problem
         self.tfe = ThinFilmEquation(N, L)
         self.add_equation(self.tfe)
-        # Generate the volume constraint
-        self.volume_constraint = VolumeConstraint(self.tfe, variable=0)
-        # Generate the translation constraint
-        self.translation_constraint = TranslationConstraint(self.tfe)
         # initialize time stepper
         # self.time_stepper = time_steppers.BDF2(dt=1000)
         # self.time_stepper = time_steppers.ImplicitEuler(dt=1e-2)
         self.time_stepper = time_steppers.BDF(self)
         # assign the continuation parameter
-        self.continuation_parameter = (self.volume_constraint, "fixed_volume")
+        self.continuation_parameter = (self.tfe, "q")
         # self.newton_solver = MyNewtonSolver()
         # self.newton_solver.convergence_tolerance = 1e-2
         # self.newton_solver.max_newton_iterations = 100
@@ -180,18 +169,11 @@ exit()
 # start parameter continuation
 problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
-
-# Impose the constraints
-problem.volume_constraint.fixed_volume = np.trapz(
-    problem.tfe.u, problem.tfe.x[0])
-problem.add_equation(problem.volume_constraint)
-problem.add_equation(problem.translation_constraint)
-
 problem.continuation_stepper.convergence_tolerance = 1e-10
 
 n = 0
 plotevery = 1
-while problem.volume_constraint.fixed_volume < 1000:
+while problem.tfe.q < 1000:
     # perform continuation step
     problem.continuation_step()
     n += 1

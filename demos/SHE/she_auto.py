@@ -38,7 +38,7 @@ class SwiftHohenbergEquation(FiniteDifferencesEquation):
         # build finite difference matrices
         self.build_FD_matrices(approx_order=3)
         # build linear operator
-        laplace = self.laplace
+        laplace = self.laplace()
         self.linear_op = -2 * self.kc**2 * laplace - laplace.dot(laplace)
 
     # definition of the SHE (right-hand side)
@@ -86,7 +86,7 @@ class TranslationConstraint(ConstraintEquation):
         eq_u_old = self.group.u[eq_idx]
         velocity = u[self_idx]
         # add constraint to residuals of reference equation (velocity is the lagrange multiplier)
-        res[eq_idx] = velocity * eq.nabla.dot(eq_u)
+        res[eq_idx] = velocity * eq.nabla(eq_u)
         # add the constraint equation
         res[self_idx] = np.dot(eq.x[0], eq_u-eq_u_old)
         # res[self_idx] = np.dot(eq_dudx, (eq_u - eq_u_old))
@@ -103,9 +103,9 @@ class TranslationConstraint(ConstraintEquation):
         # eq_u_old = self.group.u[eq_idx]
         velocity = u[self_idx][0]
         # contribution of d(eq) / du
-        deq_du = velocity * eq.nabla
+        deq_du = velocity * eq.nabla()
         # contribution of d(eq) / dvelocity
-        deq_dv = eq.nabla.dot(eq_u).reshape((eq_u.size, 1))
+        deq_dv = eq.nabla(eq_u).reshape((eq_u.size, 1))
         # contribution of d(constraint) / du
         dcnstr_du = eq.x[0].reshape((1, eq_u.size))
         # contribution of d(constraint) / dvelocity

@@ -23,15 +23,11 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         self.nabla = None
         # second order derivative
         self.laplace = None
-        # approximation order of the finite differences
-        self.approx_order = 2
         # the spatial coordinates
         if len(self.shape) > 0:
             self.x = [np.linspace(0, 1, self.shape[-1], endpoint=False)]
         else:
             self.x = None
-        # the boundary conditions, defaults to periodic BC
-        self.bc = PeriodicBC()
         # mesh adaption settings
         self.max_refinement_error = 1e-1
         self.min_refinement_error = 1e-3
@@ -40,70 +36,59 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
 
     # build finite difference differentiation matrices using Fornberg (1988) algorithm
     @profile
-    def build_FD_matrices(self, boundary_conditions=None, approx_order=None, max_order=2, premultiply_bc=True):
-        # number of grid points
-        N = self.shape[-1]
+    def build_FD_matrices(self, boundary_conditions=None, approx_order=2, max_order=2):
+        # TODO: support 'None' type boundary conditions
         # accuracy / approximation order of the FD scheme (size of stencil = 2*ao + 1)
-        if approx_order is not None:
-            self.approx_order = approx_order
-        ao = self.approx_order
-        # pad x vector with x-values of ghost nodes
+        ao = approx_order
+        # the spatial grid
         # TODO: support for higher dimensions than 1d
         x = self.x[0]
-        x_pad = self.bc.pad_x(x)
+        N = len(x)
+        # default: periodic boundary conditions
+        if boundary_conditions is None:
+            boundary_conditions = PeriodicBC()
+        # build boundary condition operators given the grid points and approximation order
+        boundary_conditions.update(x, approx_order=ao)
+        # boundary conditions implement an affine operator (Q*u + G) with a matrix Q and
+        # a constant G, that maps the unknowns u to a 'boundary padded vector' with ghost points
+        # at the boundaries.
+        # pad x vector with x-values of ghost nodes
+        x_pad = boundary_conditions.pad_x(x)
+        # the number of ghost points
+        Ngp = len(x_pad) - N
+
         # list of differentiation operators up to desired order d^n / dx^n
-        # NOTE: ddx matrices are of shape N x (N+2), because they work on boundary padded vectors
-        # trivial 0th order d^0 / dx^0 = 1
-        zeroth_order = sp.eye(N, N+2, k=1)
-        self.ddx = [zeroth_order]
+        # NOTE: ddx matrices are of shape N x (N+Ngp), because they work on boundary padded vectors
+        self.ddx = []
         # higher order operators
-        for order in range(1, max_order+1):
-            # obtain differentiation matrix from findiff package
-            op = findiff.FinDiff(0, x_pad, order, acc=ao).matrix(x_pad.shape)
-            # slice rows corresponding to ghost nodes
-            op = op[1:-1, :]
-            self.ddx.append(op)
-
-        # if given, update boundary conditions
-        if boundary_conditions is not None:
-            self.bc = boundary_conditions
-        # build boundary condition matrices:
-        # affine operator (Q*u + G) maps u to boundary padded vector
-        self.bc.update(x, approx_order=ao)
-
-        # premultiply operators with boundary matrices: ddx --> ddx * Q
-        # NOTE: this neglects the constant (G) of the affine transformation Q*u + G
-        if premultiply_bc:
-            self.bc.premultiplied = True
-            for order in range(0, max_order+1):
-                self.ddx[order] = self.ddx[order].dot(self.bc.Q)
-            # check if G is not 0 (inhomogeneous BC)
-            if np.count_nonzero(self.bc.G) > 0:
-                # if yes, premultiplying the BC is a bad idea, because G is discarded, print warning
-                print("WARNING: inhomogeneous boundary conditions should not be pre-multiplied with"
-                      " the differentiation operators, because this discards the inhomogeneity G, "
-                      "i.e., we end up with homogeneous boundary conditions.\n"
-                      "Use build_FD_matrices(premultiply_bc=False) to prevent this. However, you "
-                      "then have to do the transformation from u to 'boundary padded u' yourself "
-                      "before using the differentiation operators, e.g.:\n"
-                      "  du_dx = nabla.dot(bc.Q.dot(u)+bc.G)\n"
-                      "or:\n"
-                      "  du_dx = nabla.dot(bc.pad(u))\n"
-                      "where bc is the boundary conditions object.\n")
-        else:
-            self.bc.premultiplied = False
+        for order in range(0, max_order+1):
+            if order == 0:
+                # trivial 0th order d^0 / dx^0 = 1
+                op = sp.eye(N, N+Ngp, k=1)
+            else:
+                # obtain differentiation matrix from findiff package
+                op = findiff.FinDiff(
+                    0, x_pad, order, acc=ao).matrix(x_pad.shape)
+                # slice rows corresponding to ghost nodes
+                op = op[Ngp//2:N+Ngp//2, :]
+            # include the boundary conditions into the differentiation operator by pre-multiplying
+            # it with the (affine) boundary operator (matrix Q and constant G)
+            opQ = op.dot(boundary_conditions.Q)
+            opG = op.dot(boundary_conditions.G) if np.count_nonzero(
+                boundary_conditions) > 0 else 0
+            # store as new affine operator Op(u) = ddx*(Q*u + G) = opQ*u + opG
+            self.ddx.append(AffineOperator(opQ, opG))
 
         # special names for some operators:
-        # nabla operator: d^1/dx^1
+        # nabla operator: d / dx
         self.nabla = self.ddx[1]
-        # laplace operator: d^2/dx^2
+        # laplace operator: d^2 / dx^2
         self.laplace = self.ddx[2]
 
     # Jacobian of the equation
     def jacobian(self, u):
         # FD Jacobians are typically sparse, so we convert to a sparse matrix
         return sp.csr_matrix(super().jacobian(u))
-    
 
     # perform adaption of the grid to the solution
     # TODO: support higher dimensions than 1d
@@ -155,7 +140,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
             else:
                 self.u_history[t] = np.interp(x_new, x_old, u)
         # re-build the FEM matrices
-        self.build_FD_matrices(premultiply_bc=self.bc.premultiplied)
+        self.build_FD_matrices()
 
     # estimate the error made in each grid point
     @profile
@@ -170,15 +155,40 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         nvars = self.shape[0] if len(self.shape) > 1 else 1
         for n in range(nvars):
             u = self.u[n] if len(self.shape) > 1 else self.u
-            curv = self.laplace.dot(self.bc.pad(u))
+            curv = self.laplace(u)
             err += np.abs(curv*dx)
         return err
 
 
+# wrapper object for an affine operator:
+# Op: u --> Q*u + G, where Q is a matrix and G is some constant
+class AffineOperator:
+
+    def __init__(self, Q, G=0):
+        # linear part
+        self.Q = Q
+        # constant (affine) part
+        self.G = G
+
+    # Apply the operator to some vector/tensor u and scale the constant part with g:
+    # operator(u) = Q*u + g*G
+    # if called without arguments, only the linear part is returned, for an intuitive
+    # implementation of operator derivatives, e.g.:
+    # f(u) = operator(u) = Q*u + g*G
+    # f'(u) = operator() = Q
+    # this also allows for simple operator algebra, e.g.:
+    # op2 = operator()*operator() = Q*Q (unfortunately discarding the constant part)
+    def __call__(self, u=None, g=1):
+        if u is None:
+            return self.Q
+        return self.Q.dot(u) + g*self.G
+
+    # overload the dot method, so we can do operator.dot(u) as with numpy/scipy matrices
+    def dot(self, u):
+        return self.__call__(u)
+
+
 class FDBoundaryConditions:
-    # TODO: update description
-    # maps u to boundary padded u: u --> (gp, gp, u_0, u_1, ...., u_{N-1}, gp, gp)
-    # where gp are the ghost points
     """
     Boundary conditions for FD are applied using an affine transformation Q*u + G that maps the
     unknowns u to the 'boundary padded u', i.e., the u-vector padded with ghost points that assure
@@ -193,6 +203,7 @@ class FDBoundaryConditions:
     boundary conditions. This will called automatically during build_FD_matrices of a
     FiniteDifferenceEquation and needs to be called again only if the boundary conditions change.
 
+    TODO: update this part, since we have AffineOperators now!
     For both periodic and homogeneous boundary conditions the transformation is linear (G=0), i.e.,
     we can pre-multiply the operators with Q:
     du_dx = D_x * Q * u = D_x' * u
@@ -207,8 +218,6 @@ class FDBoundaryConditions:
         self.Q = None
         # constant (affine) part
         self.G = 0
-        # are the boundary conditions Q already multiplied with the differentiation operators?
-        self.premultiplied = False
 
     # build the matrix and constant part for the affine transformation u_padded = Q*u + G
     def update(self, x, approx_order):
@@ -218,12 +227,8 @@ class FDBoundaryConditions:
         self.Q = sp.eye(N+2, N, k=-ao)
         self.G = 0
 
-    # transform a vector u to the boundary padded vector
+    # transform a vector u to the boundary padded vector: u_pad = Q*u + G
     def pad(self, u):
-        # if Q is already multiplied to operators, mapping is not required
-        if self.premultiplied:
-            return u
-        # else, do the mapping
         return self.Q.dot(u) + self.G
 
     # pad vector of node values with the x-values of the ghost nodes

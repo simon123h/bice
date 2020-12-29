@@ -49,21 +49,21 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         h, dFdh = u
         h3 = h**3
         djp = 1./h3**2 - 1./h3
-        eq1 = self.nabla.dot(h3 * self.nabla.dot(dFdh))
-        eq2 = -self.laplace.dot(h) - djp - dFdh
+        eq1 = self.nabla(h3 * self.nabla(dFdh))
+        eq2 = -self.laplace(h) - djp - dFdh
         return np.array([eq1, eq2])
 
     def jacobian(self, u):
         h, dFdh = u
         ddjpdh = 3./h**4 - 6./h**7
-        eq1dh = self.nabla.dot(sp.diags(3 * h**2 * self.nabla.dot(dFdh)))
-        eq1dF = self.nabla.dot(sp.diags(h**3) * self.nabla)
-        eq2dh = -self.laplace - sp.diags(ddjpdh)
-        eq2dF = -self.ddx[0]
+        eq1dh = self.nabla(sp.diags(3 * h**2 * self.nabla(dFdh)))
+        eq1dF = self.nabla(sp.diags(h**3) * self.nabla())
+        eq2dh = -self.laplace() - sp.diags(ddjpdh)
+        eq2dF = -self.ddx[0]()
         return sp.bmat([[eq1dh, eq1dF], [eq2dh, eq2dF]])
 
     def du_dx(self, u, direction=0):
-        return self.nabla[direction].dot(u)
+        return self.nabla[direction](u)
 
     def plot(self, ax):
         ax.set_xlabel("x")
