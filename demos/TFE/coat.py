@@ -27,52 +27,63 @@ class ThinFilmEquation(FiniteDifferencesEquation):
      """
 
     def __init__(self, N, L):
-        super().__init__(shape=(2, N))
+        super().__init__(shape=(N,))
         # parameters:
         self.U = 0.01  # substrate velocity
         self.q = 0.1  # influx
         self.h0 = 20
+        print("h_LL =", self.q/self.U)
         # setup the mesh
         self.L = L
         self.x = [np.linspace(0, L, N)]
         # initial condition
         x = self.x[0]
-        self.u[0] = self.h0 - 0.01*x
+        self.u = np.maximum(self.h0 - 0.0*x, 1)
         # build finite differences matrices
         self.bc_F = DirichletBC(vals=(self.U*self.h0-self.q, 0))
-        self.build_FD_matrices(boundary_conditions=self.bc_F, premultiply_bc=False)
+        self.build_FD_matrices(
+            boundary_conditions=self.bc_F, premultiply_bc=False)
         self.nabla_F = self.nabla
         self.bc_h = RobinBC(a=(1, 0), b=(0, 1), c=(self.h0, 0))
-        self.build_FD_matrices(boundary_conditions=self.bc_h, premultiply_bc=False)
+        self.build_FD_matrices(
+            boundary_conditions=self.bc_h, premultiply_bc=False)
         self.nabla_h = self.nabla
         self.laplace_h = self.laplace
         self.nabla0 = findiff.FinDiff(0, x, 1, acc=3).matrix(x.shape)
 
-        print("h_LL =", self.q/self.U / self.h0)
-
-
     # definition of the equation
     def rhs(self, u):
-        h, dFdh = u
+        h = u
         # do boundary transformation
         h_pad = self.bc_h.pad(h)
         # disjoining pressure
         h3 = h**3
         djp = 1./h3**2 - 1./h3
+        djp = 0
         # equations
-        eq1 = self.nabla_F.dot(self.bc_F.pad(h3 * self.nabla0.dot(dFdh)))
-        eq1 -= self.U * self.nabla_h.dot(h_pad)
-        eq2 = -self.laplace_h.dot(h_pad) - djp - dFdh
-        return np.array([eq1, eq2])
+        dFdh = -self.laplace_h.dot(h_pad) - djp
+        dhdt = self.nabla_F.dot(self.bc_F.pad(h3 * self.nabla0.dot(dFdh)))
+        dhdt -= self.U * self.nabla_h.dot(h_pad)
+        return dhdt
 
-    def jacobian2(self, u):
-        h, dFdh = u
-        ddjpdh = 3./h**4 - 6./h**7
-        eq1dh = self.nabla.dot(sp.diags(3 * h**2 * self.nabla.dot(dFdh)))
-        eq1dF = self.nabla.dot(sp.diags(h**3) * self.nabla)
-        eq2dh = -self.laplace - sp.diags(ddjpdh)
-        eq2dF = -self.ddx[0]
-        return sp.bmat([[eq1dh, eq1dF], [eq2dh, eq2dF]])
+    def jacobian(self, u):
+        h = u
+        h_pad = self.bc_h.pad(h)
+        # disjoining pressure
+        h3 = h**3
+        djp = 1./h3**2 - 1./h3
+        ddjpdh = sp.diags(3./h**4 - 6./h**7)
+        # free energy variation
+        dFdh = -self.laplace_h.dot(h_pad) - djp
+        ddFdhdh = -self.laplace_h.dot(self.bc_h.Q) - ddjpdh
+        # d(Qh^3*nabla*dFdh)/dh
+        inner = sp.diags(3*h**2 * self.nabla0.dot(dFdh)) + \
+            sp.diags(h3) * self.nabla0.dot(ddFdhdh)
+        inner_pad = self.bc_F.Q.dot(inner)
+        # jacobian
+        jac = self.nabla_F.dot(inner_pad)
+        jac -= self.U * self.nabla_h.dot(self.bc_h.Q)
+        return jac
 
     def du_dx(self, u, direction=0):
         return self.nabla[direction].dot(u)
@@ -82,19 +93,11 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         ax.set_xlabel("x")
         ax.set_ylabel("solution h(x,t)")
         x = self.x[0] - self.U*problem.time
-        h = self.u[0]
-        dFdh = self.u[1]*1e2
-        # ax.set_xlim(np.min(x), np.max(x))
-        # ax.set_ylim(0, 1.1*np.max(h))
+        h = self.u
+        ax.set_xlim(np.min(x), np.max(x))
+        ax.set_ylim(0, 1.1*np.max(h))
         ax.plot(x, h)
-        ax.plot(x, dFdh)
-
-    def mass_matrix(self):
-        nvar, ngrid = self.shape
-        dynamics = np.eye(nvar)
-        dynamics[1, 1] = 0
-        I = sp.eye(ngrid)
-        return sp.kron(dynamics, I)
+        # ax.plot(x, dFdh)
 
 
 class ThinFilm(Problem):
@@ -109,9 +112,9 @@ class ThinFilm(Problem):
         # Generate the translation constraint
         self.translation_constraint = TranslationConstraint(self.tfe)
         # initialize time stepper
-        self.time_stepper = time_steppers.BDF2(dt=1000)
+        # self.time_stepper = time_steppers.BDF2(dt=1000)
         # self.time_stepper = time_steppers.ImplicitEuler(dt=1e-2)
-        # self.time_stepper = time_steppers.BDF(self)
+        self.time_stepper = time_steppers.BDF(self)
         # assign the continuation parameter
         self.continuation_parameter = (self.volume_constraint, "fixed_volume")
         # self.newton_solver = MyNewtonSolver()
@@ -128,7 +131,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=200, L=100)
+problem = ThinFilm(N=100, L=500)
 
 # create figure
 fig, ax = plt.subplots(1, figsize=(16, 9))
@@ -138,7 +141,7 @@ Profiler.start()
 
 # time-stepping
 n = 0
-plotevery = 1
+plotevery = 10
 dudtnorm = 1
 if not os.path.exists("initial_state2.dat"):
     while dudtnorm > 1e-8:
