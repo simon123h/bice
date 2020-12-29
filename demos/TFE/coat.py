@@ -8,7 +8,7 @@ import scipy.sparse as sp
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
-from bice.pde.finite_differences import RobinBC, PeriodicBC, NeumannBC, DirichletBC
+from bice.pde.finite_differences import RobinBC, NeumannBC, DirichletBC
 from bice.continuation import VolumeConstraint, TranslationConstraint
 from bice import profile, Profiler
 from bice.core.solvers import NewtonKrylovSolver, MyNewtonSolver
@@ -28,32 +28,47 @@ class ThinFilmEquation(FiniteDifferencesEquation):
     def __init__(self, N, L):
         super().__init__(shape=(2, N))
         # parameters:
-        self.U = 0
+        self.U = 0.1  # substrate velocity
+        self.q = 0  # influx
         # setup the mesh
         self.L = L
-        self.x = [np.linspace(-L/2, L/2, N, endpoint=False)]
+        self.x = [np.linspace(0, L, N)]
         # initial condition
         h0 = 6
         a = 3/20. / (h0-1)
         x = self.x[0]
-        self.u[0] = 2 + np.sin(4*np.pi*x/L)
+        self.u[0] = 20 + 0*x
         # self.u[0] = np.maximum(-a*x**2 + h0, 1)
-        # build the boundary conditions
-        # bc = PeriodicBC()
-        bc = NeumannBC()
         # build finite differences matrices
-        self.build_FD_matrices(boundary_conditions=bc)
+        self.bc_F = RobinBC(a=(0, 0), b=(1, 1), c=(0, -1e-2))
+        self.build_FD_matrices(boundary_conditions=self.bc_F, premultiply_bc=False)
+        self.nabla_F = self.nabla
+        self.laplace_F = self.laplace
+        self.bc_h = RobinBC(a=(1, 0), b=(0, 1), c=(20, 0))
+        self.build_FD_matrices(boundary_conditions=self.bc_h, premultiply_bc=False)
+        self.nabla_h = self.nabla
+        self.laplace_h = self.laplace
+        self.bc_n = DirichletBC()
+        self.build_FD_matrices(boundary_conditions=self.bc_n, premultiply_bc=True)
+
 
     # definition of the equation
     def rhs(self, u):
         h, dFdh = u
+        # do boundary transformation
+        h_pad = self.bc_h.pad(h)
+        dFdh_pad = self.bc_F.pad(dFdh)
+        # disjoining pressure
         h3 = h**3
         djp = 1./h3**2 - 1./h3
-        eq1 = self.nabla.dot(h3 * self.nabla.dot(dFdh))
-        eq2 = -self.laplace.dot(h) - djp - dFdh
+        # equations
+        # TODO: fix boundary conditions for dFdh
+        eq1 = self.nabla_F.dot(self.bc_F.pad(h3 * self.nabla.dot(dFdh)))
+        eq1 -= self.U * self.nabla_h.dot(h_pad)
+        eq2 = -self.laplace_h.dot(h_pad) - djp - dFdh
         return np.array([eq1, eq2])
 
-    def jacobian(self, u):
+    def jacobian2(self, u):
         h, dFdh = u
         ddjpdh = 3./h**4 - 6./h**7
         eq1dh = self.nabla.dot(sp.diags(3 * h**2 * self.nabla.dot(dFdh)))
@@ -66,12 +81,14 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         return self.nabla[direction].dot(u)
 
     def plot(self, ax):
+        global problem
         ax.set_xlabel("x")
         ax.set_ylabel("solution h(x,t)")
-        h, dFdh = self.u
-        ax.plot(self.x[0], h, marker="x", label="solution")
-        ax.plot(self.x[0], dFdh, marker="x", label="dFdh")
-        ax.legend()
+        x = self.x[0] - self.U*problem.time
+        h = self.u[0]
+        ax.set_xlim(np.min(x), np.max(x))
+        ax.set_ylim(0, 1.1*np.max(h))
+        ax.plot(x, h)
 
     def mass_matrix(self):
         nvar, ngrid = self.shape
@@ -93,7 +110,7 @@ class ThinFilm(Problem):
         # Generate the translation constraint
         self.translation_constraint = TranslationConstraint(self.tfe)
         # initialize time stepper
-        self.time_stepper = time_steppers.BDF2(dt=1)
+        self.time_stepper = time_steppers.BDF2(dt=100)
         # self.time_stepper = time_steppers.ImplicitEuler(dt=1e-2)
         # self.time_stepper = time_steppers.BDF(self)
         # assign the continuation parameter
@@ -122,7 +139,7 @@ Profiler.start()
 
 # time-stepping
 n = 0
-plotevery = 10
+plotevery = 1
 dudtnorm = 1
 if not os.path.exists("initial_state2.dat"):
     while dudtnorm > 1e-8:
@@ -138,9 +155,6 @@ if not os.path.exists("initial_state2.dat"):
         n += 1
         # perform timestep
         problem.time_step()
-        # adapt the mesh
-        if n % 10 == 0:
-            problem.adapt()
         # calculate the new norm
         dudtnorm = np.linalg.norm(problem.rhs(problem.u))
         # catch divergent solutions
