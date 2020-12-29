@@ -39,11 +39,11 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         x = self.x[0]
         self.u = np.maximum(self.h0 - 0.0*x, 1)
         # build finite differences matrices
-        bc_h = RobinBC(a=(1, 0), b=(0, 1), c=(self.h0, 0))  # boundary conditions for h
-        bc_F = DirichletBC(vals=(1, 0))  # boundary conditions for h^3 * dF/dh
-        self.build_FD_matrices(boundary_conditions=bc_h)
+        self.bc = RobinBC(a=(1, 0), b=(0, 1), c=(self.h0, 0))  # boundary conditions for h
+        self.build_FD_matrices()
         self.nabla_F = self.nabla
-        self.build_FD_matrices(boundary_conditions=bc_F)
+        self.bc = DirichletBC(vals=(1, 0))  # boundary conditions for h^3 * dF/dh
+        self.build_FD_matrices()
         self.nabla_h = self.nabla
         self.laplace_h = self.laplace
         # build generic differentiation matrix without boundary effects
@@ -94,7 +94,6 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         ax.set_xlim(np.min(x), np.max(x))
         ax.set_ylim(0, 1.1*np.max(h))
         ax.plot(x, h)
-        # ax.plot(x, dFdh)
 
 
 class ThinFilm(Problem):

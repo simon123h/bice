@@ -11,7 +11,7 @@ from scipy.sparse import diags
 import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
-from bice.pde import FiniteDifferencesEquation
+from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
 from bice.continuation import TranslationConstraint, DeflatedContinuation
 from bice import profile, Profiler
 from bice import MyNewtonSolver
@@ -38,8 +38,9 @@ class SwiftHohenbergEquationFD(FiniteDifferencesEquation):
         self.u = np.cos(2 * np.pi * self.x[0] / 10) * \
             np.exp(-0.005 * self.x[0] ** 2)
         # build finite difference matrices
+        self.bc = PeriodicBC()
         self.build_FD_matrices(approx_order=3)
-        laplace = self.laplace
+        laplace = self.laplace()
         self.linear_op = -2 * self.kc**2 * laplace - laplace.dot(laplace)
 
     # definition of the SHE (right-hand side)

@@ -35,24 +35,21 @@ class HeatEquation(FiniteDifferencesEquation):
         self.u = np.cos(2 * np.pi * self.x[0] / 10) * \
             np.exp(-0.005 * self.x[0] ** 2)
         # create boundary conditions
-        dbc = DirichletBC(vals=(0.1, -0.1))
-        nbc = NeumannBC(vals=(0.01, 0.01))
-        pbc = PeriodicBC()
+        self.bc = DirichletBC(vals=(0.1, -0.1))
+        self.bc = NeumannBC(vals=(0.01, 0.01))
+        # self.bc = PeriodicBC()
         # build finite difference matrices
-        self.build_FD_matrices(boundary_conditions=nbc,
-                               premultiply_bc=False,
-                               approx_order=2)
+        self.build_FD_matrices(approx_order=2)
 
     # definition of the equation (right-hand side)
     def rhs(self, u):
-        u_pad = self.bc.pad(u)
-        # return -self.nabla.dot(u_pad)  # advection equation
-        return self.laplace.dot(u_pad)
+        # return -self.nabla(u)  # advection equation
+        return self.laplace(u)
 
     # definition of the Jacobian
     @profile
     def jacobian(self, u):
-        return self.laplace.dot(self.bc.Q)
+        return self.laplace()
 
 
 class HeatProblem(Problem):
