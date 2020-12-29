@@ -39,6 +39,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         self.max_dx = 2
 
     # build finite difference differentiation matrices using Fornberg (1988) algorithm
+    @profile
     def build_FD_matrices(self, boundary_conditions=None, approx_order=None, max_order=2, premultiply_bc=True):
         # number of grid points
         N = self.shape[-1]
@@ -263,6 +264,7 @@ class RobinBC(FDBoundaryConditions):
 
     # build the matrix and constant part for the affine transformation u_padded = Q*u + G
     # cf. RobinBC in https://github.com/SciML/DiffEqOperators.jl
+    @profile
     def update(self, x, approx_order):
         N = len(x)
         ao = approx_order

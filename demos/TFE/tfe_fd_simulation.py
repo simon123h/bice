@@ -93,15 +93,15 @@ class ThinFilm(Problem):
         # Generate the translation constraint
         self.translation_constraint = TranslationConstraint(self.tfe)
         # initialize time stepper
-        self.time_stepper = time_steppers.BDF2(dt=0.02)
+        self.time_stepper = time_steppers.BDF2(dt=1)
         # self.time_stepper = time_steppers.ImplicitEuler(dt=1e-2)
         # self.time_stepper = time_steppers.BDF(self)
         # assign the continuation parameter
         self.continuation_parameter = (self.volume_constraint, "fixed_volume")
-        self.newton_solver = MyNewtonSolver()
-        self.newton_solver.convergence_tolerance = 1e-2
-        self.newton_solver.max_newton_iterations = 100
-        self.newton_solver.verbosity = 0
+        # self.newton_solver = MyNewtonSolver()
+        # self.newton_solver.convergence_tolerance = 1e-2
+        # self.newton_solver.max_newton_iterations = 100
+        # self.newton_solver.verbosity = 0
 
     def norm(self):
         return np.trapz(self.tfe.u, self.tfe.x[0])
@@ -122,7 +122,7 @@ Profiler.start()
 
 # time-stepping
 n = 0
-plotevery = 100
+plotevery = 10
 dudtnorm = 1
 if not os.path.exists("initial_state2.dat"):
     while dudtnorm > 1e-8:
@@ -138,7 +138,9 @@ if not os.path.exists("initial_state2.dat"):
         n += 1
         # perform timestep
         problem.time_step()
-        problem.adapt()
+        # adapt the mesh
+        if n % 10 == 0:
+            problem.adapt()
         # calculate the new norm
         dudtnorm = np.linalg.norm(problem.rhs(problem.u))
         # catch divergent solutions
