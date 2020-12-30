@@ -4,6 +4,7 @@ import os
 import sys
 import numpy as np
 import findiff
+import matplotlib
 import matplotlib.pyplot as plt
 import scipy.sparse as sp
 sys.path.append("../..")  # noqa, needed for relative import of package
@@ -13,6 +14,7 @@ from bice.pde.finite_differences import NeumannBC, DirichletBC, RobinBC, NoBound
 from bice import profile, Profiler
 from bice.core.solvers import NewtonKrylovSolver, MyNewtonSolver
 
+matplotlib.use("Tkagg")
 
 class CoatingEquation(FiniteDifferencesEquation):
     r"""
@@ -23,7 +25,7 @@ class CoatingEquation(FiniteDifferencesEquation):
         super().__init__(shape=(N,))
         # parameters:
         self.U = 0.5  # substrate velocity
-        self.q = 0.1  # influx
+        self.q = 0.5  # influx
         self.h_p = 0.04
         self.theta = np.sqrt(0.6)
         print("h_LL =", self.q/self.U)
@@ -31,12 +33,12 @@ class CoatingEquation(FiniteDifferencesEquation):
         self.L = L
         self.x = [np.linspace(0, L, N)]
         # initial condition
-        x = self.x[0]
-        incl = 2
-        hLL = self.q / self.U
-        h1 = 1-incl*(x[1] - x[0])
-        self.u = (h1 - hLL) * (1 + np.tanh(-incl * x)) + hLL
-        # self.u = np.ones(N)
+        # x = self.x[0]
+        # incl = 2
+        # hLL = self.q / self.U
+        # h1 = 1-incl*(x[1] - x[0])
+        # self.u = (h1 - hLL) * (1 + np.tanh(-incl * x)) + hLL
+        self.u = np.ones(N)
         # self.u = np.maximum(1 - 0.0*x, self.h_p)
         # build finite differences matrices
         self.build_FD_matrices(approx_order=1)
@@ -179,24 +181,36 @@ plt.close(fig)
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 
 # start parameter continuation
-problem.continuation_stepper.ds = 1e-2
+problem.continuation_stepper.ds = -1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
 problem.continuation_stepper.convergence_tolerance = 1e-10
 problem.continuation_stepper.max_newton_iterations = 100
 problem.continuation_parameter = (problem.tfe, "q")
 problem.settings.neigs = 10
 
-n = 0
-plotevery = 1
-while problem.tfe.h_p < problem.tfe.q / problem.tfe.U < 1:
-    # perform continuation step
-    problem.continuation_step()
-    n += 1
-    print("step #:", n, " ds:", problem.continuation_stepper.ds)
-    # plot
-    if n % plotevery == 0:
-        problem.plot(ax)
-        fig.savefig("out/img/{:05d}.png".format(plotID))
-        plotID += 1
+h_p = problem.tfe.h_p
+U = problem.tfe.U
+
+# generate bifurcation diagram
+problem.bifurcation_diagram.xlim = (h_p*U, 0.1)
+problem.generate_bifurcation_diagram(
+    ax=ax,
+    parameter_lims=(h_p * U, U),
+    max_recursion=2,
+    plotevery=30
+)
+
+# n = 0
+# plotevery = 10
+# while problem.tfe.h_p < problem.tfe.q / problem.tfe.U < 1:
+#     # perform continuation step
+#     problem.continuation_step()
+#     n += 1
+#     print("step #:", n, " ds:", problem.continuation_stepper.ds)
+#     # plot
+#     if n % plotevery == 0:
+#         problem.plot(ax)
+#         fig.savefig("out/img/{:05d}.png".format(plotID))
+#         plotID += 1
 
 Profiler.print_summary()

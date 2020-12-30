@@ -49,7 +49,7 @@ problem.add_equation(constraint)
 Profiler.start()
 
 # automatically generate bifurcation diagram
-problem.generate_bifurcationdiagram(parameter_lims=(-0.016, -0.012),
+problem.generate_bifurcation_diagram(parameter_lims=(-0.016, -0.012),
                                     max_recursion=1,
                                     max_steps=1e3,
                                     ax=ax,

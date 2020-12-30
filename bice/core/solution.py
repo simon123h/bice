@@ -208,6 +208,10 @@ class BifurcationDiagram:
         self.branches = []
         # make sure there is at least one branch in the list
         self.new_branch()
+        # x-limits of the diagram
+        self.xlim = None
+        # y-limits of the diagram
+        self.ylim = None
 
     # create a new branch
     def new_branch(self):
@@ -240,6 +244,10 @@ class BifurcationDiagram:
 
     # plot the bifurcation diagram
     def plot(self, ax):
+        if self.xlim is not None:
+            ax.set_xlim(self.xlim)
+        if self.ylim is not None:
+            ax.set_ylim(self.ylim)
         # plot every branch separately
         for branch in self.branches:
             p, norm = branch.data()

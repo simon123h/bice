@@ -446,7 +446,7 @@ class Problem():
 
     # automatically generate a full bifurcation diagram within the given bounds
     # branch switching will be performed automatically up to the given maximum recursion level
-    def generate_bifurcationdiagram(self, parameter_lims=(-1e9, 1e9), norm_lims=(-1e9, 1e9), max_recursion=4, max_steps=1e9, ax=None, plotevery=30):
+    def generate_bifurcation_diagram(self, parameter_lims=(-1e9, 1e9), norm_lims=(-1e9, 1e9), max_recursion=4, max_steps=1e9, ax=None, plotevery=30):
         if ax is not None:
             import matplotlib.pyplot as plt
             plt.ion()
@@ -456,7 +456,7 @@ class Problem():
         norm = self.norm()
         param = self.get_continuation_parameter()
         u0 = self.u.copy()
-        while parameter_lims[0] < param < parameter_lims[1] and norm_lims[0] < norm < norm_lims[1]:
+        while parameter_lims[0] <= param <= parameter_lims[1] and norm_lims[0] <= norm <= norm_lims[1]:
             # do continuation step
             self.continuation_step()
             # get new parameter and norm values
@@ -502,7 +502,7 @@ class Problem():
             if not converged:
                 continue
             # recursively generate a bifurcation diagram from the new branch
-            self.generate_bifurcationdiagram(ax=ax,
+            self.generate_bifurcation_diagram(ax=ax,
                                              parameter_lims=parameter_lims,
                                              norm_lims=norm_lims,
                                              max_recursion=max_recursion-1,
