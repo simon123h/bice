@@ -37,6 +37,7 @@ class MyNewtonSolver:
             "Newton solver did not converge after {:d} iterations!".format(self.iteration_count))
 
 
+# TODO: rename back to NewtonSolver and put warning if Jac is given and sparse
 class NewtonKrylovSolver:
     # TODO: catch errors, get number of iterations...
     def __init__(self):

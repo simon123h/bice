@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.sparse as sp
+import matplotlib.pyplot as plt
 from bice.core.equation import Equation
 
 # TODO: make this work for multiple variables, regarding ref_eq.shape
@@ -64,7 +65,7 @@ class TimePeriodicOrbitHandler(Equation):
         ddt -= -168*np.roll(I, 2, axis=1)
         ddt -= 32*np.roll(I, 3, axis=1)
         ddt -= -3*np.roll(I, 4, axis=1)
-        # TODO: is there maybe a sign error somewhere dudt --> - dudt?
+        # TODO: the minus should not be here!
         ddt /= -dt * 840
         # convert to sparse
         return sp.csr_matrix(ddt)
@@ -100,7 +101,8 @@ class TimePeriodicOrbitHandler(Equation):
         return res
 
     # calculate the Jacobian of rhs(u)
-    def jacobian2(self, u):
+    def jacobian(self, u):
+        uu = u
         # number of unknowns of a single equation
         N = self.ref_eq.ndofs
         # split the unknowns into:
@@ -109,15 +111,19 @@ class TimePeriodicOrbitHandler(Equation):
         # ... u's per timestep
         u = u[:-1].reshape((self.Nt, *self.ref_eq.shape))
         # setup empty result matrix
+        # TODO: remove, should be using sparse matrix
         jac = np.zeros((self.ndofs, self.ndofs))
-        # jacobian of dudt: FD operator
-        jac = self.ddt
         # calculate the time derivative
         dudt = self.ddt.dot(u) / T
         # same for the old variables
         T_old = self.u[-1]
         u_old = self.u[:-1].reshape((self.Nt, *self.ref_eq.shape))
         dudt_old = self.ddt.dot(u_old) / T_old
+        # mass matrix
+        M = self.ref_eq.mass_matrix()
+        # jacobian of M.dot(dudt) w.r.t. u
+        d_dudt_du = sp.kron(self.ddt, M).toarray() / T
+        jac[:-1, :-1] = -d_dudt_du
         # add the jacobian contributions of rhs for each timestep
         for i in range(self.Nt):
             # 0 = ref_eq.jacobian(u) for each u(t_i)
@@ -125,8 +131,13 @@ class TimePeriodicOrbitHandler(Equation):
             # phase condition: d [\int_0^1 dt <u, dudt_old>] du = \int_0^1 dt dudt_old
             jac[-1, i*N:(i+1)*N] += dudt_old[i] * self.dt[i]
             # add the T-derivative
-            jac[i*N:(i+1)*N, -1] += -dudt[i] / T
+            jac[i*N:(i+1)*N, -1] += M.dot(dudt[i]) / T
         # no T-dependency in phase condition, so jac[-1, -1] = 0
+        jac[-1, -1] = 0
+
+        return jac
+
+
 
     # adapt the time mesh to the solution
     # TODO: test this
