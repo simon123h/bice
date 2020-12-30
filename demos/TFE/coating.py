@@ -41,7 +41,7 @@ class CoatingEquation(FiniteDifferencesEquation):
         self.u = np.ones(N)
         # self.u = np.maximum(1 - 0.0*x, self.h_p)
         # build finite differences matrices
-        self.build_FD_matrices(approx_order=1)
+        self.build_FD_matrices(approx_order=2)
 
     # overload building of FD matrices, because this equation has a more complicated set up
     def build_FD_matrices(self, approx_order):
