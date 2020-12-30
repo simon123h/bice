@@ -25,7 +25,7 @@ class CoatingEquation(FiniteDifferencesEquation):
         super().__init__(shape=(N,))
         # parameters:
         self.U = 0.5  # substrate velocity
-        self.q = 0.1  # influx
+        self.q = 0.06  # influx
         self.h_p = 0.04
         self.theta = np.sqrt(0.6)
         print("h_LL =", self.q/self.U)
@@ -106,7 +106,7 @@ class CoatingEquation(FiniteDifferencesEquation):
         # add left ghost point (Dirichlet BC)
         x = np.concatenate(([x[0]-x[1]], x))
         h = np.concatenate(([1], h))
-        x -= self.U*problem.time
+        # x -= self.U*problem.time
         ax.set_xlim(np.min(x), np.max(x))
         ax.set_ylim(0, 1.1*np.max(h))
         ax.plot(x, h)
@@ -137,7 +137,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = Coating(N=200, L=10)
+problem = Coating(N=100, L=2)
 
 # create figure
 fig, ax = plt.subplots(1, figsize=(16, 9))
@@ -181,12 +181,12 @@ fig, ax = plt.subplots(2, 2, figsize=(16*0.6, 9*0.6))
 
 # start parameter continuation
 problem.continuation_stepper.ds = -1e-4
-problem.continuation_stepper.ds_max = 1e-3
+problem.continuation_stepper.ds_max = 2e-3
 problem.continuation_stepper.ndesired_newton_steps = 3
 problem.continuation_stepper.convergence_tolerance = 1e-10
 problem.continuation_stepper.max_newton_iterations = 100
 problem.continuation_parameter = (problem.tfe, "q")
-problem.settings.neigs = 30
+problem.settings.neigs = 10
 
 h_p = problem.tfe.h_p
 U = problem.tfe.U
@@ -197,24 +197,10 @@ problem.generate_bifurcation_diagram(
     ax=ax,
     parameter_lims=(h_p * U, U),
     max_recursion=2,
-    plotevery=30
+    plotevery=50
 )
 
 print((h_p * U, U))
 print(problem.get_continuation_parameter())
 
 Profiler.print_summary()
-
-# n = 0
-# plotevery = 10
-# while problem.tfe.h_p < problem.tfe.q / problem.tfe.U < 1:
-#     # perform continuation step
-#     problem.continuation_step()
-#     n += 1
-#     print("step #:", n, " ds:", problem.continuation_stepper.ds)
-#     # plot
-#     if n % plotevery == 0:
-#         problem.plot(ax)
-#         fig.savefig("out/img/{:05d}.png".format(plotID))
-#         plotID += 1
-# Profiler.print_summary()
