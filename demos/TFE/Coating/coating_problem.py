@@ -1,20 +1,14 @@
 #!/usr/bin/python3
-import shutil
-import os
 import sys
 import numpy as np
-import findiff
-import matplotlib
-import matplotlib.pyplot as plt
-import scipy.sparse as sp
-sys.path.append("../..")  # noqa, needed for relative import of package
+from scipy.sparse import diags
+sys.path.append("../../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
 from bice.pde.finite_differences import NeumannBC, DirichletBC, RobinBC, NoBoundaryConditions
-from bice import profile, Profiler
+from bice import profile
 from bice.core.solvers import NewtonKrylovSolver, MyNewtonSolver
 
-matplotlib.use("Tkagg")
 
 class CoatingEquation(FiniteDifferencesEquation):
     r"""
@@ -82,13 +76,13 @@ class CoatingEquation(FiniteDifferencesEquation):
         h3 = h**3
         djp = 5/3*(self.theta*self.h_p)**2 * (self.h_p**3/h3**2 - 1./h3)
         ddjpdh = 5/3*(self.theta*self.h_p)**2 * \
-            sp.diags(3./h**4 - 6.*self.h_p**3/h**7)
+            diags(3./h**4 - 6.*self.h_p**3/h**7)
         # free energy variation
         dFdh = -self.laplace_h(h) - djp
         ddFdhdh = -self.laplace_h() - ddjpdh
         # d(Qh^3*nabla*dFdh)/dh
-        flux = sp.diags(3*h**2 * self.nabla0.dot(dFdh)) + \
-            sp.diags(h3) * self.nabla0.dot(ddFdhdh)
+        flux = diags(3*h**2 * self.nabla0.dot(dFdh)) + \
+            diags(h3) * self.nabla0.dot(ddFdhdh)
         # dynamics equation, boundary condition is a constant --> scale with zero
         jac = self.nabla_F(flux, 0)
         jac -= self.U * self.nabla_h()
@@ -112,7 +106,7 @@ class CoatingEquation(FiniteDifferencesEquation):
         ax.plot(x, h)
 
 
-class Coating(Problem):
+class CoatingProblem(Problem):
 
     def __init__(self, N, L):
         super().__init__()
@@ -130,79 +124,3 @@ class Coating(Problem):
 
     def norm(self):
         return np.trapz(self.tfe.u, self.tfe.x[0])
-
-
-# create output folder
-shutil.rmtree("out", ignore_errors=True)
-os.makedirs("out/img", exist_ok=True)
-
-# create problem
-problem = Coating(N=100, L=2)
-
-# create figure
-fig, ax = plt.subplots(1, figsize=(16, 9))
-plotID = 0
-
-Profiler.start()
-
-# time-stepping
-n = 0
-plotevery = 20
-dudtnorm = 1
-if not os.path.exists("initial_state_coating.dat"):
-    while dudtnorm > 1e-5:
-        # plot
-        if n % plotevery == 0:
-            problem.plot(ax)
-            fig.savefig("out/img/{:05d}.png".format(plotID))
-            plotID += 1
-            print("step #: {:}".format(n))
-            print("time:   {:}".format(problem.time))
-            print("dt:     {:}".format(problem.time_stepper.dt))
-            print("|dudt|: {:}".format(dudtnorm))
-        n += 1
-        # perform timestep
-        problem.time_step()
-        # calculate the new norm
-        dudtnorm = np.linalg.norm(problem.rhs(problem.u))
-        # catch divergent solutions
-        if np.max(problem.u) > 1e12:
-            print("Aborted.")
-            break
-    Profiler.print_summary()
-    # save the state, so we can reload it later
-    problem.save("initial_state_coating.dat")
-else:
-    # load the initial state
-    problem.load("initial_state_coating.dat")
-
-plt.close(fig)
-fig, ax = plt.subplots(2, 2, figsize=(16*0.6, 9*0.6))
-
-# start parameter continuation
-problem.continuation_stepper.ds = -1e-4
-problem.continuation_stepper.ds_max = 2e-3
-problem.continuation_stepper.ndesired_newton_steps = 3
-problem.continuation_stepper.convergence_tolerance = 1e-10
-problem.continuation_stepper.max_newton_iterations = 100
-problem.continuation_parameter = (problem.tfe, "q")
-problem.settings.neigs = 10
-
-h_p = problem.tfe.h_p
-U = problem.tfe.U
-
-# generate bifurcation diagram
-# problem.bifurcation_diagram.xlim = (h_p*U, 0.05)
-problem.generate_bifurcation_diagram(
-    ax=ax,
-    parameter_lims=(h_p * U, U),
-    max_recursion=2,
-    plotevery=50
-)
-
-print((h_p * U, U))
-print(problem.get_continuation_parameter())
-
-fig.savefig("out/bifurcation_diagram.png")
-
-Profiler.print_summary()

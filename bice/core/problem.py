@@ -479,10 +479,10 @@ class Problem():
             norm = self.norm()
             n += 1
             # Check whether limits were exceeded
-            if not (parameter_lims[0] <= param <= parameter_lims[1]):
+            if not parameter_lims[0] <= param <= parameter_lims[1]:
                 print("Parameter limits exceeded for current branch. Parameter:", param)
                 break
-            if not (norm_lims[0] <= norm <= norm_lims[1]):
+            if not norm_lims[0] <= norm <= norm_lims[1]:
                 print("Norm limits exceeded for current branch. Norm:", norm)
                 break
             # if maximum number of steps exceeded, abort

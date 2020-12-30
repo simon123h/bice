@@ -97,6 +97,7 @@ class Solution:
         return bif_type not in [None, ""]
 
     # what type of bifurcation is the solution
+    # TODO: rename to "type" ? bifurcation.bifurcation_type() looks weird...
     def bifurcation_type(self, update=False):
         # check if bifurcation type is cached
         if self.__bifurcation_type is not None and not update:
