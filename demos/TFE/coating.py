@@ -203,4 +203,6 @@ problem.generate_bifurcation_diagram(
 print((h_p * U, U))
 print(problem.get_continuation_parameter())
 
+fig.savefig("out/bifurcation_diagram.png")
+
 Profiler.print_summary()
