@@ -102,7 +102,6 @@ class TimePeriodicOrbitHandler(Equation):
 
     # calculate the Jacobian of rhs(u)
     def jacobian(self, u):
-        uu = u
         # number of unknowns of a single equation
         N = self.ref_eq.ndofs
         # split the unknowns into:
@@ -110,9 +109,6 @@ class TimePeriodicOrbitHandler(Equation):
         T = u[-1]
         # ... u's per timestep
         u = u[:-1].reshape((self.Nt, *self.ref_eq.shape))
-        # setup empty result matrix
-        # TODO: remove, should be using sparse matrix
-        jac = np.zeros((self.ndofs, self.ndofs))
         # calculate the time derivative
         dudt = self.ddt.dot(u) / T
         # same for the old variables
@@ -121,23 +117,22 @@ class TimePeriodicOrbitHandler(Equation):
         dudt_old = self.ddt.dot(u_old) / T_old
         # mass matrix
         M = self.ref_eq.mass_matrix()
+        # The different contributions to the jacobian: ((#1, #2), (#3, #4))
+        # 1.: bulk equations du: d ( rhs(u) - M*dudt ) / du
         # jacobian of M.dot(dudt) w.r.t. u
-        d_dudt_du = sp.kron(self.ddt, M).toarray() / T
-        jac[:-1, :-1] = -d_dudt_du
-        # add the jacobian contributions of rhs for each timestep
-        for i in range(self.Nt):
-            # 0 = ref_eq.jacobian(u) for each u(t_i)
-            jac[i*N:(i+1)*N, i*N:(i+1)*N] += self.ref_eq.jacobian(u[i])
-            # phase condition: d [\int_0^1 dt <u, dudt_old>] du = \int_0^1 dt dudt_old
-            jac[-1, i*N:(i+1)*N] += dudt_old[i] * self.dt[i]
-            # add the T-derivative
-            jac[i*N:(i+1)*N, -1] += M.dot(dudt[i]) / T
-        # no T-dependency in phase condition, so jac[-1, -1] = 0
-        jac[-1, -1] = 0
-
-        return jac
-
-
+        d_bulk_du = sp.block_diag([self.ref_eq.jacobian(u[i])
+                                   for i in range(self.Nt)]) - sp.kron(self.ddt, M) / T
+        # 2.: bulk equations dT: d ( rhs(u) - M*dudt ) / dT
+        d_bulk_dT = sp.csr_matrix(np.concatenate(
+            [M.dot(dudt[i]) / T for i in range(self.Nt)])).T
+        # 3.: constraint equation du: d ( \int_0^1 dt <u, dudt_old> = 0 ) / du
+        d_cnst_du = sp.csr_matrix(np.concatenate(
+            [dudt_old[i] * self.dt[i] for i in range(self.Nt)]))
+        # 4.: cnst equation dT: d ( \int_0^1 dt <u, dudt_old> = 0 ) / du = 0
+        d_cnst_dT = 0*sp.csr_matrix((1, 1))
+        # combine the contributions to the full jacobian and return
+        return sp.bmat([[d_bulk_du, d_bulk_dT],
+                       [d_cnst_du, d_cnst_dT]])
 
     # adapt the time mesh to the solution
     # TODO: test this
