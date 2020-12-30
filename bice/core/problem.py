@@ -446,7 +446,22 @@ class Problem():
 
     # automatically generate a full bifurcation diagram within the given bounds
     # branch switching will be performed automatically up to the given maximum recursion level
-    def generate_bifurcation_diagram(self, parameter_lims=(-1e9, 1e9), norm_lims=(-1e9, 1e9), max_recursion=4, max_steps=1e9, ax=None, plotevery=30):
+    def generate_bifurcation_diagram(self,
+                                     # limits for the continuation parameter
+                                     parameter_lims=(-1e9, 1e9),
+                                     # limits for the norm
+                                     norm_lims=(-1e9, 1e9),
+                                     # maximum recursion for sub-branch continuation
+                                     max_recursion=4,
+                                     # maximum number of steps per branch
+                                     max_steps=1e9,
+                                     # stop when solution reaches starting point again
+                                     detect_circular_branches=True,
+                                     # axes object to live plot the diagram
+                                     ax=None,
+                                     # plotting frequency
+                                     plotevery=30
+                                     ):
         if ax is not None:
             import matplotlib.pyplot as plt
             plt.ion()
@@ -456,19 +471,29 @@ class Problem():
         norm = self.norm()
         param = self.get_continuation_parameter()
         u0 = self.u.copy()
-        while parameter_lims[0] <= param <= parameter_lims[1] and norm_lims[0] <= norm <= norm_lims[1]:
+        while True:
             # do continuation step
             self.continuation_step()
             # get new parameter and norm values
             param = self.get_continuation_parameter()
             norm = self.norm()
             n += 1
+            # Check whether limits were exceeded
+            if not (parameter_lims[0] <= param <= parameter_lims[1]):
+                print("Parameter limits exceeded for current branch. Parameter:", param)
+                break
+            if not (norm_lims[0] <= norm <= norm_lims[1]):
+                print("Norm limits exceeded for current branch. Norm:", norm)
+                break
             # if maximum number of steps exceeded, abort
             if n > max_steps:
+                print("Maximum number of steps exceeded for current branch.")
                 break
             # if we are close to the intial solution, the branch is likely a circle, then abort
             distance = np.linalg.norm(self.u - u0) / np.linalg.norm(self.u)
-            if n > 20 and distance < 1e-2:
+            if n > 20 and distance < self.continuation_stepper.ds and detect_circular_branches:
+                print("Branch has likely reached it's starting point again. Exiting this branch.\n"
+                      "Set 'detect_circular_branches=False' to prevent this.")
                 break
             # print status
             sol = self.bifurcation_diagram.current_solution()
@@ -503,11 +528,11 @@ class Problem():
                 continue
             # recursively generate a bifurcation diagram from the new branch
             self.generate_bifurcation_diagram(ax=ax,
-                                             parameter_lims=parameter_lims,
-                                             norm_lims=norm_lims,
-                                             max_recursion=max_recursion-1,
-                                             max_steps=max_steps,
-                                             plotevery=plotevery)
+                                              parameter_lims=parameter_lims,
+                                              norm_lims=norm_lims,
+                                              max_recursion=max_recursion-1,
+                                              max_steps=max_steps,
+                                              plotevery=plotevery)
 
 
 class ProblemHistory():

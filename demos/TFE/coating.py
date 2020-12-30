@@ -25,7 +25,7 @@ class CoatingEquation(FiniteDifferencesEquation):
         super().__init__(shape=(N,))
         # parameters:
         self.U = 0.5  # substrate velocity
-        self.q = 0.5  # influx
+        self.q = 0.1  # influx
         self.h_p = 0.04
         self.theta = np.sqrt(0.6)
         print("h_LL =", self.q/self.U)
@@ -177,10 +177,11 @@ else:
     problem.load("initial_state_coating.dat")
 
 plt.close(fig)
-fig, ax = plt.subplots(2, 2, figsize=(16, 9))
+fig, ax = plt.subplots(2, 2, figsize=(16*0.6, 9*0.6))
 
 # start parameter continuation
-problem.continuation_stepper.ds = -1e-2
+problem.continuation_stepper.ds = -1e-4
+problem.continuation_stepper.ds_max = 1e-3
 problem.continuation_stepper.ndesired_newton_steps = 3
 problem.continuation_stepper.convergence_tolerance = 1e-10
 problem.continuation_stepper.max_newton_iterations = 100
@@ -191,13 +192,16 @@ h_p = problem.tfe.h_p
 U = problem.tfe.U
 
 # generate bifurcation diagram
-problem.bifurcation_diagram.xlim = (h_p*U, 0.05)
+# problem.bifurcation_diagram.xlim = (h_p*U, 0.05)
 problem.generate_bifurcation_diagram(
     ax=ax,
     parameter_lims=(h_p * U, U),
     max_recursion=2,
-    plotevery=60
+    plotevery=30
 )
+
+print((h_p * U, U))
+print(problem.get_continuation_parameter())
 
 Profiler.print_summary()
 
