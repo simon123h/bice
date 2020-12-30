@@ -14,67 +14,74 @@ from bice import profile, Profiler
 from bice.core.solvers import NewtonKrylovSolver, MyNewtonSolver
 
 
-class ThinFilmEquation(FiniteDifferencesEquation):
+class CoatingEquation(FiniteDifferencesEquation):
     r"""
-     Finite differences implementation of the 1-dimensional Thin-Film Equation
-     equation
-     dh/dt = d/dx (h^3 d/dx dF/dh )
-     with the variation of the free energy:
-     dF/dh = -d^2/dx^2 h - Pi(h)
-     and the disjoining pressure:
-     Pi(h) = 1/h^3 - 1/h^6
+     Finite differences implementation of the 1-dimensional coating problem
      """
 
     def __init__(self, N, L):
         super().__init__(shape=(N,))
         # parameters:
-        self.U = 0.01  # substrate velocity
-        self.q = 0.05  # influx
-        self.h0 = 40
+        self.U = 0.5  # substrate velocity
+        self.q = 0.1  # influx
+        self.h_p = 0.04
+        self.theta = np.sqrt(0.6)
         print("h_LL =", self.q/self.U)
         # setup the mesh
         self.L = L
         self.x = [np.linspace(0, L, N)]
         # initial condition
         x = self.x[0]
-        self.u = np.maximum(self.h0 - 0.0*x, 1)
+        incl = 2
+        hLL = self.q / self.U
+        h1 = 1-incl*(x[1] - x[0])
+        self.u = (h1 - hLL) * (1 + np.tanh(-incl * x)) + hLL
+        # self.u = np.ones(N)
+        # self.u = np.maximum(1 - 0.0*x, self.h_p)
+        # build finite differences matrices
+        self.build_FD_matrices(approx_order=1)
+
+    # overload building of FD matrices, because this equation has a more complicated set up
+    def build_FD_matrices(self, approx_order):
         # build finite differences matrices...
         # (i) including the flux boundary conditions for h^3 * dF/dh
         self.bc = DirichletBC(vals=(1, 0))
-        self.build_FD_matrices()
+        super().build_FD_matrices(approx_order)
         self.nabla_F = self.nabla
         # (ii) including the mixed boundary conditions for h (left Dirichlet, right Neumann)
-        self.bc = RobinBC(a=(1, 0), b=(0, 1), c=(self.h0, 0))
-        self.build_FD_matrices()
+        self.bc = RobinBC(a=(1, 0), b=(0, 1), c=(1, 0))
+        super().build_FD_matrices(approx_order)
         self.nabla_h = self.nabla
         self.laplace_h = self.laplace
         # (iii) differentiation operators no specific boundary effects
         self.bc = NoBoundaryConditions()
-        self.build_FD_matrices()
+        super().build_FD_matrices(approx_order)
         self.nabla0 = self.nabla
 
     # definition of the equation
+
     def rhs(self, h):
-        # disjoining pressure
         h3 = h**3
-        djp = 1./h3**2 - 1./h3
+        # disjoining pressure
+        djp = 5/3*(self.theta*self.h_p)**2 * (self.h_p**3/h3**2 - 1./h3)
         # free energy variation
         dFdh = -self.laplace_h(h) - djp
         # bulk flux
         flux = h3 * self.nabla0.dot(dFdh)
         # boundary flux
-        j_in = self.U*self.h0-self.q
+        j_in = self.U-self.q
         # dynamics equation, scale boundary condition with j_in
         dhdt = self.nabla_F(flux, j_in)
         # advection term
         dhdt -= self.U * self.nabla_h.dot(h)
         return dhdt
 
-    def jacobian(self, h):
+    def jacobian2(self, h):
         # disjoining pressure
         h3 = h**3
-        djp = 1./h3**2 - 1./h3
-        ddjpdh = sp.diags(3./h**4 - 6./h**7)
+        djp = 5/3*(self.theta*self.h_p)**2 * (self.h_p**3/h3**2 - 1./h3)
+        ddjpdh = 5/3*(self.theta*self.h_p)**2 * \
+            sp.diags(3.*self.h_p**3/h**4 - 6./h**7)
         # free energy variation
         dFdh = -self.laplace_h(h) - djp
         ddFdhdh = -self.laplace_h() - ddjpdh
@@ -93,26 +100,28 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         global problem
         ax.set_xlabel("x")
         ax.set_ylabel("solution h(x,t)")
-        x = self.x[0] - self.U*problem.time
+        x = self.x[0]
         h = self.u
+        # add left ghost point (Dirichlet BC)
+        x = np.concatenate(([x[0]-x[1]], x))
+        h = np.concatenate(([1], h))
+        x -= self.U*problem.time
         ax.set_xlim(np.min(x), np.max(x))
         ax.set_ylim(0, 1.1*np.max(h))
-        ax.plot(x, h)
+        ax.plot(x, h, marker="x")
 
 
-class ThinFilm(Problem):
+class Coating(Problem):
 
     def __init__(self, N, L):
         super().__init__()
         # Add the Thin-Film equation to the problem
-        self.tfe = ThinFilmEquation(N, L)
+        self.tfe = CoatingEquation(N, L)
         self.add_equation(self.tfe)
         # initialize time stepper
-        # self.time_stepper = time_steppers.BDF2(dt=1000)
+        self.time_stepper = time_steppers.BDF2(dt=1)
         # self.time_stepper = time_steppers.ImplicitEuler(dt=1e-2)
-        self.time_stepper = time_steppers.BDF(self)
-        # assign the continuation parameter
-        self.continuation_parameter = (self.tfe, "q")
+        # self.time_stepper = time_steppers.BDF(self)
         # self.newton_solver = MyNewtonSolver()
         # self.newton_solver.convergence_tolerance = 1e-2
         # self.newton_solver.max_newton_iterations = 100
@@ -127,7 +136,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=600, L=1500)
+problem = Coating(N=100, L=10)
 
 # create figure
 fig, ax = plt.subplots(1, figsize=(16, 9))
@@ -137,10 +146,10 @@ Profiler.start()
 
 # time-stepping
 n = 0
-plotevery = 100
+plotevery = 20
 dudtnorm = 1
-if not os.path.exists("initial_state2.dat"):
-    while dudtnorm > 1e-8:
+if not os.path.exists("initial_state_coating.dat"):
+    while dudtnorm > 1e-5:
         # plot
         if n % plotevery == 0:
             problem.plot(ax)
@@ -161,27 +170,29 @@ if not os.path.exists("initial_state2.dat"):
             break
     Profiler.print_summary()
     # save the state, so we can reload it later
-    problem.save("initial_state.dat")
+    problem.save("initial_state_coating.dat")
 else:
     # load the initial state
-    problem.load("initial_state.dat")
+    problem.load("initial_state_coating.dat")
 
-exit()
-
+plt.close(fig)
+fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 
 # start parameter continuation
 problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
 problem.continuation_stepper.convergence_tolerance = 1e-10
+problem.continuation_stepper.max_newton_iterations = 100
+problem.continuation_parameter = (problem.tfe, "q")
+problem.settings.neigs = 10
 
 n = 0
 plotevery = 1
-while problem.tfe.q < 1000:
+while problem.tfe.h_p < problem.tfe.q / problem.tfe.U < 1:
     # perform continuation step
     problem.continuation_step()
     n += 1
     print("step #:", n, " ds:", problem.continuation_stepper.ds)
-    #print('largest EVs: ', problem.eigen_solver.latest_eigenvalues[:3])
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
