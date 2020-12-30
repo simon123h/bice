@@ -26,7 +26,6 @@ class ThinFilmEquation(FiniteDifferencesEquation):
      """
 
     def __init__(self, N, L):
-        N = 20
         super().__init__(shape=(2, N))
         # parameters:
         self.U = 0

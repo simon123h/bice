@@ -37,15 +37,14 @@ class HeatEquation(FiniteDifferencesEquation):
         # create boundary conditions
         # self.bc = DirichletBC(vals=(0.1, -0.1))
         # self.bc = NeumannBC(vals=(0.01, 0.01))
-        # self.bc = PeriodicBC()
-        self.bc = NoBoundaryConditions()
+        self.bc = PeriodicBC()
         # build finite difference matrices
-        self.build_FD_matrices(approx_order=2)
+        self.build_FD_matrices(approx_order=4)
 
     # definition of the equation (right-hand side)
     def rhs(self, u):
-        # return -self.nabla(u)  # advection equation
-        return self.laplace(u)
+        return -self.nabla(u)  # advection equation
+        # return self.laplace(u)
 
     # definition of the Jacobian
     @profile
@@ -79,7 +78,7 @@ plotID = 0
 
 # time-stepping
 n = 0
-plotevery = 10
+plotevery = 50
 dudtnorm = 1
 Profiler.start()
 while dudtnorm > 1e-5:
@@ -96,6 +95,8 @@ while dudtnorm > 1e-5:
     n += 1
     # perform timestep
     problem.time_step()
+    # TODO: fix adaption
+    # problem.adapt()
     # calculate the new norm
     dudtnorm = np.linalg.norm(problem.rhs(problem.u))
     # catch divergent solutions

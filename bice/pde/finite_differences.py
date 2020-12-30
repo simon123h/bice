@@ -249,17 +249,37 @@ class PeriodicBC(FDBoundaryConditions):
     """
     periodic boundary conditions
     """
-    # TODO: PeriodicBCs could support 2*approx_order ghost points!
+
+    def __init__(self):
+        super().__init__()
+        # how many ghost nodes at each boundary?
+        self.order = 1
+        # the virtual distance between the left and right boundary node
+        self.boundary_dx = 1e-2
 
     # build the matrix and constant part for the affine transformation u_padded = Q*u + G
     def update(self, x, approx_order):
         # generate matrix that maps u_i --> u_{i%N} for 1d periodic ghost points
+        self.order = approx_order
         N = len(x)
-        top = sp.eye(1, N, k=N-1)
-        bot = sp.eye(1, N, k=0)
+        top = sp.eye(self.order, N, k=N-self.order)
+        bot = sp.eye(self.order, N, k=0)
         self.Q = sp.vstack((top, sp.eye(N), bot))
         # constant part is zero
         self.G = 0
+
+    # pad vector of node values with the x-values of the ghost nodes
+    def pad_x(self, x):
+        # build the full list of dx's for the periodic domain using the
+        # virtual distance between the boundary nodes
+        dx_lr = self.boundary_dx
+        dx = np.concatenate(([dx_lr], np.diff(x), [dx_lr]))
+        # construct the left and right ghost nodes (number of ghost points = self.order)
+        x_l = [x[0]-sum(dx[-n-1:]) for n in range(self.order)][::-1]
+        x_r = [x[-1]+sum(dx[:n+1]) for n in range(self.order)]
+        # concatenate for full padded x vector
+        x_pad = np.concatenate((x_l, x, x_r))
+        return np.concatenate((x_l, x, x_r))
 
 
 class RobinBC(FDBoundaryConditions):
