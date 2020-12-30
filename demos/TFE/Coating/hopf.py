@@ -5,7 +5,7 @@ import sys
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-from coating import CoatingProblem
+from coating_problem import CoatingProblem
 sys.path.append("../../..")  # noqa, needed for relative import of package
 from bice import Profiler
 from bice.continuation import TimePeriodicOrbitHandler
