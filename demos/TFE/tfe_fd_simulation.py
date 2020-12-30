@@ -8,7 +8,7 @@ import scipy.sparse as sp
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
-from bice.pde.finite_differences import RobinBC, PeriodicBC, NeumannBC, DirichletBC, GenericBC
+from bice.pde.finite_differences import RobinBC, PeriodicBC, NeumannBC, DirichletBC, NoBoundaryConditions
 from bice.continuation import VolumeConstraint, TranslationConstraint
 from bice import profile, Profiler
 from bice.core.solvers import NewtonKrylovSolver, MyNewtonSolver
@@ -44,29 +44,6 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         # self.bc = NeumannBC()
         # build finite differences matrices
         self.build_FD_matrices()
-
-
-        # test space
-        self.bc = NeumannBC()
-        self.build_FD_matrices(approx_order=2)
-        nab1 = self.nabla()*10
-        lapl1 = self.laplace()*10
-        self.bc = GenericBC()
-        self.build_FD_matrices(approx_order=2)
-        nab2 = self.nabla()*10
-        lapl2 = self.laplace()*10
-        def print_mat(m):
-            print(np.array2string(m, max_line_width=200, precision=1))
-        print_mat(nab1.toarray()[3])
-        print_mat(nab2.toarray()[3])
-        diff = np.linalg.norm(nab1.toarray() - nab2.toarray())
-        print("diff:", diff)
-        print_mat(lapl1.toarray()[3])
-        print_mat(lapl2.toarray()[3])
-        diff = np.linalg.norm(lapl1.toarray() - lapl2.toarray())
-        print("diff:", diff)
-        # print_mat(self.ddx[3]().toarray())
-        exit()
 
     # definition of the equation
     def rhs(self, u):

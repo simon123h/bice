@@ -9,7 +9,7 @@ import scipy.sparse as sp
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
-from bice.pde.finite_differences import NeumannBC, DirichletBC, RobinBC, GenericBC
+from bice.pde.finite_differences import NeumannBC, DirichletBC, RobinBC, NoBoundaryConditions
 from bice import profile, Profiler
 from bice.core.solvers import NewtonKrylovSolver, MyNewtonSolver
 
@@ -49,7 +49,7 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         self.nabla_h = self.nabla
         self.laplace_h = self.laplace
         # (iii) differentiation operators no specific boundary effects
-        self.bc = GenericBC()
+        self.bc = NoBoundaryConditions()
         self.build_FD_matrices()
         self.nabla0 = self.nabla
 

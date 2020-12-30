@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
-from bice.pde.finite_differences import DirichletBC, NeumannBC, RobinBC, PeriodicBC
+from bice.pde.finite_differences import DirichletBC, NeumannBC, RobinBC, PeriodicBC, NoBoundaryConditions
 from bice.continuation import ConstraintEquation
 from bice import profile, Profiler
 
@@ -35,9 +35,10 @@ class HeatEquation(FiniteDifferencesEquation):
         self.u = np.cos(2 * np.pi * self.x[0] / 10) * \
             np.exp(-0.005 * self.x[0] ** 2)
         # create boundary conditions
-        self.bc = DirichletBC(vals=(0.1, -0.1))
-        self.bc = NeumannBC(vals=(0.01, 0.01))
+        # self.bc = DirichletBC(vals=(0.1, -0.1))
+        # self.bc = NeumannBC(vals=(0.01, 0.01))
         # self.bc = PeriodicBC()
+        self.bc = NoBoundaryConditions()
         # build finite difference matrices
         self.build_FD_matrices(approx_order=2)
 

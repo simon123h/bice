@@ -318,7 +318,7 @@ def NeumannBC(vals=(0, 0)):
     return RobinBC(a=(0, 0), b=(1, 1), c=vals)
 
 
-class GenericBC(FDBoundaryConditions):
+class NoBoundaryConditions(FDBoundaryConditions):
     """
     These boundaries have no ghost points at all!
     Therefore, the derivatives on the boundaries are determined by
@@ -328,7 +328,7 @@ class GenericBC(FDBoundaryConditions):
     Delta u = nabla_bc * (nabla_free * u),
     where the inner nabla_free should not conflict with the boundary conditions
     imposed by the outer nabla_bc. Hence, nabla_free can be built using
-    GenericBC.
+    NoBoundaryConditions.
     """
 
     # build the matrix and constant part for the affine transformation u_padded = Q*u + G
