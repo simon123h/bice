@@ -255,7 +255,7 @@ class PeriodicBC(FDBoundaryConditions):
         # how many ghost nodes at each boundary?
         self.order = 1
         # the virtual distance between the left and right boundary node
-        self.boundary_dx = 1e-2
+        self.boundary_dx = None
 
     # build the matrix and constant part for the affine transformation u_padded = Q*u + G
     def update(self, x, approx_order):
@@ -270,9 +270,11 @@ class PeriodicBC(FDBoundaryConditions):
 
     # pad vector of node values with the x-values of the ghost nodes
     def pad_x(self, x):
-        # build the full list of dx's for the periodic domain using the
-        # virtual distance between the boundary nodes
+        # obtain the (constant!) virtual distance between the left and right boundary nodes
+        if self.boundary_dx is None:
+            self.boundary_dx = x[1] - x[0]
         dx_lr = self.boundary_dx
+        # build the full list of dx's for the periodic domain
         dx = np.concatenate(([dx_lr], np.diff(x), [dx_lr]))
         # construct the left and right ghost nodes (number of ghost points = self.order)
         x_l = [x[0]-sum(dx[-n-1:]) for n in range(self.order)][::-1]

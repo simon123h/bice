@@ -37,19 +37,27 @@ class HeatEquation(FiniteDifferencesEquation):
         # create boundary conditions
         # self.bc = DirichletBC(vals=(0.1, -0.1))
         # self.bc = NeumannBC(vals=(0.01, 0.01))
+        # TODO: inhomogeneous NeumannBC somehow break on non-uniform grids for approx_order > 1
         self.bc = PeriodicBC()
         # build finite difference matrices
-        self.build_FD_matrices(approx_order=4)
+        self.build_FD_matrices(approx_order=2)
+        # mesh adaption settings
+        self.max_refinement_error = 5e-2
+        self.min_refinement_error = 1e-3
+        self.min_dx = 1e-1
 
     # definition of the equation (right-hand side)
     def rhs(self, u):
-        return -self.nabla(u)  # advection equation
-        # return self.laplace(u)
+        # return -self.nabla(u)  # advection equation
+        return self.laplace(u)
 
     # definition of the Jacobian
     @profile
     def jacobian(self, u):
         return self.laplace()
+
+    def plot(self, ax):
+        ax.plot(self.x[0], self.u, marker="x")
 
 
 class HeatProblem(Problem):
@@ -60,7 +68,8 @@ class HeatProblem(Problem):
         self.she = HeatEquation(N, L)
         self.add_equation(self.she)
         # initialize time stepper
-        self.time_stepper = time_steppers.BDF(self)
+        # self.time_stepper = time_steppers.BDF(self)
+        self.time_stepper = time_steppers.BDF2(dt=1)
         # assign the continuation parameter
         self.continuation_parameter = (self.she, "r")
 
@@ -70,7 +79,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = HeatProblem(N=500, L=100)
+problem = HeatProblem(N=256, L=100)
 
 # create figure
 fig, ax = plt.subplots(1, figsize=(16, 9))
@@ -78,7 +87,7 @@ plotID = 0
 
 # time-stepping
 n = 0
-plotevery = 50
+plotevery = 1
 dudtnorm = 1
 Profiler.start()
 while dudtnorm > 1e-5:
@@ -95,8 +104,8 @@ while dudtnorm > 1e-5:
     n += 1
     # perform timestep
     problem.time_step()
-    # TODO: fix adaption
-    # problem.adapt()
+    # adapt the mesh
+    problem.adapt()
     # calculate the new norm
     dudtnorm = np.linalg.norm(problem.rhs(problem.u))
     # catch divergent solutions
