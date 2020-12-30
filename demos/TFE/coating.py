@@ -61,7 +61,6 @@ class CoatingEquation(FiniteDifferencesEquation):
         self.nabla0 = self.nabla
 
     # definition of the equation
-
     def rhs(self, h):
         h3 = h**3
         # disjoining pressure
@@ -78,12 +77,12 @@ class CoatingEquation(FiniteDifferencesEquation):
         dhdt -= self.U * self.nabla_h.dot(h)
         return dhdt
 
-    def jacobian2(self, h):
+    def jacobian(self, h):
         # disjoining pressure
         h3 = h**3
         djp = 5/3*(self.theta*self.h_p)**2 * (self.h_p**3/h3**2 - 1./h3)
         ddjpdh = 5/3*(self.theta*self.h_p)**2 * \
-            sp.diags(3.*self.h_p**3/h**4 - 6./h**7)
+            sp.diags(3./h**4 - 6.*self.h_p**3/h**7)
         # free energy variation
         dFdh = -self.laplace_h(h) - djp
         ddFdhdh = -self.laplace_h() - ddjpdh
@@ -110,7 +109,7 @@ class CoatingEquation(FiniteDifferencesEquation):
         x -= self.U*problem.time
         ax.set_xlim(np.min(x), np.max(x))
         ax.set_ylim(0, 1.1*np.max(h))
-        ax.plot(x, h, marker="x")
+        ax.plot(x, h)
 
 
 class Coating(Problem):
@@ -138,7 +137,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = Coating(N=100, L=10)
+problem = Coating(N=200, L=10)
 
 # create figure
 fig, ax = plt.subplots(1, figsize=(16, 9))
@@ -186,19 +185,21 @@ problem.continuation_stepper.ndesired_newton_steps = 3
 problem.continuation_stepper.convergence_tolerance = 1e-10
 problem.continuation_stepper.max_newton_iterations = 100
 problem.continuation_parameter = (problem.tfe, "q")
-problem.settings.neigs = 10
+problem.settings.neigs = 30
 
 h_p = problem.tfe.h_p
 U = problem.tfe.U
 
 # generate bifurcation diagram
-problem.bifurcation_diagram.xlim = (h_p*U, 0.1)
+problem.bifurcation_diagram.xlim = (h_p*U, 0.05)
 problem.generate_bifurcation_diagram(
     ax=ax,
     parameter_lims=(h_p * U, U),
     max_recursion=2,
-    plotevery=30
+    plotevery=60
 )
+
+Profiler.print_summary()
 
 # n = 0
 # plotevery = 10
@@ -212,5 +213,4 @@ problem.generate_bifurcation_diagram(
 #         problem.plot(ax)
 #         fig.savefig("out/img/{:05d}.png".format(plotID))
 #         plotID += 1
-
-Profiler.print_summary()
+# Profiler.print_summary()
