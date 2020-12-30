@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
-from bice.pde import PseudospectralEquation, FiniteDifferencesEquation
+from bice.pde import PseudospectralEquation
 from bice.continuation import VolumeConstraint, TranslationConstraint
 
 
@@ -23,23 +23,23 @@ class ThinFilmEquation(PseudospectralEquation):
         super().__init__(shape=N)
         # parameters: none
         # space and fourier space
-        self.x = np.linspace(-L/2, L/2, N, endpoint=False)
+        self.x = [np.linspace(-L/2, L/2, N, endpoint=False)]
+        x = self.x[0]
         self.build_kvectors(real_fft=True)
         # initial condition
         # self.u = np.ones(N) * 3
-        self.u = 2 * np.cos(self.x*2*np.pi/L) + 1
-        # self.u = np.maximum(10 * np.cos(self.x / 5), 1)
+        self.u = 2 * np.cos(x*2*np.pi/L) + 1
+        # self.u = np.maximum(10 * np.cos(x / 5), 1)
 
     # definition of the equation, using pseudospectral method
     def rhs(self, h):
         h_k = np.fft.rfft(h)
+        k = self.k[0]
         djp_k = self.dealias(np.fft.rfft(self.djp(h)))
         dhhh_dx = np.fft.irfft(self.dealias(
-            self.dealias(np.fft.rfft(h**3)) * 1j * self.k))
-        term1 = np.fft.irfft(self.dealias(
-            1j * self.k * (-self.k**2 * h_k + djp_k)))
-        term2 = np.fft.irfft(self.dealias(
-            self.k**2 * (self.k**2 * h_k - djp_k)))
+            self.dealias(np.fft.rfft(h**3)) * 1j * k))
+        term1 = np.fft.irfft(self.dealias(1j * k * (-k**2 * h_k + djp_k)))
+        term2 = np.fft.irfft(self.dealias(k**2 * (k**2 * h_k - djp_k)))
         return -dhhh_dx * term1 - h**3 * term2
 
     # disjoining pressure
@@ -52,8 +52,9 @@ class ThinFilmEquation(PseudospectralEquation):
             u_k = np.fft.rfft(u)
         else:
             u_k = u
-        k_F = (1-ratio) * self.k[-1]
-        u_k *= np.exp(-36*(4. * self.k / 5. / k_F)**36)
+        k = self.k[0]
+        k_F = (1-ratio) * k[-1]
+        u_k *= np.exp(-36*(4. * k / 5. / k_F)**36)
         if real_space:
             return np.fft.irfft(u_k)
         return u_k
@@ -63,54 +64,12 @@ class ThinFilmEquation(PseudospectralEquation):
         return np.fft.irfft(du_dx)
 
 
-class ThinFilmEquationFD(FiniteDifferencesEquation):
-    r"""
-     Finite difference implementation of the 1-dimensional Thin-Film Equation
-     equation
-     dh/dt = d/dx (h^3 d/dx ( - d^2/dx^2 h - Pi(h) ))
-     with the disjoining pressure:
-     Pi(h) = 1/h^3 - 1/h^6
-     """
-
-    def __init__(self, N, L):
-        super().__init__(shape=N)
-        # parameters: none
-        # space and fourier space
-        self.x = [np.linspace(-L/2, L/2, N)]
-        self.k = np.fft.rfftfreq(N, L / (2. * N * np.pi))
-        # initial condition
-        self.u = 2 * np.cos(self.x[0] * 2 * np.pi / L) + 3
-        # build finite difference matrices
-        self.build_FD_matrices(approx_order=3)
-        # self.u = np.ones(N) * 3
-        #self.x = self.x[0]
-        # self.u = np.maximum(10 * np.cos(self.x / 5), 1)
-
-    # definition of the equation, using finite difference method
-    def rhs(self, h):
-        dFdh = -np.matmul(self.laplace, h) - self.djp(h)
-        return np.matmul(self.nabla, h**3 * np.matmul(self.nabla, dFdh))
-
-    # disjoining pressure
-
-    def djp(self, h):
-        return 1./h**6 - 1./h**3
-
-    # no dealiasing for the FD version
-    def dealias(self, u, real_space=False, ratio=1./2.):
-        return u
-
-    def du_dx(self, u, direction=0):
-        return np.matmul(self.nabla, u)
-
-
 class ThinFilm(Problem):
 
     def __init__(self, N, L):
         super().__init__()
         # Add the Thin-Film equation to the problem
-        #self.tfe = ThinFilmEquation(N, L)
-        self.tfe = ThinFilmEquationFD(N, L)
+        self.tfe = ThinFilmEquation(N, L)
         self.add_equation(self.tfe)
         # Generate the volume constraint
         self.volume_constraint = VolumeConstraint(self.tfe)
@@ -122,7 +81,7 @@ class ThinFilm(Problem):
         # self.time_stepper = time_steppers.RungeKuttaFehlberg45()
         # self.time_stepper.error_tolerance = 1e1
         # self.time_stepper.dt = 3e-5
-        self.time_stepper = time_steppers.BDF(self)  # better for FD
+        self.time_stepper = time_steppers.BDF(self)
         # assign the continuation parameter
         self.continuation_parameter = (self.volume_constraint, "fixed_volume")
 
