@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.sparse as sp
 from bice.core.equation import Equation
 
 # TODO: make this work for multiple variables, regarding ref_eq.shape
@@ -25,6 +26,7 @@ class TimePeriodicOrbitHandler(Equation):
         # the period is also an unknown, append it to u
         # TODO: a good guess for T is 2pi / Im(lambda), with the unstable eigenvalue lambda
         self.u = np.append(u1, T)
+        self.ddt = self.build_ddt_matrix()
 
     # access the period length
     @property
@@ -45,19 +47,27 @@ class TimePeriodicOrbitHandler(Equation):
         # split the period and reshape to (Nt, *ref_eq.shape)
         return self.u[:-1].reshape((self.Nt, *self.ref_eq.shape))
 
-    # return the time derivative for a given list of u's at each timestep
-    def dudt(self, u):
-        # calculate central difference
-        ul = np.roll(u, 1, axis=0)
-        ur = np.roll(u, -1, axis=0)
-        dtl = 1 / np.roll(self.dt, 1, axis=0)
-        dtr = 1 / self.dt
-        return (ur.T * dtr + (dtl - dtr) * u.T - ul.T * dtl).T / 2
-
-    # return the jacobian of the time derivative for a given list of u's at each timestep
-    def ddudtdu(self, u):
-        # TODO: implement!
-        pass
+    # build the time-derivative operator ddt, using periodic finite differences
+    def build_ddt_matrix(self):
+        # time-derivative operator
+        # TODO: build using FinDiff or numdifftoos.fornberg
+        #       then we can also support non-uniform time-grids
+        Nt = self.Nt
+        I = np.eye(Nt)
+        dt = self.dt[0]
+        ddt = np.zeros((Nt, Nt))
+        ddt += -3*np.roll(I, -4, axis=1)
+        ddt += 32*np.roll(I, -3, axis=1)
+        ddt += -168*np.roll(I, -2, axis=1)
+        ddt += 672*np.roll(I, -1, axis=1)
+        ddt -= 672*np.roll(I, 1, axis=1)
+        ddt -= -168*np.roll(I, 2, axis=1)
+        ddt -= 32*np.roll(I, 3, axis=1)
+        ddt -= -3*np.roll(I, 4, axis=1)
+        # TODO: is there maybe a sign error somewhere dudt --> - dudt?
+        ddt /= -dt * 840
+        # convert to sparse
+        return sp.csr_matrix(ddt)
 
     # calculate the rhs of the full system of equations
     def rhs(self, u):
@@ -68,12 +78,12 @@ class TimePeriodicOrbitHandler(Equation):
         T = u[-1]
         # ... u's per timestep
         u = u[:-1].reshape((self.Nt, *self.ref_eq.shape))
-        # calculate the time derivative
-        dudt = self.dudt(u) / T
+        # calculate the time derivative using FD
+        dudt = self.ddt.dot(u) / T
         # same for the old variables
         T_old = self.u[-1]
         u_old = self.u[:-1].reshape((self.Nt, *self.ref_eq.shape))
-        dudt_old = self.dudt(u_old) / T_old
+        dudt_old = self.ddt.dot(u_old) / T_old
         # mass matrix
         M = self.ref_eq.mass_matrix()
         # setup empty result vector
@@ -90,7 +100,7 @@ class TimePeriodicOrbitHandler(Equation):
         return res
 
     # calculate the Jacobian of rhs(u)
-    def jacobian_INCOMPLETE(self, u):
+    def jacobian2(self, u):
         # number of unknowns of a single equation
         N = self.ref_eq.ndofs
         # split the unknowns into:
@@ -100,14 +110,14 @@ class TimePeriodicOrbitHandler(Equation):
         u = u[:-1].reshape((self.Nt, *self.ref_eq.shape))
         # setup empty result matrix
         jac = np.zeros((self.ndofs, self.ndofs))
-        # calculate jacobian of dudt
-        # jac = self.ddudtdu(u) # TODO: this is still missing
+        # jacobian of dudt: FD operator
+        jac = self.ddt
         # calculate the time derivative
-        dudt = self.dudt(u) / T
+        dudt = self.ddt.dot(u) / T
         # same for the old variables
         T_old = self.u[-1]
         u_old = self.u[:-1].reshape((self.Nt, *self.ref_eq.shape))
-        dudt_old = self.dudt(u_old) / T_old
+        dudt_old = self.ddt.dot(u_old) / T_old
         # add the jacobian contributions of rhs for each timestep
         for i in range(self.Nt):
             # 0 = ref_eq.jacobian(u) for each u(t_i)
@@ -120,6 +130,7 @@ class TimePeriodicOrbitHandler(Equation):
 
     # adapt the time mesh to the solution
     # TODO: test this
+    # TODO: ddt does currently not support non-uniform time, make uniform?
     def adapt(self):
         # number of unknowns of a single equation
         N = self.ref_eq.ndofs
@@ -169,5 +180,7 @@ class TimePeriodicOrbitHandler(Equation):
         # if the equation belongs to a group of equations, redo it's mapping of the unknowns
         if self.group is not None:
             self.group.map_unknowns()
+        # rebuild FD time-derivative matrix
+        self.ddt = self.build_ddt_matrix()
         # return min/max error estimates
         return (min(error_estimate), max(error_estimate))
