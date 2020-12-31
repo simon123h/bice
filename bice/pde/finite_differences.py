@@ -165,10 +165,26 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
             err += np.abs(curv*dx)
         return err
 
+    # save the state of the equation, including the x-values
+    # override this method, if your equation needs to store more stuff
+    def save(self):
+        data = super().save()
+        data.update({'x': self.x})
+        return data
 
-# wrapper object for an affine operator:
-# Op: u --> Q*u + G, where Q is a matrix and G is some constant
+    # load the state of the equation, including the x-values
+    # override this method, if your equation needs to recover more stuff
+    def load(self, data):
+        self.x = data['x']
+        super().load(data)
+
+
 class AffineOperator:
+    """
+    Wrapper object for an affine operator:
+    Op: u --> Q*u + G, where Q is a matrix and G is some constant
+    Needed for including boundary conditions into differentiation operators
+    """
 
     def __init__(self, Q, G=0):
         # linear part

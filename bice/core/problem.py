@@ -361,6 +361,7 @@ class Problem():
 
     # Save the current solution to the file <filename>.
     # Returns a dictionary of the serialized data.
+    @profile
     def save(self, filename=None):
         # dict of data to store
         data = {}
@@ -385,7 +386,8 @@ class Problem():
         # return the dict
         return data
 
-    # Load the current solution from a file, inverse of Problem.save(..).
+    # Load the current solution from a file, inverse of Problem.save(..)
+    @profile
     def load(self, filename):
         # load data dictionary from the file
         data = np.load(filename, allow_pickle=True)
