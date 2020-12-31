@@ -149,10 +149,10 @@ if not os.path.exists("initial_state2.dat"):
             break
     Profiler.print_summary()
     # save the state, so we can reload it later
-    problem.save("initial_state.dat")
+    problem.save("initial_state.npz")
 else:
     # load the initial state
-    problem.load("initial_state.dat")
+    problem.load("initial_state.npz")
 
 exit()
 

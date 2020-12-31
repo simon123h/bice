@@ -83,7 +83,7 @@ n = 0
 plotevery = 1000
 dudtnorm = 1
 
-if not os.path.exists("initial_state.dat"):
+if not os.path.exists("initial_state.npz"):
     while dudtnorm > 1e-6:
         # plot
         if n % plotevery == 0:
@@ -105,10 +105,10 @@ if not os.path.exists("initial_state.dat"):
         if np.max(problem.u) > 1e12:
             break
     # save the state, so we can reload it later
-    problem.save("initial_state.dat")
+    problem.save("initial_state.npz")
 else:
     # load the initial state
-    problem.load("initial_state.dat")
+    problem.load("initial_state.npz")
 
 # start parameter continuation
 problem.continuation_stepper.ds = 1e-3

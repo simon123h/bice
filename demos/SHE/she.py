@@ -48,7 +48,7 @@ while dudtnorm > 1e-5:
         break
 Profiler.print_summary()
 # save the state, so we can reload it later
-problem.save("initial_state.dat")
+problem.save("initial_state.npz")
 
 # start parameter continuation
 problem.continuation_stepper.ds = 1e-2
@@ -77,7 +77,7 @@ Profiler.print_summary()
 
 # load the initial state and add extra dof for translation constraint
 problem.remove_equation(constraint)
-problem.load("initial_state.dat")
+problem.load("initial_state.npz")
 problem.add_equation(constraint)
 
 # continuation in reverse direction

@@ -127,4 +127,4 @@ if __name__ == "__main__":
             print("diverged")
             break
     # save the state, so we can reload it later
-    problem.save("initial_state.dat")
+    problem.save("initial_state.npz")

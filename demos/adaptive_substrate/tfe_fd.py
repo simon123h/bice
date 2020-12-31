@@ -109,10 +109,10 @@ while dudtnorm > 1e-8:
 Profiler.print_summary()
 
 # save the state, so we can reload it later
-problem.save("initial_state.dat")
+problem.save("initial_state.npz")
 
 # # load the initial state
-# problem.load("initial_state.dat")
+# problem.load("initial_state.npz")
 
 # # start parameter continuation
 # problem.continuation_stepper.ds = 1e-2

@@ -58,7 +58,7 @@ while problem.time < T:
         print("diverged")
         break
 # save the state, so we can reload it later
-#problem.save("initial_state.dat")
+#problem.save("initial_state.npz")
 
 
 # calculate Lyapunov exponents

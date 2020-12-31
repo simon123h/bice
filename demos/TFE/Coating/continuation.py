@@ -29,7 +29,7 @@ Profiler.start()
 n = 0
 plotevery = 20
 dudtnorm = 1
-if not os.path.exists("initial_state_coating.dat"):
+if not os.path.exists("initial_state.npz"):
     while dudtnorm > 1e-5:
         # plot
         if n % plotevery == 0:
@@ -51,10 +51,10 @@ if not os.path.exists("initial_state_coating.dat"):
             break
     Profiler.print_summary()
     # save the state, so we can reload it later
-    problem.save("initial_state_coating.dat")
+    problem.save("initial_state.npz")
 else:
     # load the initial state
-    problem.load("initial_state_coating.dat")
+    problem.load("initial_state.npz")
 
 plt.close(fig)
 fig, ax = plt.subplots(2, 2, figsize=(16*0.6, 9*0.6))

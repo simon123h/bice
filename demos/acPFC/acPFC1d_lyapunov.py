@@ -33,7 +33,7 @@ plotevery = 10
 dudtnorm = 1
 
 T = 1000.
-if not os.path.exists("initial_state.dat"):
+if not os.path.exists("initial_state.npz"):
     while problem.time < T:
         # plot
         if n % plotevery == 0:
@@ -54,10 +54,10 @@ if not os.path.exists("initial_state.dat"):
             print("diverged")
             break
     # save the state, so we can reload it later
-    problem.save("initial_state.dat")
+    problem.save("initial_state.npz")
 else:
     # load the initial state
-    problem.load("initial_state.dat")
+    problem.load("initial_state.npz")
 
 
 # calculate Lyapunov exponents

@@ -36,7 +36,7 @@ while dudtnorm > 1e-5:
     dudtnorm = np.linalg.norm(problem.rhs(problem.u))
 
 # save the state, so we can reload it later
-problem.save("initial_state.dat")
+problem.save("initial_state.npz")
 
 # start parameter continuation
 problem.newton_solver = MyNewtonSolver()
@@ -70,7 +70,7 @@ Profiler.print_summary(nested=False)
 
 # load the initial state and add extra dof for translation constraint
 problem.remove_equation(constraint)
-problem.load("initial_state.dat")
+problem.load("initial_state.npz")
 problem.add_equation(constraint)
 
 # continuation in reverse direction

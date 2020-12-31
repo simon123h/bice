@@ -42,8 +42,8 @@ class acPFCEquation(PseudospectralEquation):
         self.ksquare = self.k[0]**2
 
         # initial guess
-        if os.path.exists("initial_state.dat"):
-            self.u = np.loadtxt("initial_state.dat").reshape(self.shape)
+        if os.path.exists("initial_state.npz"):
+            self.u = np.loadtxt("initial_state.npz").reshape(self.shape)
         else:
             psi1 = 1.*np.cos(self.x[0]*self.q1)
             psi2 = 1.4*np.cos(self.x[0]*self.q2)
@@ -136,7 +136,7 @@ if __name__ == "__main__":
             print("diverged")
             break
         # save the state, so we can reload it later
-    problem.save("initial_state.dat")
+    problem.save("initial_state.npz")
     plt.close()
 
     us = np.array(us)
