@@ -21,7 +21,7 @@ class AbstractNewtonSolver:
         # how verbose should the solving be? 0 = quiet, larger numbers = print more details
         self.verbosity = 0
         # internal storage for the number of iterations taken during last solve
-        self.__iteration_count = None
+        self._iteration_count = None
 
     # solve the system f(u) = 0 with the initial guess u0 and the Jacobian jac(u)
     def solve(self, f, u0, jac):
@@ -31,7 +31,7 @@ class AbstractNewtonSolver:
     # access to the number of iterations taken in the last Newton solve
     @property
     def niterations(self):
-        return self.__iteration_count
+        return self._iteration_count
 
     # the norm used for checking the residuals for convergence
     def norm(self, residuals):
@@ -57,9 +57,9 @@ class MyNewtonSolver(AbstractNewtonSolver):
 
     @profile
     def solve(self, f, u0, jac):
-        self.__iteration_count = 0
+        self._iteration_count = 0
         u = u0
-        while self.__iteration_count < self.max_iterations:
+        while self._iteration_count < self.max_iterations:
             # do a classical Newton step
             J = jac(u)
             if sp.issparse(J):
@@ -67,18 +67,18 @@ class MyNewtonSolver(AbstractNewtonSolver):
             else:
                 du = np.linalg.solve(J, f(u))
             u -= du
-            self.__iteration_count += 1
+            self._iteration_count += 1
             # calculate the norm of the residuals
             err = self.norm(f(u))
             # print some info on the step, if desired
             if self.verbosity > 1:
                 print("Newton step #{:d}, max. residuals: {:.2e}".format(
-                    self.__iteration_count, err))
+                    self._iteration_count, err))
             # if system converged to new solution, return solution
             if err < self.convergence_tolerance:
                 if self.verbosity > 0:
                     print("MyNewtonSolver solver converged after",
-                          self.__iteration_count, "iterations, error:", err)
+                          self._iteration_count, "iterations, error:", err)
                 return u
         # if we didn't converge, throw an error
         self.throw_no_convergence_error(err)
@@ -118,13 +118,13 @@ class NewtonSolver(AbstractNewtonSolver):
             f, u0, jac=jac_wrapper, method=self.method)
         # fetch number of iterations, residuals and status
         err = self.norm(opt_result.fun)
-        self.__iteration_count = opt_result.nit if 'nit' in opt_result.keys() else opt_result.nfev
+        self._iteration_count = opt_result.nit if 'nit' in opt_result.keys() else opt_result.nfev
         # if we didn't converge, throw an error
         if not opt_result.success:
             self.throw_no_convergence_error(err)
         if self.verbosity > 0:
             print("NewtonSolver converged after",
-                  self.__iteration_count, "iterations, error:", err)
+                  self._iteration_count, "iterations, error:", err)
         # return the result vector
         return opt_result.x
 
@@ -164,13 +164,13 @@ class NewtonKrylovSolver(AbstractNewtonSolver):
                                          options=options)
         # fetch number of iterations, residuals and status
         err = self.norm(opt_result.fun)
-        self.__iteration_count = opt_result.nit
+        self._iteration_count = opt_result.nit
         # if we didn't converge, throw an error
         if not opt_result.success:
             self.throw_no_convergence_error(err)
         if self.verbosity > 0:
             print("NewtonKrylovSolver converged after",
-                  self.__iteration_count, "iterations, error:", err)
+                  self._iteration_count, "iterations, error:", err)
         # return the result vector
         return opt_result.x
 
