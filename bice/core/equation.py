@@ -105,6 +105,18 @@ class Equation:
     def adapt(self):
         pass
 
+    # Save everything that is relevant for this equation to a dict. The Problem class
+    # will call this and save the dict to the disk.
+    # May be overridden for saving more stuff for specific types of equations.
+    def save(self):
+        return {'u': self.u}
+
+    # Restore unknowns / parameters / etc. from the given dictionary, that was created by
+    # Equation.save(). Equation.load() is the inverse of Equation.save().
+    # May be overridden for loading more stuff for specific types of equations.
+    def load(self, data):
+        self.u = data['u']
+
     # plot the solution into a matplotlib axes object
     def plot(self, ax):
         # check if there is spatial coordinates, otherwise generate fake coordinates

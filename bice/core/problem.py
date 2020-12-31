@@ -359,13 +359,47 @@ class Problem():
         # defaults to the L2-norm of the unknowns
         return np.linalg.norm(self.u)
 
-    # save the current solution to disk
-    def save(self, filename):
-        np.savetxt(filename, self.u)
+    # Save the current solution to the file <filename>.
+    # Returns a dictionary of the serialized data.
+    def save(self, filename=None):
+        # dict of data to store
+        data = {}
+        # the number of equations
+        equations = self.list_equations()
+        data['Problem.nequations'] = len(equations)
+        # store the value of the continuation parameter
+        if self.continuation_parameter is not None:
+            data['Problem.p'] = self.get_continuation_parameter()
+        # The problem's unknowns won't need to be stored, since unknowns are
+        # individually saved by the respective equations.
+        # Fill the dict with data from each equation:
+        for eq in equations:
+            # obtain the equation's dict
+            eq_data = eq.save()
+            # prepend name of the equation, to make the keys unique and merge with problem's dict
+            eq_name = type(eq).__name__ + "."
+            data.update({eq_name+k: v for k, v in eq_data.items()})
+        # save everything to the file
+        if filename is not None:
+            np.savez(filename, **data)
+        # return the dict
+        return data
 
-    # load the current solution from disk
+    # Load the current solution from a file, inverse of Problem.save(..).
     def load(self, filename):
-        self.u = np.loadtxt(filename, dtype=self.u.dtype)
+        # load data dictionary from the file
+        data = np.load(filename, allow_pickle=True)
+        # load the value of the continuation parameter
+        if self.continuation_parameter is not None:
+            self.set_continuation_parameter(data['Problem.p'])
+        # let the equations restore their data
+        for eq in self.list_equations():
+            # strip the name of the equation
+            eq_name = type(eq).__name__ + "."
+            eq_data = {k.replace(eq_name, ''): v for k,
+                       v in data.items() if k.startswith(eq_name)}
+            # pass it to the equation
+            eq.load(eq_data)
 
     # adapt the problem/equations to the solution (e.g. by mesh refinement)
     def adapt(self):
