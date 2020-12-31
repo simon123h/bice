@@ -533,7 +533,7 @@ class Problem():
                 break
             # print status
             sol = self.bifurcation_diagram.current_solution()
-            print("Branch #{:d}, Step #{:d}, ds={:.2e}, #+EVs: {:d}".format(
+            print("Branch #{:d}, Step #{:d}, ds={:.2e}, #+EVs: {}".format(
                 branch.id, n, self.continuation_stepper.ds, sol.nunstable_eigenvalues))
             if sol.is_bifurcation():
                 print(
