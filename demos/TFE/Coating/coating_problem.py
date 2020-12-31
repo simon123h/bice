@@ -7,7 +7,7 @@ from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
 from bice.pde.finite_differences import NeumannBC, DirichletBC, RobinBC, NoBoundaryConditions
 from bice import profile
-from bice.core.solvers import NewtonKrylovSolver, MyNewtonSolver
+from bice.core.solvers import NewtonSolver, MyNewtonSolver
 
 
 class CoatingEquation(FiniteDifferencesEquation):

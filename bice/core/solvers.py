@@ -1,6 +1,6 @@
 import numpy as np
+import scipy.sparse as sp
 import scipy.optimize
-import scipy.sparse
 import scipy.linalg
 from .profiling import profile
 
@@ -24,7 +24,7 @@ class MyNewtonSolver:
             u -= du
             self.iteration_count += 1
             # if system converged to new solution, return solution
-            err = np.linalg.norm(du)
+            err = np.linalg.norm(du)  # TODO: use maximum norm
             if self.verbosity > 1:
                 print("Newton step:", self.iteration_count, ", error:", err)
             if err < self.convergence_tolerance:
@@ -37,25 +37,73 @@ class MyNewtonSolver:
             "Newton solver did not converge after {:d} iterations!".format(self.iteration_count))
 
 
-# TODO: rename back to NewtonSolver and put warning if Jac is given and sparse
-class NewtonKrylovSolver:
-    # TODO: catch errors, get number of iterations...
+class NewtonSolver:
     def __init__(self):
-        self.method = "hybr"
+        self.method = "hybr"  # TODO: how does method "hybr" perform?
+        self.verbosity = 0
+        self.iteration_count = None
 
     @profile
     def solve(self, f, u, J=None):
-        if J is None or self.method == "krylov":
-            # if Jacobian is not given, use krylov approximation
-            return scipy.optimize.newton_krylov(f, u)
-        # TODO: sparse matrices are not supported by scipy's root method :-/
+        # methods that do not use the Jacobian, but use an approximation
+        inexact_methods = ["krylov", "broyden2", "anderson"]
+        # wrapper for the Jacobian
 
         def jac(u):
+            # sparse matrices are not supported by scipy's root method :-/ convert to dense
             j = J(u)
             if scipy.sparse.issparse(j):
-                j = j.toarray()
+                return j.toarray()
             return j
-        return scipy.optimize.root(f, u, jac=jac, method=self.method).x
+        # check if Jacobian is required by the method
+        if J is None or self.method in inexact_methods:
+            jac = None
+        # solve!
+        opt_result = scipy.optimize.root(f, u, jac=jac, method=self.method)
+        # fetch number of iterations
+        try:
+            self.iteration_count = opt_result.nit
+        except AttributeError:
+            self.iteration_count = opt_result.nfev
+        # if we didn't converge, throw an error
+        if not opt_result.success and False:  # TODO: should check for success
+            raise np.linalg.LinAlgError(
+                "Newton solver did not converge after {:d} iterations!".format(self.iteration_count))
+        # return the result vector
+        return opt_result.x
+
+
+class NewtonKrylovSolver:
+    def __init__(self):
+        self.verbosity = 0
+        self.iteration_count = 0
+
+    @profile
+    def solve(self, f, u, J=None):
+        # some options
+        options = {
+            'disp': self.verbosity > 0,  # print the results of each step?
+            # 'maxiter': ...
+            # 'fatol': ...  # absolute converge tolerance
+        }
+        # the inverse of the Jacobian M = J^-1 at initial guess u
+        # increases performance of the krylov method
+        if J is not None:
+            M = sp.linalg.inv(sp.csc_matrix(J(u)))
+            options.update({'jac_options': {'inner_M': M}})
+
+        # solve!
+        opt_result = scipy.optimize.root(f, u,
+                                         method="krylov",
+                                         options=options)
+        # fetch number of iterations
+        self.iteration_count = opt_result.nit
+        # if we didn't converge, throw an error
+        if not opt_result.success:
+            raise np.linalg.LinAlgError(
+                "Newton solver did not converge after {:d} iterations!".format(self.iteration_count))
+        # return the result vector
+        return opt_result.x
 
 
 class EigenSolver:

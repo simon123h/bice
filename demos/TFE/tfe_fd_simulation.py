@@ -11,7 +11,7 @@ from bice.pde import FiniteDifferencesEquation
 from bice.pde.finite_differences import RobinBC, PeriodicBC, NeumannBC, DirichletBC, NoBoundaryConditions
 from bice.continuation import VolumeConstraint, TranslationConstraint
 from bice import profile, Profiler
-from bice.core.solvers import NewtonKrylovSolver, MyNewtonSolver
+from bice.core.solvers import NewtonSolver, MyNewtonSolver
 
 
 class ThinFilmEquation(FiniteDifferencesEquation):
