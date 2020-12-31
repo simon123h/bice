@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from she_fd import SwiftHohenbergProblem, TranslationConstraint
 import numpy as np
 from bice import Profiler
+from bice.core.solvers import NewtonKrylovSolver, NewtonSolver, MyNewtonSolver
 
 # figures won't steal window focus if the right backend is chosen
 # matplotlib.use("QT5Agg")
@@ -39,7 +40,11 @@ while dudtnorm > 1e-5:
 
 # start parameter continuation
 problem.settings.always_locate_bifurcations = True
-problem.settings.neigs = 6
+problem.settings.neigs = 0
+
+problem.newton_solver = MyNewtonSolver()
+# problem.newton_solver = NewtonSolver()
+# problem.newton_solver = NewtonKrylovSolver()
 
 constraint = TranslationConstraint(problem.she)
 problem.add_equation(constraint)
@@ -51,7 +56,7 @@ problem.generate_bifurcation_diagram(parameter_lims=(-0.016, -0.012),
                                      max_recursion=1,
                                      max_steps=1e3,
                                      ax=ax,
-                                     plotevery=60)
+                                     plotevery=2)
 
 
 Profiler.print_summary()

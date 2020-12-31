@@ -119,10 +119,18 @@ class PseudoArclengthContinuation(ContinuationStepper):
         u = u + self.ds * tangent[:N]
         p = p + self.ds * tangent[N]
 
-        converged = False
-        count = 0
-        while not converged and count < self.max_newton_iterations:
-            # build extended jacobian in (u, parameter)-space
+        def f(up):
+            u = up[:-1]
+            p = up[-1]
+            # extended rhs: model's rhs & arclength condition
+            arclength_condition = (u - u_old).dot(tangent[:N]) + (p - p_old) * \
+                tangent[N] * self.parameter_arc_length_proportion - self.ds
+            return np.append(problem.rhs(u), arclength_condition)
+
+        # build extended jacobian in (u, parameter)-space
+        def J(up):
+            u = up[:-1]
+            p = up[-1]
             problem.set_continuation_parameter(p)
             jac = problem.jacobian(u)
             if not sp.issparse(jac):
@@ -136,22 +144,18 @@ class PseudoArclengthContinuation(ContinuationStepper):
             drhs_dp = (rhs_2 - rhs_1) / (2. * self.fd_epsilon)
             jac_ext = sp.hstack((jac, drhs_dp.reshape((N, 1))))
             # last row of extended jacobian: tangent vector
-            jac_ext = sp.vstack((jac_ext, tangent.reshape((1, N+1))))
-            # extended rhs: model's rhs & arclength condition
-            arclength_condition = (u - u_old).dot(tangent[:N]) + (p - p_old) * \
-                tangent[N] * self.parameter_arc_length_proportion - self.ds
-            rhs_ext = np.append(problem.rhs(u), arclength_condition)
-            # solving (jac_ext) * du_ext = rhs_ext for du_ext will now give the new solution
-            du_ext = self._linear_solve(jac_ext, rhs_ext)
-            u -= du_ext[:N]
-            p -= du_ext[N]
-            # update counter and check for convergence
-            count += 1
-            converged = np.linalg.norm(du_ext) < self.convergence_tolerance
+            return sp.vstack((jac_ext, tangent.reshape((1, N+1))))
+
+        up = np.append(u, p)
+        up = problem.newton_solver.solve(f, up, J)
+        u = up[:-1]
+        p = up[-1]
 
         # update number of steps taken
-        self.nnewton_iter_taken = count
+        self.nnewton_iter_taken = problem.newton_solver.niterations
+        count = self.nnewton_iter_taken
 
+        converged = True
         if converged:
             # system converged to new solution, assign the new values
             problem.u = u
