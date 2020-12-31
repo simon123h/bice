@@ -33,7 +33,7 @@ problem.continuation_parameter = (problem.tfe, "q")
 problem.settings.neigs = 10
 
 # load the bifurcation point into the problem
-problem.load("hopf_point_0.dat")
+problem.load("hopf_point_0.npz")
 # attempt branch switching to new branch
 converged = problem.switch_branch(locate=False)
 

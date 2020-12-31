@@ -97,4 +97,4 @@ for n, hopf in enumerate(hopfs):
     problem.u = hopf.u
     problem.set_continuation_parameter(hopf.p)
     problem.history.clear()
-    problem.save("hopf_point_{:d}.dat".format(n))
+    problem.save("hopf_point_{:d}.npz".format(n))

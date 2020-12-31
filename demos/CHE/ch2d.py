@@ -80,7 +80,7 @@ mx, my = np.meshgrid(problem.che.x[0], problem.che.x[1])
 
 Profiler.start()
 
-if not os.path.exists("initial_state2D.dat"):
+if not os.path.exists("initial_state2D.npz"):
     while dudtnorm > 1e-6:
         # plot
         if n % plotevery == 0:
@@ -106,10 +106,10 @@ if not os.path.exists("initial_state2D.dat"):
             break
 
     # save the state, so we can reload it later
-    problem.save("initial_state2D.dat")
+    problem.save("initial_state2D.npz")
 else:
     # load the initial state
-    problem.load("initial_state2D.dat")
+    problem.load("initial_state2D.npz")
 
 Profiler.print_summary()
 
