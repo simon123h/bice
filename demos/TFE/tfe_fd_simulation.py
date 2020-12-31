@@ -11,7 +11,7 @@ from bice.pde import FiniteDifferencesEquation
 from bice.pde.finite_differences import RobinBC, PeriodicBC, NeumannBC, DirichletBC, NoBoundaryConditions
 from bice.continuation import VolumeConstraint, TranslationConstraint
 from bice import profile, Profiler
-from bice.core.solvers import NewtonSolver, MyNewtonSolver
+from bice.core.solvers import NewtonSolver, MyNewtonSolver, NewtonKrylovSolver
 
 
 class ThinFilmEquation(FiniteDifferencesEquation):
@@ -93,15 +93,18 @@ class ThinFilm(Problem):
         # Generate the translation constraint
         self.translation_constraint = TranslationConstraint(self.tfe)
         # initialize time stepper
-        self.time_stepper = time_steppers.BDF2(dt=1)
+        self.time_stepper = time_steppers.BDF2(dt=1e-1)
         # self.time_stepper = time_steppers.ImplicitEuler(dt=1e-2)
         # self.time_stepper = time_steppers.BDF(self)
         # assign the continuation parameter
         self.continuation_parameter = (self.volume_constraint, "fixed_volume")
         # self.newton_solver = MyNewtonSolver()
-        # self.newton_solver.convergence_tolerance = 1e-2
-        # self.newton_solver.max_newton_iterations = 100
-        # self.newton_solver.verbosity = 0
+        # self.newton_solver = NewtonSolver()
+        self.newton_solver = NewtonKrylovSolver()
+        # self.newton_solver.approximate_jacobian = True
+        self.newton_solver.convergence_tolerance = 6e-6
+        self.newton_solver.max_newton_iterations = 100
+        self.newton_solver.verbosity = 0
 
     def norm(self):
         return np.trapz(self.tfe.u, self.tfe.x[0])

@@ -7,7 +7,6 @@ from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
 from bice.pde.finite_differences import NeumannBC, DirichletBC, RobinBC, NoBoundaryConditions
 from bice import profile
-from bice.core.solvers import NewtonSolver, MyNewtonSolver
 
 
 class CoatingEquation(FiniteDifferencesEquation):
@@ -115,12 +114,7 @@ class CoatingProblem(Problem):
         self.add_equation(self.tfe)
         # initialize time stepper
         self.time_stepper = time_steppers.BDF2(dt=1)
-        # self.time_stepper = time_steppers.ImplicitEuler(dt=1e-2)
         # self.time_stepper = time_steppers.BDF(self)
-        # self.newton_solver = MyNewtonSolver()
-        # self.newton_solver.convergence_tolerance = 1e-2
-        # self.newton_solver.max_newton_iterations = 100
-        # self.newton_solver.verbosity = 0
 
     def norm(self):
         return np.trapz(self.tfe.u, self.tfe.x[0])

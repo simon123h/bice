@@ -2,7 +2,7 @@ import numpy as np
 from bice.time_steppers.runge_kutta import RungeKutta4
 from bice.continuation import PseudoArclengthContinuation, DeflatedContinuation
 from .equation import Equation, EquationGroup
-from .solvers import NewtonSolver, EigenSolver
+from .solvers import NewtonKrylovSolver, EigenSolver
 from .solution import Solution, BifurcationDiagram
 from .profiling import profile
 
@@ -28,7 +28,7 @@ class Problem():
         # The continuation stepper for parameter continuation
         self.continuation_stepper = PseudoArclengthContinuation()
         # The Newton solver for finding roots of equations
-        self.newton_solver = NewtonSolver()
+        self.newton_solver = NewtonKrylovSolver()
         # The eigensolver for eigenvalues and -vectors
         self.eigen_solver = EigenSolver()
         # The settings (tolerances, switches, etc.) are held by this ProblemSettings object
