@@ -102,8 +102,6 @@ class TimePeriodicOrbitHandler(Equation):
 
     # calculate the Jacobian of rhs(u)
     def jacobian(self, u):
-        # number of unknowns of a single equation
-        N = self.ref_eq.ndofs
         # split the unknowns into:
         # ... period length
         T = u[-1]
@@ -132,7 +130,7 @@ class TimePeriodicOrbitHandler(Equation):
         d_cnst_dT = 0*sp.csr_matrix((1, 1))
         # combine the contributions to the full jacobian and return
         return sp.bmat([[d_bulk_du, d_bulk_dT],
-                       [d_cnst_du, d_cnst_dT]])
+                        [d_cnst_du, d_cnst_dT]])
 
     # adapt the time mesh to the solution
     # TODO: test this
@@ -146,7 +144,7 @@ class TimePeriodicOrbitHandler(Equation):
         # ... u's per timestep
         u = self.u[:-1].reshape((self.Nt, *self.ref_eq.shape))
         # calculate the time derivative
-        dudt = self.dudt(u)
+        dudt = self.ddt.dot(u)
         # estimate for the relative error in the time derivative
         # TODO: maybe there is something better than this
         error_estimate = np.array(
@@ -190,3 +188,14 @@ class TimePeriodicOrbitHandler(Equation):
         self.ddt = self.build_ddt_matrix()
         # return min/max error estimates
         return (min(error_estimate), max(error_estimate))
+
+    # save the state of the equation, including the dt-values
+    def save(self):
+        data = super().save()
+        data.update({'dt': self.dt})
+        return data
+
+    # load the state of the equation, including the dt-values
+    def load(self, data):
+        self.dt = data['dt']
+        super().load(data)
