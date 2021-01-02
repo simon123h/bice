@@ -1,6 +1,5 @@
 import numpy as np
 import scipy.sparse as sp
-import matplotlib.pyplot as plt
 from bice.core.equation import Equation
 
 # TODO: make this work for multiple variables, regarding ref_eq.shape
