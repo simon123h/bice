@@ -146,7 +146,7 @@ class Problem():
         # perform the step with a continuation stepper
         self.continuation_stepper.step(self)
         # get the current branch in the bifurcation diagram
-        branch = self.bifurcation_diagram.current_branch()
+        branch = self.bifurcation_diagram.active_branch
         # add the solution to the branch
         sol = Solution(self)
         branch.add_solution_point(sol)
@@ -509,7 +509,7 @@ class Problem():
             import matplotlib.pyplot as plt
             plt.ion()
         # perform continuation of current branch until bounds are exceeded
-        branch = self.bifurcation_diagram.current_branch()
+        branch = self.bifurcation_diagram.active_branch
         n = 0
         norm = self.norm()
         param = self.get_continuation_parameter()

@@ -1,8 +1,7 @@
-import numpy as np
-
 """
 This file describes a data structure for Solutions, Branches and BifurcationDiagrams of a Problem.
 """
+import numpy as np
 
 
 class Solution:
@@ -14,26 +13,20 @@ class Solution:
     # static variable counting the total number of Solutions
     solution_count = 0
 
-    def __init__(self, problem):
+    def __init__(self, problem=None):
         # generate solution ID
         Solution.solution_count += 1
         # unique identifier of the solution
         self.id = Solution.solution_count
-        # reference to the corresponding problem
-        self.problem = problem
-        # the dimension / number of unknowns
-        self.ndofs = problem.ndofs
-        # vector of unknowns
-        # TODO: storing each solution may eat up some memory
+        # the current problem state as a dictionary of data (equation's unknowns and parameters)
+        # TODO: storing each solution's data may eat up some memory
         #       do we need to save every solution? maybe save bifurcations only
         # save the current data of the problem, so we can restore the point
-        self.data = self.problem.save()
-        # time
-        self.t = problem.time
+        self.data = problem.save() if problem is not None else {}
         # value of the continuation parameter
-        self.p = problem.get_continuation_parameter()
+        self.p = problem.get_continuation_parameter() if problem is not None else 0
         # value of the solution norm
-        self.norm = problem.norm()
+        self.norm = problem.norm() if problem is not None else 0
         # number of true positive eigenvalues
         self.nunstable_eigenvalues = None
         # number of true positive and imaginary eigenvalues
@@ -41,7 +34,7 @@ class Solution:
         # optional reference to the corresponding branch
         self.branch = None
         # cache for the bifurcation type
-        self.__bifurcation_type = None
+        self._bifurcation_type = None
 
     # how many eigenvalues have crossed the imaginary axis with this solution?
     @property
@@ -100,26 +93,26 @@ class Solution:
     # TODO: rename to "type" ? bifurcation.bifurcation_type() looks weird...
     def bifurcation_type(self, update=False):
         # check if bifurcation type is cached
-        if self.__bifurcation_type is not None and not update:
-            return self.__bifurcation_type
+        if self._bifurcation_type is not None and not update:
+            return self._bifurcation_type
         # check for number of eigenvalues that crossed zero
         nev_crossed = self.neigenvalues_crossed
         # if unknown or no eigenvalues crossed zero, the point is no bifurcation
         if nev_crossed in [None, 0]:
-            self.__bifurcation_type = ""
-            return self.__bifurcation_type
+            self._bifurcation_type = ""
+            return self._bifurcation_type
         # otherwise it is some kind of bifurcation point (BP)
-        # self.__bifurcation_type = "BP"
+        # self._bifurcation_type = "BP"
         # use +/- signs corresponding to their null-eigenvalues as type for regular bifurcations
         n = nev_crossed
-        self.__bifurcation_type = "+"*n if n > 0 else "-"*(-n)
+        self._bifurcation_type = "+"*n if n > 0 else "-"*(-n)
         # check for Hopf bifurcations by number of imaginary eigenvalues that crossed zero
         nev_imag_crossed = self.nimaginary_eigenvalues_crossed
         # if it is not unknown or zero or one, this must be a Hopf point
         if nev_imag_crossed not in [None, 0, 1]:
-            self.__bifurcation_type = "HP"
+            self._bifurcation_type = "HP"
         # return type
-        return self.__bifurcation_type
+        return self._bifurcation_type
 
     # get access to the previous solution in the branch
     def get_neighboring_solution(self, distance):
@@ -197,6 +190,20 @@ class Branch:
         nvals = np.ma.masked_where(condition, self.norm_vals())
         return (pvals, nvals)
 
+    # store the branch to the disk in a format that allows for restoring it later
+    def save(self, filename):
+        # dict of data to store
+        data = {}
+        data["solution_data"] = [s.data for s in self.solutions]
+        data["norm"] = [s.norm for s in self.solutions]
+        data["p"] = [s.p for s in self.solutions]
+        data["nunstable_eigenvalues"] = [
+            s.nunstable_eigenvalues for s in self.solutions]
+        data["nunstable_imaginary_eigenvalues"] = [
+            s.nunstable_imaginary_eigenvalues for s in self.solutions]
+        # save everything to the file
+        np.savez(filename, **data)
+
 
 class BifurcationDiagram:
     """
@@ -207,30 +214,24 @@ class BifurcationDiagram:
     def __init__(self):
         # list of branches
         self.branches = []
-        # make sure there is at least one branch in the list
-        self.new_branch()
+        # storage for the currently active branch
+        self.active_branch = self.new_branch()
         # x-limits of the diagram
         self.xlim = None
         # y-limits of the diagram
         self.ylim = None
 
     # create a new branch
-    def new_branch(self):
+    def new_branch(self, active=True):
         branch = Branch()
         self.branches.append(branch)
+        if active:
+            self.active_branch = branch
         return branch
-
-    # return the latest branch in the diagram
-    def current_branch(self):
-        # if there is no branches yet, create one
-        if not self.branches:
-            self.new_branch()
-        # return the latest branch
-        return self.branches[-1]
 
     # return the latest solution in the diagram
     def current_solution(self):
-        return self.current_branch().solutions[-1]
+        return self.active_branch.solutions[-1]
 
     # return a branch by its ID
     def get_branch_by_ID(self, branch_id):
@@ -266,3 +267,19 @@ class BifurcationDiagram:
         ax.set_xlabel("continuation parameter")
         ax.set_ylabel("norm")
         ax.legend()
+
+    # load a branch from a file into the diagram, that was stored with Branch.save(filename)
+    def load_branch(self, filename):
+        # create a new branch
+        branch = self.new_branch(active=False)
+        # load data dictionary from the file
+        data = np.load(filename, allow_pickle=True)
+        # restore the solutions and their data
+        for i in range(len(data["norm"])):
+            sol = Solution()
+            sol.data = data["solution_data"][i]
+            sol.norm = data["norm"][i]
+            sol.p = data["p"][i]
+            sol.nunstable_eigenvalues = data["nunstable_eigenvalues"][i]
+            sol.nunstable_imaginary_eigenvalues = data["nunstable_imaginary_eigenvalues"][i]
+            branch.add_solution_point(sol)
