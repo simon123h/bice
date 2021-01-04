@@ -48,7 +48,7 @@ class ThinFilmEquationFD(FiniteDifferencesEquation):
         return self.nabla.dot(dQdh * self.nabla.dot(dFdh) + Q * self.nabla.dot(ddFdhdh))
 
     def du_dx(self, u, direction=0):
-        return np.matmul(self.nabla, u)
+        return self.nabla(u)
 
 
 class ThinFilm(Problem):

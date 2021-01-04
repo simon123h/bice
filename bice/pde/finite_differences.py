@@ -165,6 +165,11 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
             err += np.abs(curv*dx)
         return err
 
+    # default implementation for spatial derivative
+    def du_dx(self, u, direction=0):
+        # TODO: support dimensions higher than 1d
+        return self.nabla(u)
+
     # save the state of the equation, including the x-values
     # override this method, if your equation needs to store more stuff
     def save(self):

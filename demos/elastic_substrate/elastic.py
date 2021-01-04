@@ -6,13 +6,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem
-from bice.deprecated.fem import FiniteElementEquation, OneDimMesh
+from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
 from bice.continuation import TranslationConstraint, VolumeConstraint
 
 
-class ThinFilmEquation(FiniteElementEquation):
+class ThinFilmEquation(FiniteDifferencesEquation):
     r"""
-     Finite element implementation of the 1-dimensional Thin-Film Equation
+     Finite differences implementation of the 1-dimensional Thin-Film Equation
      on an elastic substrate.
      """
 
@@ -22,7 +22,7 @@ class ThinFilmEquation(FiniteElementEquation):
         self.sigma = 0.1
         self.kappa = -2
         # setup the mesh
-        self.mesh = OneDimMesh(N, L, -L/2)
+        self.x = [np.linspace(-L/2, L/2, N)]
         # initial condition
         h0 = 60
         a = 3/20. / (h0-1)
@@ -30,22 +30,20 @@ class ThinFilmEquation(FiniteElementEquation):
         h = np.maximum(-a*x*x + h0, 1)
         xi = h*0
         self.u = np.array([h, xi])
-        # build finite element matrices
-        self.build_FEM_matrices()
+        # build finite differences matrices
+        self.bc = PeriodicBC()
+        self.build_FD_matrices(approx_order=2)
 
     # definition of the equation, using finite element method
     def rhs(self, u):
         h, xi = u
+        djp = 1./h**6 - 1./h**3
         # h residual
-        r1 = -self.laplace.dot(h+xi) - self.M.dot(self.djp(h))
+        r1 = -self.laplace(h+xi) - djp
         # xi residual
-        r2 = -self.laplace.dot(h+xi) - self.sigma * \
-            self.laplace.dot(xi) + 10**self.kappa * self.M.dot(xi)
+        r2 = -self.laplace(h+xi) - self.sigma * \
+            self.laplace(xi) + 10**self.kappa * xi
         return np.array([r1, r2])
-
-    # disjoining pressure
-    def djp(self, h):
-        return 1./h**6 - 1./h**3
 
     def plot(self, ax):
         ax.set_xlabel("x")
@@ -72,11 +70,11 @@ class ThinFilm(Problem):
         # assign the continuation parameter
         self.continuation_parameter = (self.tfe, "kappa")
 
-    def norm(self):
-        # calculate the L2-norm by integration
-        h, xi = self.tfe.u
-        mesh_area = self.tfe.integrate(lambda x, h: 1, h)
-        return self.tfe.integrate(lambda x, h: h**2, h) / mesh_area
+    # def norm(self):
+    #     # calculate the L2-norm by integration
+    #     h, xi = self.tfe.u
+    #     mesh_area = self.tfe.integrate(lambda x, h: 1, h)
+    #     return self.tfe.integrate(lambda x, h: h**2, h) / mesh_area
 
 
 # create output folder
@@ -92,9 +90,9 @@ problem.add_equation(problem.volume_constraint_xi)
 problem.add_equation(problem.translation_constraint)
 
 # mesh refinement settings
-problem.tfe.mesh.max_refinement_error = 1e-1
-problem.tfe.mesh.min_refinement_error = 1e-2
-problem.tfe.mesh.min_element_dx = 1
+problem.tfe.max_refinement_error = 1e-1
+problem.tfe.min_refinement_error = 1e-2
+problem.tfe.min_dx = 1
 
 # create figure
 fig, ax = plt.subplots(1, 1, figsize=(16, 9))
@@ -128,7 +126,6 @@ fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 # start parameter continuation
 print("starting continuation")
 problem.continuation_stepper.ds = -1e-2
-problem.use_sparse_matrices = True
 problem.settings.always_locate_bifurcations = False
 problem.settings.neigs = 0
 
@@ -137,7 +134,7 @@ plotevery = 10
 while problem.tfe.kappa < 0:
     # perform continuation step
     problem.continuation_step()
-    problem.tfe.adapt()
+    # problem.tfe.adapt()
     n += 1
     print("step #:", n, " ds:", problem.continuation_stepper.ds,
           " kappa:", problem.tfe.kappa)
