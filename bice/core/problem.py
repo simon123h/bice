@@ -386,11 +386,18 @@ class Problem():
         # return the dict
         return data
 
-    # Load the current solution from a file, inverse of Problem.save(..)
+    # Load the current solution from a file or from a Solution object
+    # inverse of Problem.save(..)
     @profile
-    def load(self, filename):
-        # load data dictionary from the file
-        data = np.load(filename, allow_pickle=True)
+    def load(self, file_or_sol):
+        if isinstance(file_or_sol, Solution):
+            # get data from a solution object
+            data = file_or_sol.data
+        else:
+            # load data dictionary from the file
+            data = np.load(file_or_sol, allow_pickle=True)
+        # clear the history
+        self.history.clear()
         # load the value of the continuation parameter
         if self.continuation_parameter is not None:
             self.set_continuation_parameter(data['Problem.p'])
@@ -554,9 +561,7 @@ class Problem():
             if bif.bifurcation_type() == "HP":
                 continue
             # load the bifurcation point into the problem
-            self.u = bif.u
-            self.set_continuation_parameter(bif.p)
-            self.history.clear()
+            self.load(bif)
             # attempt branch switching to new branch
             converged = self.switch_branch(locate=False)
             # skip this bifurcation, if we failed to converge onto the bifurcation point

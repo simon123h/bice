@@ -25,9 +25,9 @@ class Solution:
         self.ndofs = problem.ndofs
         # vector of unknowns
         # TODO: storing each solution may eat up some memory
-        #  @simon: do we need to save every solution? we could save some
-        #  solutions to the disk instead
-        self.u = problem.u.copy()
+        #       do we need to save every solution? maybe save bifurcations only
+        # save the current data of the problem, so we can restore the point
+        self.data = self.problem.save()
         # time
         self.t = problem.time
         # value of the continuation parameter
