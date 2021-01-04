@@ -7,7 +7,7 @@ import scipy.sparse as sp
 import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem
-from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
+from bice.pde.finite_differences import FiniteDifferencesEquation, NeumannBC
 from bice.continuation import TranslationConstraint, VolumeConstraint
 
 
@@ -23,7 +23,7 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         self.sigma = 0.1
         self.kappa = -2
         # setup the mesh
-        self.x = [np.linspace(-L/2, L/2, N)]
+        self.x = [np.linspace(0, L/2, N)]
         # initial condition
         h0 = 60
         a = 3/20. / (h0-1)
@@ -32,7 +32,7 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         xi = h*0
         self.u = np.array([h, xi])
         # build finite differences matrices
-        self.bc = PeriodicBC()
+        self.bc = NeumannBC()
         self.build_FD_matrices(approx_order=2)
 
     # definition of the equation, using finite element method
@@ -75,9 +75,6 @@ class ThinFilm(Problem):
         # Generate the volume constraint
         self.volume_constraint_h = VolumeConstraint(self.tfe, variable=0)
         self.volume_constraint_xi = VolumeConstraint(self.tfe, variable=1)
-        # Generate the translation constraint
-        self.translation_constraint = TranslationConstraint(
-            self.tfe, variable=0)
         # assign the continuation parameter
         self.continuation_parameter = (self.tfe, "kappa")
 
@@ -99,7 +96,6 @@ problem = ThinFilm(N=200, L=1000)
 # impose the constraints
 problem.add_equation(problem.volume_constraint_h)
 problem.add_equation(problem.volume_constraint_xi)
-problem.add_equation(problem.translation_constraint)
 
 # mesh refinement settings
 problem.tfe.max_refinement_error = 1e-1
@@ -146,7 +142,7 @@ plotevery = 10
 while problem.tfe.kappa < 0:
     # perform continuation step
     problem.continuation_step()
-    # problem.tfe.adapt()
+    problem.tfe.adapt()
     n += 1
     print("step #:", n, " ds:", problem.continuation_stepper.ds,
           " kappa:", problem.tfe.kappa)
