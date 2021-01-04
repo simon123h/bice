@@ -3,6 +3,7 @@ import shutil
 import os
 import sys
 import numpy as np
+import scipy.sparse as sp
 import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem
@@ -38,12 +39,22 @@ class ThinFilmEquation(FiniteDifferencesEquation):
     def rhs(self, u):
         h, xi = u
         djp = 1./h**6 - 1./h**3
-        # h residual
-        r1 = -self.laplace(h+xi) - djp
-        # xi residual
-        r2 = -self.laplace(h+xi) - self.sigma * \
+        # h equation
+        eq1 = -self.laplace(h+xi) - djp
+        # xi equation
+        eq2 = -self.laplace(h+xi) - self.sigma * \
             self.laplace(xi) + 10**self.kappa * xi
-        return np.array([r1, r2])
+        return np.array([eq1, eq2])
+
+    # definition of the equation, using finite element method
+    def jacobian(self, u):
+        h, xi = u
+        ddjp_dh = 3./h**4 - 6./h**7
+        deq1_dh = -self.laplace() - sp.diags(ddjp_dh)
+        deq2_dh = -self.laplace()
+        deq1_dxi = -self.laplace()
+        deq2_dxi = -self.laplace() - self.sigma * self.laplace() + sp.diags(10**self.kappa+xi*0)
+        return sp.bmat([[deq1_dh, deq1_dxi], [deq2_dh, deq2_dxi]])
 
     def plot(self, ax):
         ax.set_xlabel("x")
@@ -70,11 +81,12 @@ class ThinFilm(Problem):
         # assign the continuation parameter
         self.continuation_parameter = (self.tfe, "kappa")
 
-    # def norm(self):
-    #     # calculate the L2-norm by integration
-    #     h, xi = self.tfe.u
-    #     mesh_area = self.tfe.integrate(lambda x, h: 1, h)
-    #     return self.tfe.integrate(lambda x, h: h**2, h) / mesh_area
+    def norm(self):
+        # calculate the L2-norm by integration
+        h, xi = self.tfe.u
+        x = self.tfe.x[0]
+        L = np.max(x) - np.min(x)
+        return np.trapz(h**2, x) / L
 
 
 # create output folder
