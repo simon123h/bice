@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem
-from bice.fem import FiniteElementEquation, OneDimMesh
+from bice.deprecated.fem import FiniteElementEquation, OneDimMesh
 from bice.continuation import TranslationConstraint, VolumeConstraint
 
 

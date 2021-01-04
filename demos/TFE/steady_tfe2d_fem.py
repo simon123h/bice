@@ -7,7 +7,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem
-from bice.fem import FiniteElementEquation, TriangleMesh
+from bice.deprecated.fem import FiniteElementEquation, TriangleMesh
 from bice.continuation import VolumeConstraint, TranslationConstraint
 from bice import profile, Profiler
 
