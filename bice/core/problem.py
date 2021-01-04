@@ -386,16 +386,19 @@ class Problem():
         # return the dict
         return data
 
-    # Load the current solution from a file or from a Solution object
-    # inverse of Problem.save(..)
+    # Load the current solution from the given data.
+    # where 'data' can be a filename, a Solution object of a dictionary as returned
+    # by Problem.save(). Problem.load(...) is the inverse of Problem.save(...).
     @profile
-    def load(self, file_or_sol):
-        if isinstance(file_or_sol, Solution):
+    def load(self, data):
+        # if data is a Solution object:
+        if isinstance(data, Solution):
             # get data from a solution object
-            data = file_or_sol.data
-        else:
+            data = data.data
+        # if data is a string:
+        elif isinstance(data, str):
             # load data dictionary from the file
-            data = np.load(file_or_sol, allow_pickle=True)
+            data = np.load(data, allow_pickle=True)
         # clear the history
         self.history.clear()
         # load the value of the continuation parameter
