@@ -76,7 +76,7 @@ class TranslationConstraint(ConstraintEquation):
     def rhs(self, u):
         # set up the vector of the residual contributions
         res = np.zeros((u.size))
-        # reference to the equation, shape and indices of the unknowns that we work on
+        # reference to the equation and indices of the unknowns that we work on
         eq = self.ref_eq
         eq_idx = self.group.idx[eq]
         self_idx = self.group.idx[self]
@@ -93,7 +93,7 @@ class TranslationConstraint(ConstraintEquation):
 
     @profile
     def jacobian(self, u):
-        # reference to the equation, shape and indices of the unknowns that we work on
+        # reference to the equation and indices of the unknowns that we work on
         eq = self.ref_eq
         eq_idx = self.group.idx[eq]
         self_idx = self.group.idx[self]

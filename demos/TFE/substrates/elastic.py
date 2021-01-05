@@ -5,10 +5,12 @@ import sys
 import numpy as np
 import scipy.sparse as sp
 import matplotlib.pyplot as plt
-sys.path.append("../..")  # noqa, needed for relative import of package
+sys.path.append("../../..")  # noqa, needed for relative import of package
 from bice import Problem
 from bice.pde.finite_differences import FiniteDifferencesEquation, NeumannBC
-from bice.continuation import TranslationConstraint, VolumeConstraint
+# from bice.continuation import TranslationConstraint, VolumeConstraint
+from bice import Profiler
+from two_field_volume_constraint import VolumeConstraint
 
 
 class ThinFilmEquation(FiniteDifferencesEquation):
@@ -62,6 +64,7 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         h, xi = self.u
         ax.plot(self.x[0], h+xi, marker="+", markersize=5, label="liquid")
         ax.plot(self.x[0], xi, marker="+", markersize=5, label="substrate")
+        # ax.plot(self.x[0], self.refinement_error_estimate(), label="error")
         ax.legend()
 
 
@@ -73,8 +76,7 @@ class ThinFilm(Problem):
         self.tfe = ThinFilmEquation(N, L)
         self.add_equation(self.tfe)
         # Generate the volume constraint
-        self.volume_constraint_h = VolumeConstraint(self.tfe, variable=0)
-        self.volume_constraint_xi = VolumeConstraint(self.tfe, variable=1)
+        self.volume_constraint = VolumeConstraint(self.tfe)
         # assign the continuation parameter
         self.continuation_parameter = (self.tfe, "kappa")
 
@@ -91,16 +93,21 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=200, L=1000)
+problem = ThinFilm(N=400, L=1000)
 
 # impose the constraints
-problem.add_equation(problem.volume_constraint_h)
-problem.add_equation(problem.volume_constraint_xi)
+problem.add_equation(problem.volume_constraint)
+
+h, xi = problem.tfe.u
+x = problem.tfe.x[0]
 
 # mesh refinement settings
-problem.tfe.max_refinement_error = 1e-1
+problem.tfe.max_refinement_error = 1e-0
 problem.tfe.min_refinement_error = 1e-2
 problem.tfe.min_dx = 1
+problem.tfe.max_dx = 100
+# problem.newton_solver.convergence_tolerance = 4e-1
+# problem.newton_solver.verbosity = 1
 
 # create figure
 fig, ax = plt.subplots(1, 1, figsize=(16, 9))
@@ -118,8 +125,8 @@ for i in range(5):
     print("solving")
     problem.newton_solve()
     # adapt
-    print("adapting")
-    problem.tfe.adapt()
+    # print("adapting")
+    # problem.tfe.adapt()
     # plot
     print("plotting")
     problem.tfe.plot(ax)
@@ -137,12 +144,16 @@ problem.continuation_stepper.ds = -1e-2
 problem.settings.always_locate_bifurcations = False
 problem.settings.neigs = 0
 
+Profiler.start()
+
+problem.continuation_stepper.convergence_tolerance = 4e-1
+
 n = 0
 plotevery = 10
 while problem.tfe.kappa < 0:
     # perform continuation step
     problem.continuation_step()
-    problem.tfe.adapt()
+    # problem.tfe.adapt()
     n += 1
     print("step #:", n, " ds:", problem.continuation_stepper.ds,
           " kappa:", problem.tfe.kappa)
@@ -151,3 +162,6 @@ while problem.tfe.kappa < 0:
         problem.plot(ax)
         fig.savefig("out/img/{:05d}.svg".format(plotID))
         plotID += 1
+
+
+Profiler.print_summary()

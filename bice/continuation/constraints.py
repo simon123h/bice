@@ -40,8 +40,6 @@ class VolumeConstraint(ConstraintEquation):
         self.ref_eq = reference_equation
         # on which variable (index) of the equation should the constraint be imposed?
         self.variable = variable
-        # the constraint equation couples to some other equation of the problem
-        self.is_coupled = True
         # this equation brings a single extra degree of freedom (influx Lagrange multiplier)
         self.u = np.zeros(1)
         # This parameter allows for prescribing a fixed volume (unless it is None)
@@ -53,7 +51,7 @@ class VolumeConstraint(ConstraintEquation):
         # reference to the indices of the unknowns that we work on
         self_idx = self.group.idx[self]
         eq_idx = self.group.idx[self.ref_eq]
-        # optionally split only that part that is referenced by self.variable
+        # optionally split only the part that is referenced by self.variable
         if self.variable is not None:
             eq_shape = self.ref_eq.shape[1:]
             var_ndofs = np.prod(eq_shape)
@@ -99,8 +97,6 @@ class TranslationConstraint(ConstraintEquation):
         self.direction = direction
         # initialize unknowns (velocity vector) to zero
         self.u = np.zeros(1)
-        # the constraint equation couples to some other equation of the problem
-        self.is_coupled = True
 
     def rhs(self, u):
         # set up the vector of the residual contributions
@@ -110,7 +106,7 @@ class TranslationConstraint(ConstraintEquation):
         eq_shape = eq.shape
         eq_idx = self.group.idx[eq]
         self_idx = self.group.idx[self]
-        # optionally split only that part that is referenced by self.variable
+        # optionally split only the part that is referenced by self.variable
         if self.variable is not None:
             eq_shape = self.ref_eq.shape[1:]
             var_ndofs = np.prod(eq_shape)
