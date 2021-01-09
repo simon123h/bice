@@ -410,8 +410,9 @@ class Problem():
             eq_name = type(eq).__name__ + "."
             eq_data = {k.replace(eq_name, ''): v for k,
                        v in data.items() if k.startswith(eq_name)}
-            # pass it to the equation
-            eq.load(eq_data)
+            # pass it to the equation, unless the dict is empty
+            if eq_data:
+                eq.load(eq_data)
 
     # adapt the problem/equations to the solution (e.g. by mesh refinement)
     def adapt(self):
