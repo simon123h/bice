@@ -48,7 +48,7 @@ class CoatingEquation(FiniteDifferencesEquation):
         super().build_FD_matrices(approx_order)
         self.nabla_h = self.nabla
         self.laplace_h = self.laplace
-        # (iii) differentiation operators no specific boundary effects
+        # (iii) differentiation operators with no specific boundary effects
         self.bc = NoBoundaryConditions()
         super().build_FD_matrices(approx_order)
         self.nabla0 = self.nabla

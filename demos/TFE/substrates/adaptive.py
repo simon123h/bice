@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+from volume_constraint import VolumeConstraint
 import shutil
 import os
 import sys
@@ -6,10 +7,9 @@ import numpy as np
 import scipy.sparse as sp
 from scipy.sparse import diags
 import matplotlib.pyplot as plt
-sys.path.append("../..")  # noqa, needed for relative import of package
+sys.path.append("../../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
-from bice.pde import FiniteDifferencesEquation
-from bice.continuation import VolumeConstraint, TranslationConstraint
+from bice.pde.finite_differences import FiniteDifferencesEquation, NeumannBC, DirichletBC, NoBoundaryConditions
 from bice.core.profiling import Profiler
 
 
@@ -29,8 +29,9 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         self.M = 1e-3  # absorption constant
         self.U = 0  # substrate velocity
         self.alpha = 0  # substrate inclination
+        self.j_in = 0 # liquid influx
         # spatial coordinate
-        self.x = [np.linspace(-L/2, L/2, N)]
+        self.x = [np.linspace(0, L/2, N)]
         # initial condition
         hmax = 1
         s = self.x[0]
@@ -38,7 +39,24 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         z = 0*s + 0.1
         self.u = np.array([h, z])
         # build finite difference matrices
-        self.build_FD_matrices()
+        self.build_FD_matrices(approx_order=2)
+
+    # overload building of FD matrices, because this equation has a more complicated set up
+    def build_FD_matrices(self, approx_order):
+        # build finite differences matrices...
+        # (i) including the flux boundary conditions for Q * dF/dh
+        self.bc = DirichletBC(vals=(1, 0))
+        super().build_FD_matrices(approx_order)
+        self.nabla_d = self.nabla
+        # (ii) including the Neumann boundary conditions for h & z
+        self.bc = NeumannBC()
+        super().build_FD_matrices(approx_order)
+        self.nabla_n = self.nabla
+        self.laplace_n = self.laplace
+        # (iii) differentiation operators with no specific boundary effects
+        self.bc = NoBoundaryConditions()
+        super().build_FD_matrices(approx_order)
+        self.nabla0 = self.nabla
 
     # definition of the equation, using finite difference method
     def rhs(self, u):
@@ -61,17 +79,18 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         # include miscibility effects
         dfbrush += self.T * self.chi * c / (z + H_dry)
         # free energy variations
-        dFdh = -self.laplace.dot(h+z) - djp
-        dFdz = -self.laplace.dot(h+z*(1+gamma_bl)) + dfbrush
+        dFdh = -self.laplace_n(h+z) - djp
+        dFdz = -self.laplace_n(h+z*(1+gamma_bl)) + dfbrush
         # absorption term
         M_absorb = self.M * (dFdh - dFdz)
         # dynamic equations
-        dhdt = self.nabla.dot(Qhh * self.nabla.dot(dFdh)) - M_absorb
-        dzdt = self.nabla.dot(Qzz * self.nabla.dot(dFdz)) + M_absorb
+        q = self.j_in # flux into the liquid film
+        dhdt = self.nabla_d(Qhh * self.nabla0(dFdh), q) - M_absorb
+        dzdt = self.nabla_d(Qzz * self.nabla0(dFdz), 0) + M_absorb
         # combine and return
         return np.array([dhdt, dzdt])
 
-    def jacobian(self, u):
+    def jacobian2(self, u):
         # expand unknowns
         h, z = u
         # dry brush height
@@ -95,7 +114,6 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         dFdz = -self.laplace.dot(h+z*(1+gamma_bl)) + dfbrush
         # abbreviations
         nabla = self.nabla
-        laplace = self.laplace
         # mobility derivatives
         Qhh = diags(h**3)
         dQhh_dh = diags(3 * h**2)
@@ -112,11 +130,10 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         ddjp_dh = diags(djp_pf * (c * 3 / h**4 - self.h_p**3 * 6 / h**7))
         ddjp_dz = diags(-djp_pf * dc_dz / h**3)
         # free energy variation derivatives
-        ddFdh_dh = -laplace - ddjp_dh
-        ddFdh_dz = -laplace - ddjp_dz
-        ddFdz_dh = -laplace
-        ddFdz_dz = -laplace - laplace * \
-            diags(gamma_bl+z*dgamma_bl_dz) + diags(ddfbrush_dz)
+        ddFdh_dh = -self.laplace() - ddjp_dh
+        ddFdh_dz = -self.laplace() - ddjp_dz
+        ddFdz_dh = -self.laplace()
+        ddFdz_dz = -self.laplace() - self.laplace(diags(gamma_bl+z*dgamma_bl_dz)) + diags(ddfbrush_dz)
         # absorption term derivative
         dM_absorb_dh = self.M * (ddFdh_dh - ddFdz_dh)
         dM_absorb_dz = self.M * (ddFdh_dz - ddFdz_dz)
@@ -132,8 +149,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
                           sp.hstack((ddzdt_dh, ddzdt_dz))))
 
     def du_dx(self, u, direction=0):
-        h, z = u
-        return np.matmul(self.nabla, h)
+        return self.nabla0(u)
 
     def plot(self, ax):
         ax.set_ylim((0, 1.2))
@@ -145,24 +161,20 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         ax.legend()
 
 
-class ThinFilm(Problem):
+class AdaptiveSubstrateProblem(Problem):
 
     def __init__(self, N, L):
         super().__init__()
         # Add the Thin-Film equation to the problem
-        #self.tfe = ThinFilmEquation(N, L)
         self.tfe = AdaptiveSubstrateEquation(N, L)
         self.add_equation(self.tfe)
         # initialize time stepper
         # self.time_stepper = time_steppers.BDF2()
         self.time_stepper = time_steppers.BDF(self)
         # Generate the volume constraint
-        self.volume_constraint = VolumeConstraint(self.tfe, variable=0)
-        self.volume_constraint.fixed_volume = 0
-        # Generate the translation constraint
-        self.translation_constraint = TranslationConstraint(self.tfe, variable=0)
+        self.volume_constraint = VolumeConstraint(self.tfe)
         # assign the continuation parameter
-        self.continuation_parameter = (self.volume_constraint, "fixed_volume")
+        self.continuation_parameter = (self.tfe, "Nlk")
 
     def norm(self):
         h, z = self.tfe.u
@@ -174,7 +186,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = ThinFilm(N=256, L=10)
+problem = AdaptiveSubstrateProblem(N=256, L=10)
 
 # create figure
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
@@ -213,24 +225,18 @@ else:
 problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
 
-# Impose the constraints
-problem.volume_constraint.fixed_volume = np.trapz(
-    problem.tfe.u[0], problem.tfe.x[0])
+# Impose the constraint
 problem.add_equation(problem.volume_constraint)
-problem.add_equation(problem.translation_constraint)
 
 problem.continuation_stepper.convergence_tolerance = 1e-10
 
 n = 0
 plotevery = 1
-while problem.volume_constraint.fixed_volume < 1000:
+while problem.tfe.Nlk < 1000:
     # perform continuation step
     problem.continuation_step()
-    # perform dealiasing
-    problem.dealias()
     n += 1
     print("step #:", n, " ds:", problem.continuation_stepper.ds)
-    #print('largest EVs: ', problem.eigen_solver.latest_eigenvalues[:3])
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
