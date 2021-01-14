@@ -206,8 +206,14 @@ class AffineOperator:
     # this also allows for simple operator algebra, e.g.:
     # op2 = operator()*operator() = Q*Q (unfortunately discarding the constant part)
     def __call__(self, u=None, g=1):
+        # if u is not given, return the matrix Q alone
         if u is None:
             return self.Q
+        # check if u is not a vector (but a matrix or tensor)
+        # make sure that a sparse matrix is returned
+        if u.ndim > 1:
+            return self.Q.dot(u) + sp.coo_matrix(g*np.resize(self.G, u.shape))
+        # else, u is a vector, simply perform the Q*u + G
         return self.Q.dot(u) + g*self.G
 
     # overload the dot method, so we can do operator.dot(u) as with numpy/scipy matrices
