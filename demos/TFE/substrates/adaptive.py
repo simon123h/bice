@@ -19,17 +19,17 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         super().__init__(shape=(2, N))
         # parameters
         self.theta = np.sqrt(0.6)  # contact angle
-        self.h_p = 1e-2  # precursor film height ratio
+        self.h_p = 5e-3  # precursor film height ratio
         self.sigma = 0.3  # relative grafting density
-        self.gamma_bl = 0.1  # surface tension ratio
-        self.Nlk = 0.3  # polymer chain length
-        self.T = 20  # temperature
+        self.gamma_bl = 0.01  # surface tension ratio
+        self.Nlk = 0.2  # polymer chain length
+        self.T = 50  # temperature
         self.chi = 0  # miscibility
-        self.D = 1e-4  # brush lateral diffusion constant
-        self.M = 1e-3  # absorption constant
-        self.U = 0  # substrate velocity
+        self.D = 1e-8  # brush lateral diffusion constant
+        self.M = 1e-4  # absorption constant
+        self.U = -0.05  # substrate velocity
         self.alpha = 0  # substrate inclination
-        self.j_in = 0  # liquid influx
+        self.j_in = True  # liquid influx
         # spatial coordinate
         self.x = [np.linspace(0, L/2, N)]
         # initial condition
@@ -39,13 +39,13 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         z = 0*s + 0.1
         self.u = np.array([h, z])
         # build finite difference matrices
-        self.build_FD_matrices(approx_order=2)
+        self.build_FD_matrices(approx_order=1)
 
     # overload building of FD matrices, because this equation has a more complicated set up
     def build_FD_matrices(self, approx_order):
         # build finite differences matrices...
         # (i) including the flux boundary conditions for Q * dF/dh
-        self.bc = DirichletBC(vals=(1, 0))
+        self.bc = DirichletBC(vals=(1, 1))
         super().build_FD_matrices(approx_order)
         self.nabla_d = self.nabla
         # (ii) including the Neumann boundary conditions for h & z
@@ -83,10 +83,19 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         dFdz = -self.laplace_n(h+z*(1+gamma_bl)) + dfbrush
         # absorption term
         M_absorb = self.M * (dFdh - dFdz)
+        # flux into the liquid film to conserve liquid volume
+        qh = np.zeros(h.shape)
+        qz = np.zeros(h.shape)
+        # q[0] = -(h[-1] - h[0] + z[-1] - z[0]) * self.U
+        qh[0:20] = -(h[-1] - h[0] + z[-1] - z[0]) * self.U
+        # qh[-20:] = -h[-1] * self.U * 0.01
+        # qz[-20:] = -z[-1] * self.U
         # dynamic equations
-        q = self.j_in  # flux into the liquid film
-        dhdt = self.nabla_d(Qhh * self.nabla0(dFdh), q) - M_absorb
-        dzdt = self.nabla_d(Qzz * self.nabla0(dFdz), 0) + M_absorb
+        dhdt = self.nabla_d(Qhh * self.nabla0(dFdh), qh) - M_absorb
+        dzdt = self.nabla_d(Qzz * self.nabla0(dFdz), qz) + M_absorb
+        # advection term
+        dhdt -= self.U * self.nabla_n.dot(h)
+        dzdt -= self.U * self.nabla_n.dot(z)
         # combine and return
         return np.array([dhdt, dzdt])
 
@@ -167,12 +176,15 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         return self.nabla0(u)
 
     def plot(self, ax):
+        global problem
         ax.set_ylim((0, 1.2))
         ax.set_xlabel("x")
         ax.set_ylabel("solution h(x,t)")
+        x = self.x[0]
+        x -= self.U*problem.time
         h, xi = self.u
-        ax.plot(self.x[0], h+xi, markersize=5, label="liquid")
-        ax.plot(self.x[0], xi, markersize=5, label="substrate")
+        ax.plot(x, h+xi, markersize=5, label="liquid")
+        ax.plot(x, xi, markersize=5, label="substrate")
         ax.legend()
 
 
@@ -238,7 +250,7 @@ else:
 
 # start parameter continuation
 problem.continuation_stepper.ds = 1e-2
-problem.continuation_stepper.ndesired_newton_steps = 3
+problem.continuation_stepper.ndesired_newton_steps = 5
 
 # Impose the constraint
 problem.add_equation(problem.volume_constraint)
