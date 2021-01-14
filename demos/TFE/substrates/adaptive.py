@@ -90,7 +90,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         # combine and return
         return np.array([dhdt, dzdt])
 
-    def jacobian(self, u):
+    def jacobian2(self, u):
         # expand unknowns
         h, z = u
         # dry brush height
@@ -145,6 +145,21 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         ddzdt_dz = self.nabla_d(dQzz_dz * diags(self.nabla0(dFdz)) +
                                 Qzz * self.nabla0(ddFdz_dz), 0) + dM_absorb_dz
         # combine and return
+        an_jac = sp.bmat([[ddhdt_dh, ddhdt_dz],
+                          [ddzdt_dh, ddzdt_dz]]).toarray()
+        fd_jac = super().jacobian(u).toarray()
+        plt.clf()
+        plt.title("Analytical Jacobian")
+        plt.imshow(np.abs(an_jac), cmap="Reds")
+        plt.show()
+        plt.title("FD Jacobian")
+        plt.imshow(np.abs(fd_jac), cmap="Reds")
+        plt.show()
+        diff = an_jac - fd_jac
+        plt.title("Difference")
+        plt.imshow(np.abs(diff), cmap="Reds")
+        plt.show()
+        exit()
         return sp.bmat([[ddhdt_dh, ddhdt_dz],
                         [ddzdt_dh, ddzdt_dz]])
 
