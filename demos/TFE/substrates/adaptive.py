@@ -29,7 +29,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         self.M = 1e-3  # absorption constant
         self.U = 0  # substrate velocity
         self.alpha = 0  # substrate inclination
-        self.j_in = 0 # liquid influx
+        self.j_in = 0  # liquid influx
         # spatial coordinate
         self.x = [np.linspace(0, L/2, N)]
         # initial condition
@@ -84,13 +84,13 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         # absorption term
         M_absorb = self.M * (dFdh - dFdz)
         # dynamic equations
-        q = self.j_in # flux into the liquid film
+        q = self.j_in  # flux into the liquid film
         dhdt = self.nabla_d(Qhh * self.nabla0(dFdh), q) - M_absorb
         dzdt = self.nabla_d(Qzz * self.nabla0(dFdz), 0) + M_absorb
         # combine and return
         return np.array([dhdt, dzdt])
 
-    def jacobian2(self, u):
+    def jacobian(self, u):
         # expand unknowns
         h, z = u
         # dry brush height
@@ -110,10 +110,8 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         # include miscibility effects
         dfbrush += self.T * self.chi * c / (z + H_dry)
         # free energy variations
-        dFdh = -self.laplace.dot(h+z) - djp
-        dFdz = -self.laplace.dot(h+z*(1+gamma_bl)) + dfbrush
-        # abbreviations
-        nabla = self.nabla
+        dFdh = -self.laplace_n(h+z) - djp
+        dFdz = -self.laplace_n(h+z*(1+gamma_bl)) + dfbrush
         # mobility derivatives
         Qhh = diags(h**3)
         dQhh_dh = diags(3 * h**2)
@@ -130,23 +128,25 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         ddjp_dh = diags(djp_pf * (c * 3 / h**4 - self.h_p**3 * 6 / h**7))
         ddjp_dz = diags(-djp_pf * dc_dz / h**3)
         # free energy variation derivatives
-        ddFdh_dh = -self.laplace() - ddjp_dh
-        ddFdh_dz = -self.laplace() - ddjp_dz
-        ddFdz_dh = -self.laplace()
-        ddFdz_dz = -self.laplace() - self.laplace(diags(gamma_bl+z*dgamma_bl_dz)) + diags(ddfbrush_dz)
+        ddFdh_dh = -self.laplace_n() - ddjp_dh
+        ddFdh_dz = -self.laplace_n() - ddjp_dz
+        ddFdz_dh = -self.laplace_n()
+        ddFdz_dz = -self.laplace_n() - self.laplace_n(diags(gamma_bl +
+                                                            z*dgamma_bl_dz)) + diags(ddfbrush_dz)
         # absorption term derivative
         dM_absorb_dh = self.M * (ddFdh_dh - ddFdz_dh)
         dM_absorb_dz = self.M * (ddFdh_dz - ddFdz_dz)
         # derivatives of dynamic equations
-        ddhdt_dh = nabla.dot(dQhh_dh * nabla.dot(dFdh) +
-                             Qhh * nabla.dot(ddFdh_dh)) - dM_absorb_dh
-        ddhdt_dz = nabla.dot(Qhh * nabla.dot(ddFdh_dz)) - dM_absorb_dz
-        ddzdt_dh = nabla.dot(Qzz * nabla.dot(ddFdz_dh)) + dM_absorb_dh
-        ddzdt_dz = nabla.dot(dQzz_dz * nabla.dot(dFdz) +
-                             Qzz * nabla.dot(ddFdz_dz)) + dM_absorb_dz
+        q = self.j_in  # flux into the liquid film
+        ddhdt_dh = self.nabla_d(dQhh_dh * diags(self.nabla0(dFdh)) +
+                                Qhh * self.nabla0(ddFdh_dh), q) - dM_absorb_dh
+        ddhdt_dz = self.nabla_d(Qhh * self.nabla0(ddFdh_dz), q) - dM_absorb_dz
+        ddzdt_dh = self.nabla_d(Qzz * self.nabla0(ddFdz_dh), 0) + dM_absorb_dh
+        ddzdt_dz = self.nabla_d(dQzz_dz * diags(self.nabla0(dFdz)) +
+                                Qzz * self.nabla0(ddFdz_dz), 0) + dM_absorb_dz
         # combine and return
-        return sp.vstack((sp.hstack((ddhdt_dh, ddhdt_dz)),
-                          sp.hstack((ddzdt_dh, ddzdt_dz))))
+        return sp.bmat([[ddhdt_dh, ddhdt_dz],
+                        [ddzdt_dh, ddzdt_dz]])
 
     def du_dx(self, u, direction=0):
         return self.nabla0(u)
