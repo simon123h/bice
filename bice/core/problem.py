@@ -703,7 +703,7 @@ class ProblemSettings():
         # TODO: should have a more verbose name
         self.neigs = 20
         # how small does an eigenvalue need to be in order to be counted as 'zero'?
-        self.eigval_zero_tolerance = 1e-6
+        self.eigval_zero_tolerance = 1e-16
         # should we always try to exactly locate bifurcations when passing one?
         self.always_locate_bifurcations = False
         # should sparse matrices be assumed when solving linear systems?
