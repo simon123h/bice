@@ -27,7 +27,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         self.chi = 0  # miscibility
         self.D = 1e-8  # brush lateral diffusion constant
         self.M = 1e-4  # absorption constant
-        self.U = -0.05  # substrate velocity
+        self.U = -0.005  # substrate velocity
         self.alpha = 0  # substrate inclination
         self.j_in = True  # liquid influx
         # spatial coordinate
@@ -196,7 +196,7 @@ class AdaptiveSubstrateProblem(Problem):
         self.tfe = AdaptiveSubstrateEquation(N, L)
         self.add_equation(self.tfe)
         # initialize time stepper
-        # self.time_stepper = time_steppers.BDF2()
+        # self.time_stepper = time_steppers.BDF2(dt = 1e-5)
         self.time_stepper = time_steppers.BDF(self)
         # Generate the volume constraint
         self.volume_constraint = VolumeConstraint(self.tfe)
