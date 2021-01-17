@@ -80,7 +80,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         dfbrush += self.T * self.chi * c / (z + H_dry)
         # free energy variations
         dFdh = -self.laplace_h(h+z) - djp
-        dFdz = -self.laplace_h(h+z*(1+gamma_bl)) + dfbrush
+        dFdz = -self.laplace_h(h+z) - gamma_bl * self.laplace_h(z) + dfbrush
         # absorption term
         M_absorb = self.M * (dFdh - dFdz)
         # flux into the liquid film to conserve liquid volume
@@ -107,10 +107,11 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         # polymer volume fraction (polymer concentration)
         c = H_dry / (H_dry + z)
         # disjoining pressure
+        # TODO: add back adaptive wettability
         djp = 5/3 * (self.theta * self.h_p)**2 * \
-            (self.h_p**3 / h**6 - c / h**3)
+            (self.h_p**3 / h**6 - 1 / h**3)
         # adaptive brush-liquid surface tension
-        gamma_bl = self.gamma_bl * c
+        gamma_bl = self.gamma_bl * 1
         # mobilities
         Qhh = h**3
         Qzz = self.D * z
@@ -120,7 +121,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         dfbrush += self.T * self.chi * c / (z + H_dry)
         # free energy variations
         dFdh = -self.laplace_h(h+z) - djp
-        dFdz = -self.laplace_h(h+z*(1+gamma_bl)) + dfbrush
+        dFdz = -self.laplace_h(h+z) - gamma_bl * self.laplace_h(z) + dfbrush
         # mobility derivatives
         Qhh = diags(h**3)
         dQhh_dh = diags(3 * h**2)
@@ -250,6 +251,9 @@ else:
 problem.continuation_stepper.ds = -1e-2
 # problem.continuation_stepper.ndesired_newton_steps = 5
 # problem.continuation_stepper.convergence_tolerance = 1e-10
+problem.continuation_stepper.max_newton_iterations = 100
+problem.settings.eigval_zero_tolerance = 1e-18
+problem.settings.neigs = 10
 
 # Impose the constraint
 problem.add_equation(problem.volume_constraint)
