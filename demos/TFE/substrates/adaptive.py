@@ -47,12 +47,12 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         # (i) including the flux boundary conditions for Q * dF/dh
         self.bc = DirichletBC(vals=(1, 1))
         super().build_FD_matrices(approx_order)
-        self.nabla_d = self.nabla
+        self.nabla_F = self.nabla
         # (ii) including the Neumann boundary conditions for h & z
         self.bc = NeumannBC()
         super().build_FD_matrices(approx_order)
-        self.nabla_n = self.nabla
-        self.laplace_n = self.laplace
+        self.nabla_h = self.nabla
+        self.laplace_h = self.laplace
         # (iii) differentiation operators with no specific boundary effects
         self.bc = NoBoundaryConditions()
         super().build_FD_matrices(approx_order)
@@ -68,9 +68,9 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         c = H_dry / (H_dry + z)
         # disjoining pressure
         djp = 5/3 * (self.theta * self.h_p)**2 * \
-            (self.h_p**3 / h**6 - c / h**3)
+            (self.h_p**3 / h**6 - 1 / h**3)
         # adaptive brush-liquid surface tension
-        gamma_bl = self.gamma_bl * c
+        gamma_bl = self.gamma_bl * 1
         # mobilities
         Qhh = h**3
         Qzz = self.D * z
@@ -79,8 +79,8 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         # include miscibility effects
         dfbrush += self.T * self.chi * c / (z + H_dry)
         # free energy variations
-        dFdh = -self.laplace_n(h+z) - djp
-        dFdz = -self.laplace_n(h+z*(1+gamma_bl)) + dfbrush
+        dFdh = -self.laplace_h(h+z) - djp
+        dFdz = -self.laplace_h(h+z*(1+gamma_bl)) + dfbrush
         # absorption term
         M_absorb = self.M * (dFdh - dFdz)
         # flux into the liquid film to conserve liquid volume
@@ -91,11 +91,11 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         # qh[-20:] = -h[-1] * self.U * 0.01
         # qz[-20:] = -z[-1] * self.U
         # dynamic equations
-        dhdt = self.nabla_d(Qhh * self.nabla0(dFdh), qh) - M_absorb
-        dzdt = self.nabla_d(Qzz * self.nabla0(dFdz), qz) + M_absorb
+        dhdt = self.nabla_F(Qhh * self.nabla0(dFdh), qh) - M_absorb
+        dzdt = self.nabla_F(Qzz * self.nabla0(dFdz), qz) + M_absorb
         # advection term
-        dhdt -= self.U * self.nabla_n.dot(h)
-        dzdt -= self.U * self.nabla_n.dot(z)
+        dhdt -= self.U * self.nabla_h(h)
+        dzdt -= self.U * self.nabla_h(z)
         # combine and return
         return np.array([dhdt, dzdt])
 
@@ -119,8 +119,8 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         # include miscibility effects
         dfbrush += self.T * self.chi * c / (z + H_dry)
         # free energy variations
-        dFdh = -self.laplace_n(h+z) - djp
-        dFdz = -self.laplace_n(h+z*(1+gamma_bl)) + dfbrush
+        dFdh = -self.laplace_h(h+z) - djp
+        dFdz = -self.laplace_h(h+z*(1+gamma_bl)) + dfbrush
         # mobility derivatives
         Qhh = diags(h**3)
         dQhh_dh = diags(3 * h**2)
@@ -137,21 +137,21 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         ddjp_dh = diags(djp_pf * (c * 3 / h**4 - self.h_p**3 * 6 / h**7))
         ddjp_dz = diags(-djp_pf * dc_dz / h**3)
         # free energy variation derivatives
-        ddFdh_dh = -self.laplace_n() - ddjp_dh
-        ddFdh_dz = -self.laplace_n() - ddjp_dz
-        ddFdz_dh = -self.laplace_n()
-        ddFdz_dz = -self.laplace_n() - self.laplace_n(diags(gamma_bl +
+        ddFdh_dh = -self.laplace_h() - ddjp_dh
+        ddFdh_dz = -self.laplace_h() - ddjp_dz
+        ddFdz_dh = -self.laplace_h()
+        ddFdz_dz = -self.laplace_h() - self.laplace_n(diags(gamma_bl +
                                                             z*dgamma_bl_dz)) + diags(ddfbrush_dz)
         # absorption term derivative
         dM_absorb_dh = self.M * (ddFdh_dh - ddFdz_dh)
         dM_absorb_dz = self.M * (ddFdh_dz - ddFdz_dz)
         # derivatives of dynamic equations
         q = self.j_in  # flux into the liquid film
-        ddhdt_dh = self.nabla_d(dQhh_dh * diags(self.nabla0(dFdh)) +
+        ddhdt_dh = self.nabla_F(dQhh_dh * diags(self.nabla0(dFdh)) +
                                 Qhh * self.nabla0(ddFdh_dh), q) - dM_absorb_dh
-        ddhdt_dz = self.nabla_d(Qhh * self.nabla0(ddFdh_dz), q) - dM_absorb_dz
-        ddzdt_dh = self.nabla_d(Qzz * self.nabla0(ddFdz_dh), 0) + dM_absorb_dh
-        ddzdt_dz = self.nabla_d(dQzz_dz * diags(self.nabla0(dFdz)) +
+        ddhdt_dz = self.nabla_F(Qhh * self.nabla0(ddFdh_dz), q) - dM_absorb_dz
+        ddzdt_dh = self.nabla_F(Qzz * self.nabla0(ddFdz_dh), 0) + dM_absorb_dh
+        ddzdt_dz = self.nabla_F(dQzz_dz * diags(self.nabla0(dFdz)) +
                                 Qzz * self.nabla0(ddFdz_dz), 0) + dM_absorb_dz
         # combine and return
         an_jac = sp.bmat([[ddhdt_dh, ddhdt_dz],
@@ -213,7 +213,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = AdaptiveSubstrateProblem(N=256, L=10)
+problem = AdaptiveSubstrateProblem(N=1024, L=10)
 
 # create figure
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
