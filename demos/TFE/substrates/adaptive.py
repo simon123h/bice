@@ -27,7 +27,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         self.chi = 0  # miscibility
         self.D = 1e-8  # brush lateral diffusion constant
         self.M = 1e-4  # absorption constant
-        self.U = -0.005  # substrate velocity
+        self.U = -0.00  # substrate velocity
         self.alpha = 0  # substrate inclination
         self.j_in = True  # liquid influx
         # spatial coordinate
@@ -201,7 +201,9 @@ class AdaptiveSubstrateProblem(Problem):
         # Generate the volume constraint
         self.volume_constraint = VolumeConstraint(self.tfe)
         # assign the continuation parameter
-        self.continuation_parameter = (self.tfe, "Nlk")
+        # self.continuation_parameter = (self.tfe, "sigma")
+        # self.continuation_parameter = (self.tfe, "M")
+        self.continuation_parameter = (self.tfe, "U")
 
     def norm(self):
         h, z = self.tfe.u
@@ -213,7 +215,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = AdaptiveSubstrateProblem(N=1024, L=10)
+problem = AdaptiveSubstrateProblem(N=512, L=8)
 
 # create figure
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
@@ -224,9 +226,8 @@ Profiler.start()
 # time-stepping
 n = 0
 plotevery = 10
-dudtnorm = 1
 if not os.path.exists("initial_state.npz"):
-    while dudtnorm > 1e-8:
+    while problem.time_stepper.dt < 1e12:
         # plot
         if n % plotevery == 0:
             problem.plot(ax)
@@ -235,12 +236,9 @@ if not os.path.exists("initial_state.npz"):
         print("step #: {:}".format(n))
         print("time:   {:}".format(problem.time))
         print("dt:     {:}".format(problem.time_stepper.dt))
-        print("|dudt|: {:}".format(dudtnorm))
         n += 1
         # perform timestep
         problem.time_step()
-        # calculate the new norm
-        dudtnorm = np.linalg.norm(problem.rhs(problem.u))
     Profiler.print_summary()
     # save the state, so we can reload it later
     problem.save("initial_state.npz")
@@ -249,17 +247,16 @@ else:
     problem.load("initial_state.npz")
 
 # start parameter continuation
-problem.continuation_stepper.ds = 1e-2
-problem.continuation_stepper.ndesired_newton_steps = 5
+problem.continuation_stepper.ds = -1e-2
+# problem.continuation_stepper.ndesired_newton_steps = 5
+# problem.continuation_stepper.convergence_tolerance = 1e-10
 
 # Impose the constraint
 problem.add_equation(problem.volume_constraint)
 
-problem.continuation_stepper.convergence_tolerance = 1e-10
-
 n = 0
 plotevery = 1
-while problem.tfe.Nlk < 1000:
+while True:
     # perform continuation step
     problem.continuation_step()
     n += 1
