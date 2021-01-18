@@ -177,8 +177,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         ax.set_ylim((0, 1.5))
         ax.set_xlabel("x")
         ax.set_ylabel("solution h(x,t)")
-        x = self.x[0]
-        x -= self.U*problem.time
+        x = self.x[0] - self.U*problem.time
         h, xi = self.u
         ax.plot(x, h+xi, markersize=5, label="liquid")
         ax.plot(x, xi, markersize=5, label="substrate")
