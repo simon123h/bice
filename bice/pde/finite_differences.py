@@ -75,7 +75,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
             else:
                 # obtain differentiation matrix from findiff package
                 op = findiff.FinDiff(
-                    0, x_pad, order, acc=2*ao).matrix(x_pad.shape)
+                    0, x_pad, order, acc=ao).matrix(x_pad.shape)
                 # slice rows corresponding to ghost nodes
                 op = op[Ngp//2:N+Ngp//2, :]
             # include the boundary conditions into the differentiation operator by pre-multiplying

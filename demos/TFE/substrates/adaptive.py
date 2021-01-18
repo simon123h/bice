@@ -179,8 +179,9 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         ax.set_ylabel("solution h(x,t)")
         x = self.x[0] - self.U*problem.time
         h, xi = self.u
-        ax.plot(x, h+xi, markersize=5, label="liquid")
-        ax.plot(x, xi, markersize=5, label="substrate")
+        H_dry = self.sigma * self.Nlk
+        ax.plot(x, H_dry+h+xi, markersize=5, label="liquid")
+        ax.plot(x, H_dry+xi, markersize=5, label="substrate")
         ax.legend()
 
 
@@ -194,6 +195,8 @@ class AdaptiveSubstrateProblem(Problem):
         # initialize time stepper
         # self.time_stepper = time_steppers.BDF2(dt = 1e-5)
         self.time_stepper = time_steppers.BDF(self)
+        self.time_stepper.rtol = 1e-5
+        self.time_stepper.atol = 1e-10
         # Generate the volume constraint
         self.volume_constraint = VolumeConstraint(self.tfe)
         # assign the continuation parameter
@@ -211,7 +214,7 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = AdaptiveSubstrateProblem(N=512, L=8)
+problem = AdaptiveSubstrateProblem(N=512, L=5.5)
 
 # create figure
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
@@ -221,9 +224,9 @@ Profiler.start()
 
 # time-stepping
 n = 0
-plotevery = 10
+plotevery = 100
 if not os.path.exists("initial_state.npz"):
-    while problem.time_stepper.dt < 1e12 and problem.time < 1000:
+    while problem.time_stepper.dt < 1e12 and problem.time < 5000:
         # plot
         if n % plotevery == 0:
             problem.plot(ax)
@@ -244,7 +247,7 @@ else:
 
 # start parameter continuation
 problem.continuation_stepper.ds = 1e-2
-problem.continuation_stepper.ndesired_newton_steps = 2
+problem.continuation_stepper.ndesired_newton_steps = 3
 # problem.continuation_stepper.convergence_tolerance = 1e-8
 # problem.continuation_stepper.max_newton_iterations = 30
 problem.settings.eigval_zero_tolerance = 1e-18
