@@ -11,6 +11,7 @@ sys.path.append("../../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde.finite_differences import FiniteDifferencesEquation, NeumannBC, DirichletBC, NoBoundaryConditions
 from bice.core.profiling import Profiler
+from bice.continuation import NaturalContinuation
 
 
 class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
@@ -29,7 +30,6 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         self.M = 1e-4  # absorption constant
         self.U = -0.05  # substrate velocity
         self.alpha = 0  # substrate inclination
-        self.j_in = True  # liquid influx
         # spatial coordinate
         self.x = [np.linspace(0, L/2, N)]
         # initial condition
@@ -45,7 +45,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
     def build_FD_matrices(self, approx_order):
         # build finite differences matrices...
         # (i) including the flux boundary conditions for Q * dF/dh
-        self.bc = DirichletBC(vals=(1, 1))
+        self.bc = DirichletBC(vals=(1, 0))
         super().build_FD_matrices(approx_order)
         self.nabla_F = self.nabla
         # (ii) including the Neumann boundary conditions for h & z
@@ -67,32 +67,29 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         # polymer volume fraction (polymer concentration)
         c = H_dry / (H_dry + z)
         # disjoining pressure
+        h3 = h**3
         djp = 5/3 * (self.theta * self.h_p)**2 * \
-            (self.h_p**3 / h**6 - 1 / h**3)
+            (self.h_p**3 / h3**2 - 1 / h3)
         # adaptive brush-liquid surface tension
         gamma_bl = self.gamma_bl * 1
         # mobilities
-        Qhh = h**3
+        Qhh = h3
         Qzz = self.D * z
         # brush energy derivative
         dfbrush = self.T * (self.sigma**2 / c + c + np.log(1 - c))
         # include miscibility effects
         dfbrush += self.T * self.chi * c / (z + H_dry)
         # free energy variations
-        dFdh = -self.laplace_h(h+z) - djp
-        dFdz = -self.laplace_h(h+z) - gamma_bl * self.laplace_h(z) + dfbrush
+        laplace_hz = self.laplace_h(h+z)
+        dFdh = -laplace_hz - djp
+        dFdz = -laplace_hz - gamma_bl * self.laplace_h(z) + dfbrush
         # absorption term
         M_absorb = self.M * (dFdh - dFdz)
         # flux into the liquid film to conserve liquid volume
-        qh = np.zeros(h.shape)
-        qz = np.zeros(h.shape)
-        # q[0] = -(h[-1] - h[0] + z[-1] - z[0]) * self.U
-        qh[0:20] = -(h[-1] - h[0] + z[-1] - z[0]) * self.U
-        # qh[-20:] = -h[-1] * self.U * 0.01
-        # qz[-20:] = -z[-1] * self.U
+        q = -(h[-1] - h[0] + z[-1] - z[0]) * self.U
         # dynamic equations
-        dhdt = self.nabla_F(Qhh * self.nabla0(dFdh), qh) - M_absorb
-        dzdt = self.nabla_F(Qzz * self.nabla0(dFdz), qz) + M_absorb
+        dhdt = self.nabla_F(Qhh * self.nabla0(dFdh), q) - M_absorb
+        dzdt = self.nabla_F(Qzz * self.nabla0(dFdz), 0) + M_absorb
         # advection term
         dhdt -= self.U * self.nabla_h(h)
         dzdt -= self.U * self.nabla_h(z)
@@ -141,13 +138,12 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         ddFdh_dh = -self.laplace_h() - ddjp_dh
         ddFdh_dz = -self.laplace_h() - ddjp_dz
         ddFdz_dh = -self.laplace_h()
-        ddFdz_dz = -self.laplace_h() - self.laplace_n(diags(gamma_bl +
+        ddFdz_dz = -self.laplace_h() - self.laplace_h(diags(gamma_bl +
                                                             z*dgamma_bl_dz)) + diags(ddfbrush_dz)
         # absorption term derivative
         dM_absorb_dh = self.M * (ddFdh_dh - ddFdz_dh)
         dM_absorb_dz = self.M * (ddFdh_dz - ddFdz_dz)
         # derivatives of dynamic equations
-        q = self.j_in  # flux into the liquid film
         ddhdt_dh = self.nabla_F(dQhh_dh * diags(self.nabla0(dFdh)) +
                                 Qhh * self.nabla0(ddFdh_dh), q) - dM_absorb_dh
         ddhdt_dz = self.nabla_F(Qhh * self.nabla0(ddFdh_dz), q) - dM_absorb_dz
@@ -206,9 +202,9 @@ class AdaptiveSubstrateProblem(Problem):
         self.continuation_parameter = (self.tfe, "M")
         # self.continuation_parameter = (self.tfe, "U")
 
-    def norm(self):
-        h, z = self.tfe.u
-        return np.trapz(h, self.tfe.x[0])
+    # def norm(self):
+    #     h, z = self.tfe.u
+    #     return np.trapz(h, self.tfe.x[0])
 
 
 # create output folder
@@ -228,7 +224,7 @@ Profiler.start()
 n = 0
 plotevery = 10
 if not os.path.exists("initial_state.npz"):
-    while problem.time_stepper.dt < 1e12 and problem.time < 300:
+    while problem.time_stepper.dt < 1e12 and problem.time < 1000:
         # plot
         if n % plotevery == 0:
             problem.plot(ax)
@@ -249,17 +245,17 @@ else:
 
 # start parameter continuation
 problem.continuation_stepper.ds = 1e-2
-# problem.continuation_stepper.ndesired_newton_steps = 3
-# problem.continuation_stepper.convergence_tolerance = 1e-10
-problem.continuation_stepper.max_newton_iterations = 100
+problem.continuation_stepper.ndesired_newton_steps = 2
+# problem.continuation_stepper.convergence_tolerance = 1e-8
+# problem.continuation_stepper.max_newton_iterations = 30
 problem.settings.eigval_zero_tolerance = 1e-18
-problem.settings.neigs = 10
+problem.settings.neigs = 50
 
 # Impose the constraint
 problem.add_equation(problem.volume_constraint)
 
 n = 0
-plotevery = 1
+plotevery = 10
 while True:
     # perform continuation step
     problem.continuation_step()
@@ -270,5 +266,8 @@ while True:
         problem.plot(ax)
         fig.savefig("out/img/{:05d}.svg".format(plotID))
         plotID += 1
+    # save bifurcation points
+    if problem.bifurcation_diagram.current_solution().is_bifurcation():
+        problem.save("sav/sol{}.npz".format(n))
 
 problem.save("final_state.npz")

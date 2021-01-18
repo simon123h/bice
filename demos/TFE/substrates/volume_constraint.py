@@ -42,12 +42,15 @@ class VolumeConstraint(ConstraintEquation):
         # and previous unknowns of the reference equation
         x = self.ref_eq.x[0]
         res[self_idx] = np.array([
-            np.trapz(u[eq_idx1] + u[eq_idx2] -
-                     self.group.u[eq_idx1] - self.group.u[eq_idx2], x),
+            np.trapz(u[eq_idx1] - self.group.u[eq_idx1], x),
         ])
+        # res[self_idx] = np.array([
+        #     np.trapz(u[eq_idx1] + u[eq_idx2] -
+        #              self.group.u[eq_idx1] - self.group.u[eq_idx2], x),
+        # ])
         # Add the constraint to the reference equation: unknown influx is the Langrange multiplier
         res[eq_idx1] = u[self_idx][0]
-        res[eq_idx2] = u[self_idx][0]
+        # res[eq_idx2] = u[self_idx][0]
         return res
 
     def jacobian(self, u):
