@@ -42,7 +42,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         self.build_FD_matrices(approx_order=1)
 
     # overload building of FD matrices, because this equation has a more complicated set up
-    def build_FD_matrices(self, approx_order):
+    def build_FD_matrices(self, approx_order=1):
         # build finite differences matrices...
         # (i) including the flux boundary conditions for Q * dF/dh
         self.bc = DirichletBC(vals=(1, 0))
@@ -174,7 +174,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
 
     def plot(self, ax):
         global problem
-        ax.set_ylim((0, 1.2))
+        ax.set_ylim((0, 1.5))
         ax.set_xlabel("x")
         ax.set_ylabel("solution h(x,t)")
         x = self.x[0]
@@ -255,7 +255,7 @@ problem.settings.neigs = 50
 problem.add_equation(problem.volume_constraint)
 
 n = 0
-plotevery = 10
+plotevery = 1
 while True:
     # perform continuation step
     problem.continuation_step()
@@ -269,5 +269,7 @@ while True:
     # save bifurcation points
     if problem.bifurcation_diagram.current_solution().is_bifurcation():
         problem.save("sav/sol{}.npz".format(n))
+    # mesh refinement
+    # problem.adapt()
 
 problem.save("final_state.npz")
