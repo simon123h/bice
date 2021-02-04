@@ -17,7 +17,7 @@ from bice import profile, Profiler
 class HeatEquation(FiniteDifferencesEquation):
     r"""
     Finite difference implementation of the 1-dimensional Heat-Equation
-    equation, a nonlinear PDE
+    equation, a linear PDE
     \partial t u &= -k \Delta u
     """
 
