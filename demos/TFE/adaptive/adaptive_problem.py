@@ -27,9 +27,10 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         self.T = 50  # temperature
         self.chi = 0  # miscibility
         self.D = 1e-8  # brush lateral diffusion constant
-        self.M = 1e-4  # absorption constant
-        self.U = -0.05  # substrate velocity
+        self.M = 5e-5  # absorption constant
+        self.U = 0  # substrate velocity
         self.alpha = 0  # substrate inclination
+        self.problem = None
         # spatial coordinate
         self.x = [np.linspace(0, L/2, N)]
         # initial condition
@@ -173,11 +174,10 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         return self.nabla0(u)
 
     def plot(self, ax):
-        global problem
         ax.set_ylim((0, 1.5))
         ax.set_xlabel("x")
         ax.set_ylabel("solution h(x,t)")
-        x = self.x[0] - self.U*problem.time
+        x = self.x[0] - self.U*self.problem.time
         h, xi = self.u
         H_dry = self.sigma * self.Nlk
         ax.plot(x, H_dry+h+xi, markersize=5, label="liquid")
@@ -192,6 +192,7 @@ class AdaptiveSubstrateProblem(Problem):
         # Add the Thin-Film equation to the problem
         self.tfe = AdaptiveSubstrateEquation(N, L)
         self.add_equation(self.tfe)
+        self.tfe.problem = self
         # initialize time stepper
         # self.time_stepper = time_steppers.BDF2(dt = 1e-5)
         self.time_stepper = time_steppers.BDF(self)
@@ -207,71 +208,3 @@ class AdaptiveSubstrateProblem(Problem):
     # def norm(self):
     #     h, z = self.tfe.u
     #     return np.trapz(h, self.tfe.x[0])
-
-
-# create output folder
-shutil.rmtree("out", ignore_errors=True)
-os.makedirs("out/img", exist_ok=True)
-
-# create problem
-problem = AdaptiveSubstrateProblem(N=512, L=5.5)
-
-# create figure
-fig, ax = plt.subplots(2, 2, figsize=(16, 9))
-plotID = 0
-
-Profiler.start()
-
-# time-stepping
-n = 0
-plotevery = 100
-if not os.path.exists("initial_state.npz"):
-    while problem.time_stepper.dt < 1e12 and problem.time < 5000:
-        # plot
-        if n % plotevery == 0:
-            problem.plot(ax)
-            fig.savefig("out/img/{:05d}.svg".format(plotID))
-            plotID += 1
-        print("step #: {:}".format(n))
-        print("time:   {:}".format(problem.time))
-        print("dt:     {:}".format(problem.time_stepper.dt))
-        n += 1
-        # perform timestep
-        problem.time_step()
-    Profiler.print_summary()
-    # save the state, so we can reload it later
-    problem.save("initial_state.npz")
-else:
-    # load the initial state
-    problem.load("initial_state.npz")
-
-# start parameter continuation
-problem.continuation_stepper.ds = 1e-2
-problem.continuation_stepper.ndesired_newton_steps = 3
-# problem.continuation_stepper.convergence_tolerance = 1e-8
-# problem.continuation_stepper.max_newton_iterations = 30
-problem.settings.eigval_zero_tolerance = 1e-18
-problem.settings.neigs = 50
-
-# Impose the constraint
-problem.add_equation(problem.volume_constraint)
-
-n = 0
-plotevery = 1
-while True:
-    # perform continuation step
-    problem.continuation_step()
-    n += 1
-    print("step #:", n, " ds:", problem.continuation_stepper.ds)
-    # plot
-    if n % plotevery == 0:
-        problem.plot(ax)
-        fig.savefig("out/img/{:05d}.svg".format(plotID))
-        plotID += 1
-    # save bifurcation points
-    if problem.bifurcation_diagram.current_solution().is_bifurcation():
-        problem.save("sav/sol{}.npz".format(n))
-    # mesh refinement
-    # problem.adapt()
-
-problem.save("final_state.npz")
