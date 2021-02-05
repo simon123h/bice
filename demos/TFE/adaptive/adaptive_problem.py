@@ -171,6 +171,10 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
     def du_dx(self, u, direction=0):
         return self.nabla0(u)
 
+    def liquid_volume(self):
+        h, z = self.u
+        return np.trapz(h+z, self.x[0])
+
     def plot(self, ax):
         ax.set_ylim((0, 1.5))
         ax.set_xlabel("x")
