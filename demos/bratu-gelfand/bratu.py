@@ -14,7 +14,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.sparse import dia_matrix
-from skfem import asm, solve, condense, InteriorBasis, MeshLine, ElementLineP1
+from skfem import asm, condense, InteriorBasis, MeshLine, ElementLineP1
 from skfem.models.poisson import laplace, mass
 from bice import Problem, Equation
 
