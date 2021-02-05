@@ -13,8 +13,8 @@ os.makedirs("out/img", exist_ok=True)
 
 # create problem
 problem = AdaptiveSubstrateProblem(N=512, L=5.5)
-problem.U = -0.05
-problem.M = 5e-5
+problem.tfe.U = -0.05
+problem.tfe.M = 4.4e-4
 problem.continuation_parameter = (problem.tfe, "M")
 
 # create figure
@@ -33,9 +33,8 @@ if not os.path.exists("initial_state.npz"):
             problem.plot(ax)
             fig.savefig("out/img/{:05d}.svg".format(plotID))
             plotID += 1
-        print("step #: {:}".format(n))
-        print("time:   {:}".format(problem.time))
-        print("dt:     {:}".format(problem.time_stepper.dt))
+        print("step #: {:5d},  time: {:7.2e},  dt: {:7.2e}".format(
+            n, problem.time, problem.time_stepper.dt))
         n += 1
         # perform timestep
         problem.time_step()
