@@ -1,9 +1,7 @@
 #!/usr/bin/python3
-import sys
 import time
 import matplotlib.pyplot as plt
 import numpy as np
-sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, Equation, time_steppers
 from bice.continuation import TimePeriodicOrbitHandler
 

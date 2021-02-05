@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 import shutil
 import os
-import sys
 import numpy as np
 import scipy.sparse as sp
 import matplotlib.pyplot as plt
-sys.path.append("../../..")  # noqa, needed for relative import of package
 from bice import Problem
 from bice.pde.finite_differences import FiniteDifferencesEquation, NeumannBC
 # from bice.continuation import TranslationConstraint, VolumeConstraint

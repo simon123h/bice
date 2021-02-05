@@ -3,8 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import shutil
 import os
-import sys
-sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde import PseudospectralEquation
 from bice.continuation import TranslationConstraint, VolumeConstraint

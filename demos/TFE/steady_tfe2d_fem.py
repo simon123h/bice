@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 import shutil
 import os
-import sys
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem
 from bice.deprecated.fem import FiniteElementEquation, TriangleMesh
 from bice.continuation import VolumeConstraint, TranslationConstraint

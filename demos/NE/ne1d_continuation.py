@@ -1,10 +1,8 @@
 #!/usr/bin/python3
 import shutil
 import os
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
-sys.path.append("../..")  # noqa, needed for relative import of package
 from ne1d import NikolaevskiyProblem
 from bice.continuation import TranslationConstraint, VolumeConstraint
 

@@ -4,11 +4,9 @@ Finite difference implementation of the 1-dimensional Swift-Hohenberg Equation (
 This code does nothing with the equation, it only provides the implementation and
 is imported by other codes, so we don't have to write the SHE from scratch for every demo.
 """
-import sys
 import numpy as np
 from scipy.sparse import diags
 import scipy.sparse as sp
-sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
 from bice.continuation import ConstraintEquation

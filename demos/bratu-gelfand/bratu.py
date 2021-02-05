@@ -3,22 +3,19 @@ Bratu–Gelfand problem
 
 (in parts stolen from scikit-fem's ex23.py, originally using pacopy)
 
-u'' + \lambda \mathrm e^u = 0, \quad 0 < x < 1,
-with :math:`u(0)=u(1)=0` and where :math:`\lambda > 0` is a parameter.
+u'' + \lambda e^u = 0,  0 < x < 1,
+with `u(0)=u(1)=0` and where `\lambda > 0` is a parameter.
 
 The resulting bifurcation diagram, matches figure 1.1 (left) of Farrell, Birkisson, & Funke (2015).
 
 """
 
-import sys
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.sparse import dia_matrix
 from skfem import asm, solve, condense, InteriorBasis, MeshLine, ElementLineP1
 from skfem.models.poisson import laplace, mass
-
-sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, Equation
 
 # figures won't steal window focus if the right backend is chosen

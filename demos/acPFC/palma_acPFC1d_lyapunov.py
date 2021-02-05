@@ -1,12 +1,10 @@
 #!/usr/bin/python3
 import shutil
 import os
-import sys
 import numpy as np
 import matplotlib
 matplotlib.use('svg')
 import matplotlib.pyplot as plt
-sys.path.append("../..")  # noqa, needed for relative import of package
 from acPFC1d import acPFCProblem
 from bice import time_steppers
 from bice.measure import LyapunovExponentCalculator

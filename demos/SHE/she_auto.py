@@ -9,9 +9,7 @@ import shutil
 import os
 import matplotlib.pyplot as plt
 from she_fd import SwiftHohenbergProblem, TranslationConstraint
-import sys
 import numpy as np
-sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Profiler
 
 # figures won't steal window focus if the right backend is chosen

@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 import shutil
 import os
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.sparse as sp
-sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
 from bice.pde.finite_differences import RobinBC, PeriodicBC, NeumannBC, DirichletBC, NoBoundaryConditions

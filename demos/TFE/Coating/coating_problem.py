@@ -1,8 +1,6 @@
 #!/usr/bin/python3
-import sys
 import numpy as np
 from scipy.sparse import diags
-sys.path.append("../../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
 from bice.pde.finite_differences import NeumannBC, DirichletBC, RobinBC, NoBoundaryConditions

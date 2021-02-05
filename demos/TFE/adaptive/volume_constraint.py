@@ -1,7 +1,5 @@
-import sys
 import numpy as np
 import scipy.sparse as sp
-sys.path.append("../../..")  # noqa, needed for relative import of package
 from bice.continuation import ConstraintEquation
 from bice import profile
 
