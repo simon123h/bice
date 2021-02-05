@@ -6,7 +6,9 @@
 .idea*
 .vscode*
 # virtual environment
-venv
-.env
+venv/
+.env/
 # setup files
 *.egg-info/
+# documentation files (generated automatically)
+# doc/
