@@ -3,7 +3,7 @@ import shutil
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from bice.core.profiling import Profiler
+from bice import Profiler
 from adaptive_problem import AdaptiveSubstrateProblem
 
 
@@ -12,9 +12,11 @@ shutil.rmtree("out", ignore_errors=True)
 os.makedirs("out/img", exist_ok=True)
 
 # create problem
-problem = AdaptiveSubstrateProblem(N=512, L=5.5)
+problem = AdaptiveSubstrateProblem(N=512, L=6)
 problem.tfe.U = -0.05
-problem.tfe.M = 4.4e-4
+# problem.tfe.M = 4.5e-4
+problem.tfe.M = 1e-4
+# problem.tfe.M = 4.4e-4 # for stip-slick motion
 problem.continuation_parameter = (problem.tfe, "M")
 
 # create figure
@@ -27,14 +29,14 @@ Profiler.start()
 n = 0
 plotevery = 100
 if not os.path.exists("initial_state.npz"):
-    while problem.time_stepper.dt < 1e12 and problem.time < 5000:
+    while problem.time_stepper.dt < 1e12 and problem.time < 1000:
         # plot
         if n % plotevery == 0:
             problem.plot(ax)
             fig.savefig("out/img/{:05d}.svg".format(plotID))
             plotID += 1
-        print("step #: {:5d},  time: {:7.2e},  dt: {:7.2e}".format(
-            n, problem.time, problem.time_stepper.dt))
+        print("step #:{:6d},  time:{:9.2e},  dt:{:9.2e},  norm:{:9e2.e}".format(
+            n, problem.time, problem.time_stepper.dt, problem.norm()))
         n += 1
         # perform timestep
         problem.time_step()
@@ -46,7 +48,7 @@ else:
     problem.load("initial_state.npz")
 
 # start parameter continuation
-problem.continuation_stepper.ds = 1e-2
+problem.continuation_stepper.ds = 1e-3
 problem.continuation_stepper.ndesired_newton_steps = 3
 # problem.continuation_stepper.convergence_tolerance = 1e-8
 # problem.continuation_stepper.max_newton_iterations = 30
