@@ -1,4 +1,12 @@
+# cache files
 **.pyc
+# output files
 **/out
+# editor files
 .idea*
 .vscode*
+# virtual environment
+venv
+.env
+# setup files
+*.egg-info/
