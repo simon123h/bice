@@ -208,5 +208,8 @@ class AdaptiveSubstrateProblem(Problem):
         # self.continuation_parameter = (self.tfe, "U")
 
     # def norm(self):
+    #     return self.tfe.liquid_volume()
+
+    # def norm(self):
     #     h, z = self.tfe.u
     #     return np.trapz(h, self.tfe.x[0])
