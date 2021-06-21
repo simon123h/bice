@@ -11,7 +11,9 @@ from acPFC1d import acPFCProblem
 import sys
 
 
-filepath = '/local0/m_holl20/cPFC3_1d/semiactive_cPFC3_v0_0.00/'
+#filepath = '/local0/m_holl20/cPFC3_1d/semiactive_cPFC3_v0_0.00/'
+filepath = '/home/max/promotion/timesims/cPFC3_1d/semiactive_cPFC3_v0_0.00/'
+
 shutil.rmtree(filepath + 'out', ignore_errors=True)
 os.makedirs(filepath + 'out/img', exist_ok=True)
 
@@ -63,8 +65,8 @@ for idx in [0, 1]:
         cond = problem.acpfc.add_gauss_to_sol(idx)
 # iterate over activity
 
-T = 10000
-for v0 in np.arange(0., 0.7, 0.05):
+T = 10000.
+for v0 in [0.]:#np.arange(0., 0.7, 0.05):
     problem.time = 0
     problem.time_stepper.factory_reset()
     i = 0
@@ -72,7 +74,7 @@ for v0 in np.arange(0., 0.7, 0.05):
     print(v0)
     problem.acpfc.v0 = v0
     # set new path
-    filepath = f'/local0/m_holl20/cPFC3_1d/semiactive_cPFC3_v0_{v0:1.2f}/'
+    filepath = f'/home/max/promotion/timesims/cPFC3_1d/semiactive_cPFC3_v0_{v0:1.2f}/'
     shutil.rmtree(filepath + 'out', ignore_errors=True)
     os.makedirs(filepath + 'out/img', exist_ok=True)
     while problem.time < T:
@@ -82,7 +84,7 @@ for v0 in np.arange(0., 0.7, 0.05):
                 problem.save(filename=filepath + f'out/{plotID:07d}.npz')
 
                 plotID += 1
-                print("step #: {:}".format(n))
+                print("step #: {:}".format(i))
                 print("time:   {:}".format(problem.time))
                 print("dt:     {:}".format(problem.time_stepper.dt))
                 print("|dudt|: {:}".format(dudtnorm))
