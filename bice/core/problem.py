@@ -368,6 +368,8 @@ class Problem():
         # the number of equations
         equations = self.list_equations()
         data['Problem.nequations'] = len(equations)
+        # the problem's time
+        data['Problem.time'] = self.time
         # store the value of the continuation parameter
         if self.continuation_parameter is not None:
             data['Problem.p'] = self.get_continuation_parameter()
@@ -401,6 +403,8 @@ class Problem():
             data = np.load(data, allow_pickle=True)
         # clear the history
         self.history.clear()
+        # load the time
+        self.time = data['Problem.time']
         # load the value of the continuation parameter
         if self.continuation_parameter is not None:
             self.set_continuation_parameter(data['Problem.p'])
