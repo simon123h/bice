@@ -3,6 +3,8 @@ import shutil
 import os
 import sys
 import numpy as np
+import matplotlib
+matplotlib.use('svg')
 import matplotlib.pyplot as plt
 sys.path.append("../..")  # noqa, needed for relative import of package
 from bice import Problem, time_steppers
@@ -23,13 +25,13 @@ class acPFCEquation(PseudospectralEquation):
         # parameters
         self.r = -1.5
 
-        self.phi01 = -0.64
+        self.phi01 = -0.5
         self.q1 = 1.
 
-        self.v0 = 0.0
+        self.v0 = 0.4
         self.c = -0.2
 
-        self.phi02 = -0.64
+        self.phi02 = 0.
         self.q2 = 1.
 
         self.C1 = 0.1
@@ -41,10 +43,14 @@ class acPFCEquation(PseudospectralEquation):
         self.build_kvectors(real_fft=True)
         self.ksquare = self.k[0]**2
 
-    
-        u0 = np.cos(self.x[0]) * np.exp(-0.005 * self.x[0] ** 2)
-        u0 = u0 - u0.mean()
-        self.u = np.array([u0, u0, 0*u0])
+        # initial guess
+        if os.path.exists("initial_state.npz"):
+            self.u = np.loadtxt("initial_state.npz").reshape(self.shape)
+        else:
+            psi1 = 1.*np.cos(self.x[0]*self.q1)
+            psi2 = 1.4*np.cos(self.x[0]*self.q2)
+            P = np.sin(self.x[0]*self.q1)*0.4
+            self.u = np.array([psi1, psi2, P])
 
     def rhs(self, u):
         u_k = np.fft.rfft(u)
@@ -59,32 +65,10 @@ class acPFCEquation(PseudospectralEquation):
         return res
 
     def plot(self, ax):
-        ax.clear()
-        ax.set_xlabel("x")
-        ax.set_ylabel(r"solution $u_i(x,t)$")
-        ax.plot(self.x[0], self.u[0], label=r"$\phi_1$")
-        ax.plot(self.x[0], self.u[1], label=r"$\phi_2$")
-        ax.plot(self.x[0], self.u[2], label=r"$\mathbf{P}$")
-        ax.legend()
-    
-    def gauss(self, mu, sigma=1.5):
-        return np.exp(-(self.x[0]-mu)**2/(2.*sigma**2))/np.sqrt(2.*np.pi*sigma**2)
-
-    def add_gauss_to_sol(self, index):
-        cond = True
-        try:
-            gauss_pos = input(f'phi{index+1:1d}: position for gauss peak\n')
-            gauss_fac = input(f'phi{index+1:1d}: height of gauss peak\n')
-            gauss_pos = float(gauss_pos)
-            gauss_fac = float(gauss_fac)
-            u = self.u[index]
-            u -= u.mean()
-            u += self.gauss(gauss_pos)*gauss_fac
-            u -= self.u[index].mean()
-            self.u[index] = u
-        except ValueError:
-            cond = False
-        return cond
+        ax.set_xlabel(r"$x$")
+        ax.set_ylabel(r"$u_i(x,t)$")
+        for u in self.u:
+            ax.plot(self.x[0], u)
 
 
 class acPFCProblem(Problem):
@@ -95,7 +79,7 @@ class acPFCProblem(Problem):
         self.acpfc = acPFCEquation(N, L)
         self.add_equation(self.acpfc)
         # initialize time stepper
-        self.time_stepper = time_steppers.BDF(self, dt_max=1e2)
+        self.time_stepper = time_steppers.BDF(self, dt_max=1e-1)
         self.continuation_parameter = (self.acpfc, "phi01")
 
     # Norm is the L2-norm of the three fields
@@ -107,11 +91,16 @@ class acPFCProblem(Problem):
 
 if __name__ == "__main__":
     # create output folder
-    shutil.rmtree("out", ignore_errors=True)
-    os.makedirs("out/img", exist_ok=True)
 
+    phi01 = float(sys.argv[1])
+
+    filepath = "acPFC_phi01{:+01.4f}/".format(phi01).replace('.', '')
+    shutil.rmtree(filepath + "out", ignore_errors=True)
+    os.makedirs(filepath + "out/img", exist_ok=True)
+    
     # create problem
     problem = acPFCProblem(N=256, L=16*np.pi)
+    problem.acpfc.phi01 = phi01
 
     # create figure
 
@@ -122,20 +111,31 @@ if __name__ == "__main__":
 
     # time-stepping
     n = 0
-    plotevery = 1000
+    plotevery = 20
     dudtnorm = 1
+    T = 10000.
+    while problem.time < T:
+        n += 1
+        # perform timestep
+        problem.time_step()
+        if np.max(problem.u) > 1e12:
+            print("diverged")
+            break
+        # save the state, so we can reload it later
+    problem.save("initial_state.npz")
+
     L2norms = [problem.norm()]
     times = [problem.time]
     us = [problem.acpfc.u]
-    problem.acpfc.v0 = 0.2
-    T = 250.
+    T = 20000.
     while problem.time < T:
         # plot
         if not n % plotevery:
             problem.plot(ax_sol)
             ax_norm.clear()
             ax_norm.plot(times, L2norms)
-            fig.savefig("out/img/{:05d}.svg".format(plotID))
+            fig.savefig(filepath + "out/img/laststep.svg")
+            problem.save(filepath + f"out/out/{n:07d}.npz")
             plotID += 1
             print("step #: {:}".format(n))
             print("time:   {:}".format(problem.time))
@@ -150,44 +150,15 @@ if __name__ == "__main__":
         L2norms += [problem.norm()]
         times += [problem.time]
         us += [problem.acpfc.u]
+        np.savetxt(filepath[:-1] + "_L2norms.dat", L2norms)
+        np.savetxt(filepath[:-1] + "_times.dat", times)
+
         # catch divergent solutions
         if np.max(problem.u) > 1e12:
             print("diverged")
             break
         # save the state, so we can reload it later
-    #problem.save("initial_state.npz")
-    plt.close()
-    problem.acpfc.v0 = 0.3
-    problem.time = 0
-    problem.time_stepper = time_steppers.BDF(problem, dt_max=1e-2)
-    T = 500.
-    while problem.time < T:
-        # plot
-        if not n % plotevery:
-            problem.plot(ax_sol)
-            ax_norm.clear()
-            ax_norm.plot(times, L2norms)
-            fig.savefig("out/img/{:05d}.svg".format(plotID))
-            plotID += 1
-            print("step #: {:}".format(n))
-            print("time:   {:}".format(problem.time))
-            print("dt:     {:}".format(problem.time_stepper.dt))
-            print("|dudt|: {:}".format(dudtnorm))
-        n += 1
-        # perform timestep
-        problem.time_step()
-        # calculate the new norm
-        dudtnorm = np.linalg.norm(problem.rhs(problem.u))
-        # add new norm and time and u
-        L2norms += [problem.norm()]
-        times += [problem.time]
-        us += [problem.acpfc.u]
-        # catch divergent solutions
-        if np.max(problem.u) > 1e12:
-            print("diverged")
-            break
-        # save the state, so we can reload it later
-    #problem.save("initial_state.npz")
+    problem.save("initial_state.npz")
     plt.close()
 
     us = np.array(us)
@@ -205,7 +176,7 @@ if __name__ == "__main__":
     ax_psi2.pcolormesh(times, problem.acpfc.x[0], psi2s.T, cmap='Blues')
     ax_P.pcolormesh(times, problem.acpfc.x[0], Ps.T, cmap='Greens')
     ax_norm.plot(times, L2norms)
-
+    plt.savefig(filepath + 'out/img/spacetime.png')
     fig_return = plt.figure(2)
     ax_return = fig_return.add_subplot(211)
     ax_u0 = fig_return.add_subplot(212)
@@ -216,9 +187,7 @@ if __name__ == "__main__":
 
     ax_return.plot(maxs[:-1], maxs[1:], 'k.')
     ax_u0.plot(times, u0s)
+    plt.savefig(filepath + 'out/img/returnmap.png')
+    plt.close()
 
-    plt.show()
-
-    np.savetxt('psi1.dat', us[-1, 0, :])
-    np.savetxt('psi2.dat', us[-1, 1, :])
-    np.savetxt('P.dat', us[-1, 2, :])
+    
