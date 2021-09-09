@@ -10,7 +10,7 @@ from bice.continuation import TranslationConstraint, VolumeConstraint
 
 class CahnHilliardEquation(PseudospectralEquation):
     r"""
-    Pseudospectral implementation of the 1-dimensional Swift-Hohenberg Equation
+    Pseudospectral implementation of the 1-dimensional Cahn-Hilliard Equation
     equation, a nonlinear PDE
     \partial t h &= (r - (kc^2 + \Delta)^2)h + v * h^2 - g * h^3
     """
@@ -46,7 +46,7 @@ class CahnHilliardProblem(Problem):
 
     def __init__(self, N, L):
         super().__init__()
-        # Add the Swift-Hohenberg equation to the problem
+        # Add the Cahn-Hilliard equation to the problem
         self.che = CahnHilliardEquation(N, L)
         self.add_equation(self.che)
         # initialize time stepper

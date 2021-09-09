@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 import time
+import matplotlib
+matplotlib.use("GTK3Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from bice import Problem, Equation, time_steppers
