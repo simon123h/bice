@@ -155,7 +155,7 @@ class NewtonKrylovSolver(AbstractNewtonSolver):
         if jac is not None and not self.approximate_jacobian:
             # compute incomplete LU decomposition of Jacobian
             J_ilu = sp.linalg.spilu(sp.csc_matrix(jac(u0)))
-            M = sp.linalg.LinearOperator(shape=J.shape, matvec=J_ilu.solve)
+            M = sp.linalg.LinearOperator(shape=jac.shape, matvec=J_ilu.solve)
             options.update({'jac_options': {'inner_M': M}})
 
         # solve!
