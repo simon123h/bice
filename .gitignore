@@ -11,4 +11,4 @@ venv/
 # setup files
 *.egg-info/
 # documentation files (generated automatically)
-# doc/
+doc/
