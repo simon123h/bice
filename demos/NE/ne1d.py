@@ -48,6 +48,12 @@ class NikolaevskiyEquation(PseudospectralEquation):
         # sum up and return
         return np.fft.irfft(lin) - 0.5 * nonlin
 
+    # calculate the spatial derivative
+    def du_dx(self, u, direction=0):
+        du_dx = 1j*self.k[direction]*np.fft.rfft(u)
+        return np.fft.irfft(du_dx)
+
+    # plot the solution
     def plot(self, ax):
         ax.set_xlabel("x")
         ax.set_ylabel("h(x,t)")
