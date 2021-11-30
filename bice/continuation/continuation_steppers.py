@@ -158,10 +158,15 @@ class PseudoArclengthContinuation(ContinuationStepper):
             # we didn't converge, reset to old values :-/
             problem.u = u_old
             problem.set_continuation_parameter(p_old)
-            # and throw error
-            # TODO: we could also try again with a smaller step size, unless ds is already minimal
-            raise np.linalg.LinAlgError(
-                "Newton solver did not converge after {:d} iterations!".format(count))
+            # if step size is already minimal, throw an error
+            if abs(self.ds) < self.ds_min:
+                raise np.linalg.LinAlgError(
+                    "Newton solver did not converge after {:d} iterations!".format(count))
+            # else, retry with a smaller step size
+            self.ds /= 2
+            print(
+                f"Newton solver did not converge, trying again with ds = {self.ds:.3e}")
+            return self.step(problem)
 
         # adapt step size
         if self.adapt_stepsize:
@@ -169,11 +174,8 @@ class PseudoArclengthContinuation(ContinuationStepper):
                 # decrease step size
                 self.ds = max(
                     abs(self.ds)*self.ds_decrease_factor, self.ds_min)*np.sign(self.ds)
-                # redo continuation step
-                # self.u = u_old
-                # problem.set_continuation_parameter(p_old)
-                # self.step(problem)
             elif count < self.ndesired_newton_steps:
+                # increase step size
                 self.ds = min(
                     abs(self.ds)*self.ds_increase_factor, self.ds_max)*np.sign(self.ds)
 
