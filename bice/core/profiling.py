@@ -1,5 +1,5 @@
 import time
-import numpy as np
+from functools import wraps
 
 """
 This submodule is used for profiling our methods.
@@ -12,6 +12,7 @@ def profile(method):
     """
     This is a decorator (@profile), that triggers profiling of the execution time of a method
     """
+    @wraps(method)
 
     def do_profile(*args, **kw):
         # if profiling is turned off: do nothing but execute the method
