@@ -3,7 +3,7 @@
 This file provides a method that determines the drift velocity of the solution u(x, t) of a
 partial differential equation.
 
-- - - Derivation of the drift velocity formula - - -
+=== Derivation of the drift velocity formula ===
 cf. B. Wallmeyer, master thesis (2014); S. Hartmann, master thesis (2018)
 Consider the field of u(x, t) with spatial coordinates (arbitrary dimension) x and time t.
 Approximate time evolution of the field for infinitesimal small time interval dt:
