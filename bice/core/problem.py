@@ -469,8 +469,11 @@ class Problem():
                     ev_re > self.settings.eigval_zero_tolerance, ev_re)
                 ev_re_p = np.ma.masked_where(
                     ev_re <= self.settings.eigval_zero_tolerance, ev_re)
+                ev_is_imag = np.ma.masked_where(
+                    np.abs(np.imag(self.eigen_solver.latest_eigenvalues)) <= self.settings.eigval_zero_tolerance, ev_re)
                 eigval_ax.plot(ev_re_n, "o", color="C0", label="Re < 0")
                 eigval_ax.plot(ev_re_p, "o", color="C1", label="Re > 0")
+                eigval_ax.plot(ev_is_imag, "x", color="black", label="imaginary", alpha=0.6)
                 eigval_ax.axhline(0, color="gray")
                 eigval_ax.legend()
                 eigval_ax.set_ylabel("eigenvalues")
