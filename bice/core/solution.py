@@ -177,9 +177,8 @@ class Branch:
     #    - only="unstable": unstable parts only
     #    - only="bifurcations": bifurcations only
     def data(self, only=None):
-        if only is None:
-            condition = False
-        elif only == "stable":
+        condition = False
+        if only == "stable":
             condition = [not s.is_stable() for s in self.solutions]
         elif only == "unstable":
             condition = [s.is_stable() for s in self.solutions]
