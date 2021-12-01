@@ -220,6 +220,10 @@ class BifurcationDiagram:
         self.xlim = None
         # y-limits of the diagram
         self.ylim = None
+        # name of the continuation parameter
+        self.parameter_name = None
+        # name of the norm
+        self.norm_name = "norm"
 
     # create a new branch
     def new_branch(self, active=True):
@@ -264,8 +268,8 @@ class BifurcationDiagram:
                 s = bif.bifurcation_type()
                 ax.annotate(" "+s, (bif.p, bif.norm))
         ax.plot(np.nan, np.nan, "*", color="C2", label="bifurcations")
-        ax.set_xlabel("continuation parameter")
-        ax.set_ylabel("norm")
+        ax.set_xlabel(self.parameter_name)
+        ax.set_ylabel(self.norm_name)
         ax.legend()
 
     # load a branch from a file into the diagram, that was stored with Branch.save(filename)

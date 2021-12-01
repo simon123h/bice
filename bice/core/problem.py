@@ -145,6 +145,15 @@ class Problem():
         self.history.update(history_type="continuation")
         # perform the step with a continuation stepper
         self.continuation_stepper.step(self)
+        # make sure the bifurcation diagram is up to date
+        # TODO: this could be encapsulated within the BifurcationDiagram class or somewhere else
+        if self.bifurcation_diagram.parameter_name is None:
+            self.bifurcation_diagram.parameter_name = self.continuation_parameter[1]
+        elif self.bifurcation_diagram.parameter_name != self.continuation_parameter[1]:
+            print("Warning: continuation parameter changed from"
+                  "{self.bifurcation_diagram.parameter_name:s} to {self.continuation_parameter[1]:s}!"
+                  "Will generate a new bifurcation diagram!")
+            self.bifurcation_diagram = BifurcationDiagram()
         # get the current branch in the bifurcation diagram
         branch = self.bifurcation_diagram.active_branch
         # add the solution to the branch
@@ -473,7 +482,8 @@ class Problem():
                     np.abs(np.imag(self.eigen_solver.latest_eigenvalues)) <= self.settings.eigval_zero_tolerance, ev_re)
                 eigval_ax.plot(ev_re_n, "o", color="C0", label="Re < 0")
                 eigval_ax.plot(ev_re_p, "o", color="C1", label="Re > 0")
-                eigval_ax.plot(ev_is_imag, "x", color="black", label="complex", alpha=0.6)
+                eigval_ax.plot(ev_is_imag, "x", color="black",
+                               label="complex", alpha=0.6)
                 eigval_ax.axhline(0, color="gray")
                 eigval_ax.legend()
                 eigval_ax.set_ylabel("eigenvalues")
