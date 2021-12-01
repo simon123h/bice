@@ -10,5 +10,6 @@ venv/
 .env/
 # setup files
 *.egg-info/
+build/
 # documentation files (generated automatically)
 doc/
