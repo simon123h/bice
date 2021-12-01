@@ -38,10 +38,10 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         z = 0*s + 0.1
         self.u = np.array([h, z])
         # build finite difference matrices
-        self.build_FD_matrices(approx_order=1)
+        self.build_FD_matrices(approx_order=2)
 
     # overload building of FD matrices, because this equation has a more complicated set up
-    def build_FD_matrices(self, approx_order=1):
+    def build_FD_matrices(self, approx_order=2):
         # build finite differences matrices...
         # (i) including the flux boundary conditions for Q * dF/dh
         self.bc = DirichletBC(vals=(1, 0))

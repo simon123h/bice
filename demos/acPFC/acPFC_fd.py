@@ -40,7 +40,7 @@ class activePFCEquation(FiniteDifferencesEquation):
         self.u = np.array([u0 + self.phi01, u0 + self.phi02, 0*u0])
         # build finite difference matrices
         self.bc = PeriodicBC() 
-        self.build_FD_matrices(approx_order=3)
+        self.build_FD_matrices(approx_order=2)
         laplace = self.laplace()
         self.linear_op1 = 2*self.q1**2 * laplace + laplace.dot(laplace)
         self.linear_op2 = 2*self.q2**2 * laplace + laplace.dot(laplace)
