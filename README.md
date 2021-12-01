@@ -19,10 +19,18 @@ in any directory of your choice. This will install the bice package using `setup
 
 ## Documentation
 
-The documentation can be created with the command
+The documentation can be created with the commands
 
 ```bash
-doxygen Doxyfile
+cd doc
+sphinx-apidoc -o source ../bice
+make html
 ```
 
 The documentation can then be found in the folder `doc`.
+
+You will need to have `Sphinx` and `sphinx_rtd_theme` installed:
+
+```bash
+pip3 install Sphinx sphinx_rtd_theme
+```
