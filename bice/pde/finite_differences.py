@@ -1,7 +1,6 @@
 import numpy as np
 import findiff
 import scipy.sparse as sp
-from scipy.interpolate import interp1d
 import numdifftools.fornberg as fornberg
 from .pde import PartialDifferentialEquation
 from bice.core import profile

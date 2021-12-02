@@ -6,4 +6,12 @@ setup(name='bice',
       author='Simon Hartmann',
       author_email='s.hartmann@wwu.de',
       license='MIT',
-      packages=['bice'])
+      packages=['bice'],
+      install_requires=[
+          'numpy',
+          'scipy',
+          'matplotlib',
+          'findiff',
+          'numdifftools'
+      ]
+      )
