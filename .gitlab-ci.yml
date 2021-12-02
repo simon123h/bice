@@ -26,11 +26,10 @@ before_script:
 build:
   stage: build
   script:
-    - python setup.py bdist_wheel
-    - pip install dist/*
+      pip install -e .
   artifacts:
     paths:
-      - dist/*.whl
+      - bice.egg-info/*
 
 # Run tests
 # test:
