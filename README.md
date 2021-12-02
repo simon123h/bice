@@ -4,6 +4,8 @@ A continuation software written in Python
 
 TODO: find backronym!
 
+<img src="demos/SHE/sample.svg" alt="Sample bifurcation diagram with snaking" width="800"/>
+
 ## Installation
 
 This package is not yet published on PyPI, therefore you need to install it locally.
@@ -25,7 +27,7 @@ All will be installed automatically when installing `bice`.
 
 ## Documentation
 
-Click here for the 
+Click here for the
 [online version of the documentation](https://s_hart20.zivgitlabpages.uni-muenster.de/bice/).
 
 The documentation can also be generated locally with the commands
