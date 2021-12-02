@@ -4,7 +4,9 @@ A continuation software written in Python
 
 TODO: find backronym!
 
-<img src="demos/SHE/sample.svg" alt="Sample bifurcation diagram with snaking" width="800"/>
+## Example
+Example of a bifurcation diagram with snaking in the Swift-Hohenberg equation obtained with *bice*, see the [corresponding SHE demo](demos/SHE/).
+<img src="demos/SHE/sample.svg" alt="Sample bifurcation diagram with snaking" width="900"/>
 
 ## Installation
 
