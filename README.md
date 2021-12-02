@@ -25,11 +25,13 @@ All will be installed automatically when installing `bice`.
 
 ## Documentation
 
-The documentation can be created with the commands
+Click here for the 
+[online version of the documentation](https://s_hart20.zivgitlabpages.uni-muenster.de/bice/).
+
+The documentation can also be generated locally with the commands
 
 ```bash
 cd doc
-sphinx-apidoc -o source ../bice
 make html
 ```
 
