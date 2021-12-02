@@ -19,7 +19,7 @@ class Equation:
 
     def __init__(self, shape=None):
         # The equation's storage for the unknowns
-        self.u = np.zeros(shape)
+        self.u = np.zeros(() if shape is None else shape)
         # we keep our own __shape variable, so that the shape is not unintentionally lost
         # when the user changes u. If stored shape is undefined, we'll simply fallback to u.shape
         self.__shape = self.u.shape
