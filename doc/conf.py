@@ -22,7 +22,7 @@ copyright = '2021, Simon Hartmann'
 author = 'Simon Hartmann'
 
 # The full version, including alpha/beta/rc tags
-release = '2021'
+release = '0.2'
 
 
 # -- General configuration ---------------------------------------------------
