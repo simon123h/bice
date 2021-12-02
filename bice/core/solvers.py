@@ -23,22 +23,22 @@ class AbstractNewtonSolver:
         # internal storage for the number of iterations taken during last solve
         self._iteration_count = None
 
-    # solve the system f(u) = 0 with the initial guess u0 and the Jacobian jac(u)
     def solve(self, f, u0, jac):
+        """solve the system f(u) = 0 with the initial guess u0 and the Jacobian jac(u)"""
         raise NotImplementedError(
             "'AbstractNewtonSolver' is an abstract base class - do not use for actual solving!")
 
-    # access to the number of iterations taken in the last Newton solve
     @property
     def niterations(self):
+        """access to the number of iterations taken in the last Newton solve"""
         return self._iteration_count
 
-    # the norm used for checking the residuals for convergence
     def norm(self, residuals):
+        """the norm used for checking the residuals for convergence"""
         return np.max(residuals)
 
-    # throw an error when the solver failed to converge
     def throw_no_convergence_error(self, res=None):
+        """throw an error when the solver failed to converge"""
         if res is None:
             res = ""
         else:
@@ -52,8 +52,8 @@ class AbstractNewtonSolver:
             name + " did not converge" + it + "!" + res)
 
 
-# Reference implementation of a simple 'text book' Newton solver
 class MyNewtonSolver(AbstractNewtonSolver):
+    """Reference implementation of a simple 'text book' Newton solver"""
 
     @profile
     def solve(self, f, u0, jac):
@@ -176,6 +176,10 @@ class NewtonKrylovSolver(AbstractNewtonSolver):
 
 
 class EigenSolver:
+    """
+    A wrapper to the powerful iterative Eigensolver ARPACK,
+    that finds eigenvalues and eigenvectors of an eigenproblem.
+    """
 
     def __init__(self):
         # The shift used for the shift-invert method in the iterative eigensolver.
