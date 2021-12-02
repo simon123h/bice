@@ -11,3 +11,4 @@ venv/
 # setup files
 *.egg-info/
 build/
+dist/
