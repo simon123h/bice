@@ -115,7 +115,7 @@ class NewtonSolver(AbstractNewtonSolver):
             jac_wrapper = None
         # solve!
         opt_result = scipy.optimize.root(
-            f, u0, jac=jac_wrapper, method=self.method)
+            f, u0, jac=jac_wrapper, method=self.method, tol=self.convergence_tolerance)
         # fetch number of iterations, residuals and status
         err = self.norm(opt_result.fun)
         self._iteration_count = opt_result.nit if 'nit' in opt_result.keys() else opt_result.nfev
