@@ -32,14 +32,15 @@ build:
       - bice.egg-info/*
 
 # Run tests
-# test:
-#   stage: test
-#   script:
-#     - python setup.py test
+test:
+  stage: test
+  script:
+    - python -m unittest
 
 # Generate the documentation pages
 pages:
   stage: deploy
+  only: master
   script:
     - pip install sphinx sphinx-rtd-theme
     - cd doc ; make html
