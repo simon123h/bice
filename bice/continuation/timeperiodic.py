@@ -28,27 +28,27 @@ class TimePeriodicOrbitHandler(Equation):
         self.u = np.append(u1, T)
         self.ddt = self.build_ddt_matrix()
 
-    # access the period length
     @property
     def T(self):
+        """Access the period length"""
         return self.u[-1]
 
     @T.setter
     def T(self, v):
         self.u[-1] = v
 
-    # number of points in time
     @property
     def Nt(self):
+        """Number of points in time"""
         return len(self.dt)
 
-    # the unknowns in separate arrays for each point in time
     def u_orbit(self):
+        """The unknowns in separate arrays for each point in time"""
         # split the period and reshape to (Nt, *ref_eq.shape)
         return self.u[:-1].reshape((self.Nt, *self.ref_eq.shape))
 
-    # build the time-derivative operator ddt, using periodic finite differences
     def build_ddt_matrix(self):
+        """Build the time-derivative operator ddt, using periodic finite differences"""
         # time-derivative operator
         # TODO: build using FinDiff or numdifftoos.fornberg
         #       then we can also support non-uniform time-grids
@@ -69,8 +69,8 @@ class TimePeriodicOrbitHandler(Equation):
         # convert to sparse
         return sp.csr_matrix(ddt)
 
-    # calculate the rhs of the full system of equations
     def rhs(self, u):
+        """Calculate the rhs of the full system of equations"""
         # number of unknowns of a single equation
         N = self.ref_eq.ndofs
         # split the unknowns into:
@@ -99,8 +99,8 @@ class TimePeriodicOrbitHandler(Equation):
         # return the result
         return res
 
-    # calculate the Jacobian of rhs(u)
     def jacobian(self, u):
+        """Calculate the Jacobian of rhs(u)"""
         # split the unknowns into:
         # ... period length
         T = u[-1]
@@ -131,10 +131,10 @@ class TimePeriodicOrbitHandler(Equation):
         return sp.bmat([[d_bulk_du, d_bulk_dT],
                         [d_cnst_du, d_cnst_dT]])
 
-    # adapt the time mesh to the solution
     # TODO: test this
     # TODO: ddt does currently not support non-uniform time, make uniform?
     def adapt(self):
+        """Adapt the time mesh to the solution"""
         # number of unknowns of a single equation
         N = self.ref_eq.ndofs
         # split the unknowns into:
@@ -188,13 +188,13 @@ class TimePeriodicOrbitHandler(Equation):
         # return min/max error estimates
         return (min(error_estimate), max(error_estimate))
 
-    # save the state of the equation, including the dt-values
     def save(self):
+        """Save the state of the equation, including the dt-values"""
         data = super().save()
         data.update({'dt': self.dt})
         return data
 
-    # load the state of the equation, including the dt-values
     def load(self, data):
+        """Load the state of the equation, including the dt-values"""
         self.dt = data['dt']
         super().load(data)

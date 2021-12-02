@@ -35,9 +35,9 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         self.min_dx = 1e-3
         self.max_dx = 2
 
-    # build finite difference differentiation matrices using Fornberg (1988) algorithm
     @profile
     def build_FD_matrices(self, approx_order=2, max_order=2):
+        """Build finite difference differentiation matrices using Fornberg (1988) algorithm"""
         # TODO: support for higher dimensions than 1d
         # accuracy / approximation order of the FD scheme (size of stencil = 2*ao + 1)
         ao = approx_order
@@ -90,15 +90,15 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # laplace operator: d^2 / dx^2
         self.laplace = self.ddx[2]
 
-    # Jacobian of the equation
     def jacobian(self, u):
+        """Jacobian of the equation"""
         # FD Jacobians are typically sparse, so we convert to a sparse matrix
         return sp.csr_matrix(super().jacobian(u))
 
-    # perform adaption of the grid to the solution
     # TODO: support higher dimensions than 1d
     @profile
     def adapt(self):
+        """Perform adaption of the grid to the solution"""
         # calculate error estimate
         error_estimate = self.refinement_error_estimate()
         # adapt the mesh
@@ -147,9 +147,9 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # re-build the FEM matrices
         self.build_FD_matrices()
 
-    # estimate the error made in each grid point
     @profile
     def refinement_error_estimate(self):
+        """Estimate the error made in each grid point"""
         # calculate integral of curvature:
         # error = | \int d^2 u / dx^2 * test(x) dx |
         # NOTE: overwrite this method, if different weights of the curvatures are needed
@@ -164,21 +164,25 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
             err += np.abs(curv*dx)
         return err
 
-    # default implementation for spatial derivative
     def du_dx(self, u, direction=0):
+        """Default implementation for spatial derivative"""
         # TODO: support dimensions higher than 1d
         return self.nabla(u)
 
-    # save the state of the equation, including the x-values
-    # override this method, if your equation needs to store more stuff
     def save(self):
+        """
+        Save the state of the equation, including the x-values.
+        Override this method, if your equation needs to store more stuff.
+        """
         data = super().save()
         data.update({'x': self.x})
         return data
 
-    # load the state of the equation, including the x-values
-    # override this method, if your equation needs to recover more stuff
     def load(self, data):
+        """
+        Load the state of the equation, including the x-values.
+        Override this method, if your equation needs to recover more stuff.
+        """
         self.x = data['x']
         super().load(data)
 
@@ -196,15 +200,17 @@ class AffineOperator:
         # constant (affine) part
         self.G = G
 
-    # Apply the operator to some vector/tensor u and scale the constant part with g:
-    # operator(u) = Q*u + g*G
-    # if called without arguments, only the linear part is returned, for an intuitive
-    # implementation of operator derivatives, e.g.:
-    # f(u) = operator(u) = Q*u + g*G
-    # f'(u) = operator() = Q
-    # this also allows for simple operator algebra, e.g.:
-    # op2 = operator()*operator() = Q*Q (unfortunately discarding the constant part)
     def __call__(self, u=None, g=1):
+        """
+        Apply the operator to some vector/tensor u and scale the constant part with g:
+        operator(u) = Q*u + g*G
+        if called without arguments, only the linear part is returned, for an intuitive
+        implementation of operator derivatives, e.g.:
+        f(u) = operator(u) = Q*u + g*G
+        f'(u) = operator() = Q
+        this also allows for simple operator algebra, e.g.:
+        op2 = operator()*operator() = Q*Q (unfortunately discarding the constant part)
+        """
         # if u is not given, return the matrix Q alone
         if u is None:
             return self.Q
@@ -258,20 +264,20 @@ class FDBoundaryConditions:
         # constant (affine) part
         self.G = 0
 
-    # build the matrix and constant part for the affine transformation u_padded = Q*u + G
     def update(self, x, approx_order):
+        """build the matrix and constant part for the affine transformation u_padded = Q*u + G"""
         # default case: identity matrix (equals homogeneous Dirichlet conditions)
         N = len(x)
         ao = approx_order
         self.Q = sp.eye(N+2, N, k=-ao)
         self.G = 0
 
-    # transform a vector u to the boundary padded vector: u_pad = Q*u + G
     def pad(self, u):
+        """Transform a vector u to the boundary padded vector: u_pad = Q*u + G"""
         return self.Q.dot(u) + self.G
 
-    # pad vector of node values with the x-values of the ghost nodes
     def pad_x(self, x):
+        """Pad vector of node values with the x-values of the ghost nodes"""
         dxl = x[1] - x[0]
         dxr = x[-1] - x[-2]
         return np.concatenate(([x[0]-dxl], x, [x[-1]+dxr]))
@@ -279,7 +285,7 @@ class FDBoundaryConditions:
 
 class PeriodicBC(FDBoundaryConditions):
     """
-    periodic boundary conditions
+    Periodic boundary conditions
     """
 
     def __init__(self):
@@ -289,8 +295,8 @@ class PeriodicBC(FDBoundaryConditions):
         # the virtual distance between the left and right boundary node
         self.boundary_dx = None
 
-    # build the matrix and constant part for the affine transformation u_padded = Q*u + G
     def update(self, x, approx_order):
+        """Build the matrix and constant part for the affine transformation u_padded = Q*u + G"""
         # generate matrix that maps u_i --> u_{i%N} for 1d periodic ghost points
         self.order = approx_order
         N = len(x)
@@ -300,8 +306,8 @@ class PeriodicBC(FDBoundaryConditions):
         # constant part is zero
         self.G = 0
 
-    # pad vector of node values with the x-values of the ghost nodes
     def pad_x(self, x):
+        """Pad vector of node values with the x-values of the ghost nodes"""
         # obtain the (constant!) virtual distance between the left and right boundary nodes
         if self.boundary_dx is None:
             self.boundary_dx = x[1] - x[0]
@@ -329,10 +335,12 @@ class RobinBC(FDBoundaryConditions):
         self.b = b
         self.c = c
 
-    # build the matrix and constant part for the affine transformation u_padded = Q*u + G
-    # cf. RobinBC in https://github.com/SciML/DiffEqOperators.jl
     @profile
     def update(self, x, approx_order):
+        """
+        Build the matrix and constant part for the affine transformation u_padded = Q*u + G
+        cf. RobinBC in https://github.com/SciML/DiffEqOperators.jl
+        """
         N = len(x)
         ao = approx_order
         # expand coefficients for left and right
@@ -385,15 +393,15 @@ class NoBoundaryConditions(FDBoundaryConditions):
     NoBoundaryConditions.
     """
 
-    # build the matrix and constant part for the affine transformation u_padded = Q*u + G
     def update(self, x, approx_order):
+        """Build the matrix and constant part for the affine transformation u_padded = Q*u + G"""
         # default case: identity matrix (equals homogeneous Dirichlet conditions)
         # no ghost points, mapping is identity: boundary padded u = u = 1 * u + 0
         N = len(x)
         self.Q = sp.eye(N)
         self.G = 0
 
-    # pad vector of node values with the x-values of the ghost nodes
     def pad_x(self, x):
+        """Pad vector of node values with the x-values of the ghost nodes"""
         # here: no ghost nodes! x_pad = x
         return x

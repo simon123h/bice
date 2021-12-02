@@ -21,10 +21,13 @@ class ContinuationStepper:
             "'ContinuationStepper' is an abstract base class - "
             "do not use for actual parameter continuation!")
 
-    # reset the continuation-stepper parameters & storage to default, e.g.,
-    # when starting off a new solution point, switching branches or
-    # switching the principal continuation parameter
     def factory_reset(self):
+        """
+        Reset the continuation-stepper parameters & storage to default, e.g.,
+        when starting off a new solution point, switching branches or
+        switching the principal continuation parameter
+        """
+        # TODO: is this method even needed?
         pass
 
 
