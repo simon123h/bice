@@ -40,7 +40,6 @@ test:
 # Generate the documentation pages
 pages:
   stage: deploy
-  only: master
   script:
     - pip install sphinx sphinx-rtd-theme
     - cd doc ; make html
