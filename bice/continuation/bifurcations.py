@@ -3,6 +3,7 @@ from bice.core.equation import Equation
 
 
 class BifurcationConstraint(Equation):
+    # TODO: add docstring
     def __init__(self, phi, free_parameter):
         super().__init__()
         # the constraint equation couples to some other equations of the problem
@@ -117,8 +118,8 @@ class BifurcationConstraint(Equation):
         # couples to no time-derivatives
         return 0
 
-    # calculate the original (unextended) Jacobian of the problem
     def original_jacobian(self, u):
+        """Calculate the original (unextended) Jacobian of the problem"""
         # disable the null-space equations
         self.__disabled = True
         Gu = self.group.jacobian(u)

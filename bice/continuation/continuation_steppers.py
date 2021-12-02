@@ -15,8 +15,8 @@ class ContinuationStepper:
         # continuation step size
         self.ds = ds
 
-    # perform a continuation step on a problem
     def step(self, problem):
+        """Perform a continuation step on a problem"""
         raise NotImplementedError(
             "'ContinuationStepper' is an abstract base class - "
             "do not use for actual parameter continuation!")
@@ -33,8 +33,8 @@ class NaturalContinuation(ContinuationStepper):
     Natural parameter continuation stepper
     """
 
-    # perform continuation step
     def step(self, problem):
+        """Perform a continuation step on a problem"""
         # update the parameter value
         p = problem.get_continuation_parameter()
         problem.set_continuation_parameter(p + self.ds)
@@ -74,8 +74,8 @@ class PseudoArclengthContinuation(ContinuationStepper):
         # finite-difference for calculating parameter derivatives
         self.fd_epsilon = 1e-10
 
-    # perform continuation step
     def step(self, problem):
+        """Perform a continuation step on a problem"""
         p = problem.get_continuation_parameter()
         u = problem.u
         N = u.size
@@ -203,8 +203,8 @@ class DeflatedContinuation(ContinuationStepper):
         # list of solutions in the last step, for initial guesses
         self.prev_solutions = []
 
-    # perform deflated continuation step
     def step(self, problem):
+        """Perform deflated continuation step"""
 
         # initial guess
         i = len(self.deflation.solutions)
