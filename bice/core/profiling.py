@@ -20,7 +20,7 @@ def profile(method):
         # get the full name of the method
         name = method.__qualname__
         # save the MethodProfile that we're coming from
-        parent_profile = Profiler.__current_profile
+        parent_profile = Profiler._current_profile
         # open the MethodProfile of the current method
         if name not in parent_profile.nested_profiles:
             # if it doesn't exist in the parent, create it
@@ -30,7 +30,7 @@ def profile(method):
             # else, use the one already stored in the parent
             current_profile = parent_profile.nested_profiles[name]
         # we'll now be in the current method, so the Profiler should know that
-        Profiler.__current_profile = current_profile
+        Profiler._current_profile = current_profile
         # execute the method while measuring the execution time
         ts = time.time()
         result = method(*args, **kw)
@@ -39,7 +39,7 @@ def profile(method):
         current_profile.execution_time += te - ts
         current_profile.ncalls += 1
         # we're out of the method, reset current profile to parent
-        Profiler.__current_profile = parent_profile
+        Profiler._current_profile = parent_profile
         # return the result of the method
         return result
     return do_profile
@@ -125,7 +125,7 @@ class Profiler:
 
     __start_time = None
     __root_profile = MethodProfile("")
-    __current_profile = __root_profile
+    _current_profile = __root_profile
 
     @staticmethod
     def start():
