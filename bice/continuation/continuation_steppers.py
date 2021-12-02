@@ -1,7 +1,6 @@
 import numpy as np
 import scipy.optimize
 import scipy.sparse as sp
-from .deflation import DeflationOperator
 
 
 class ContinuationStepper:
@@ -191,72 +190,3 @@ class PseudoArclengthContinuation(ContinuationStepper):
         # ...or simply the one for full rank matrices
         return np.linalg.solve(A, b)
 
-
-class DeflatedContinuation(ContinuationStepper):
-    """
-    Deflated continuation stepper
-    """
-
-    def __init__(self, ds=1e-3):
-        super().__init__(ds)
-        # The deflation operator
-        self.deflation = DeflationOperator()
-        # maximum number of solutions
-        self.max_solutions = 30
-        # list of solutions in the last step, for initial guesses
-        self.prev_solutions = []
-
-    def step(self, problem):
-        """Perform deflated continuation step"""
-
-        # initial guess
-        i = len(self.deflation.solutions)
-        if i < len(self.prev_solutions):
-            u0 = self.prev_solutions[i]
-        else:
-            # TODO: there must be a better choice!
-            u0 = problem.u * 1.3
-            # u0 = problem.u + np.random.random(problem.u.shape) * 1e-2
-
-        # try to solve problem with Newton solver
-        try:
-            if len(self.deflation.solutions) < self.max_solutions:
-                # call Newton solver with deflated rhs
-                problem.u = u0
-                rhs = self.deflation.deflated_rhs(problem.rhs)
-                jac = self.deflation.deflated_jacobian(
-                    problem.rhs, problem.jacobian)
-                u_new = problem.newton_solver.solve(rhs, u0, jac)
-                # add new solution to known solutions
-                self.deflation.add_solution(u_new)
-                converged = True
-            else:
-                converged = False
-        except scipy.optimize.nonlin.NoConvergence:
-            # did not converge! Possibly, there are no unknown solutions left
-            converged = False
-        except np.linalg.LinAlgError:
-            # did not converge! Possibly, there are no unknown solutions left
-            converged = False
-
-        # if a new solution was found, assign the unknowns and return
-        if converged:
-            problem.u = u_new
-            return
-
-        # TODO: step size adaption
-
-        # otherwise, no solution was found
-        # increase the continuation parameter by ds
-        p = problem.get_continuation_parameter()
-        problem.set_continuation_parameter(p + self.ds)
-        # check if any solutions were found
-        if len(self.deflation.solutions) == 0:
-            # TODO: raise exception?
-            print("Warning: deflated continuation found no solutions at all!")
-        # store the list of solutions for using them as initial guesses in the next round
-        self.prev_solutions = self.deflation.solutions
-        # clear the known solutions storage
-        self.deflation.clear_solutions()
-        # do a new continuation step with increased parameter
-        self.step(problem)
