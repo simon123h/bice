@@ -13,7 +13,6 @@ def profile(method):
     This is a decorator (@profile), that triggers profiling of the execution time of a method
     """
     @wraps(method)
-
     def do_profile(*args, **kw):
         # if profiling is turned off: do nothing but execute the method
         if not Profiler.is_active():
@@ -21,7 +20,7 @@ def profile(method):
         # get the full name of the method
         name = method.__qualname__
         # save the MethodProfile that we're coming from
-        parent_profile = Profiler.current_profile
+        parent_profile = Profiler.__current_profile
         # open the MethodProfile of the current method
         if name not in parent_profile.nested_profiles:
             # if it doesn't exist in the parent, create it
@@ -31,7 +30,7 @@ def profile(method):
             # else, use the one already stored in the parent
             current_profile = parent_profile.nested_profiles[name]
         # we'll now be in the current method, so the Profiler should know that
-        Profiler.current_profile = current_profile
+        Profiler.__current_profile = current_profile
         # execute the method while measuring the execution time
         ts = time.time()
         result = method(*args, **kw)
@@ -40,7 +39,7 @@ def profile(method):
         current_profile.execution_time += te - ts
         current_profile.ncalls += 1
         # we're out of the method, reset current profile to parent
-        Profiler.current_profile = parent_profile
+        Profiler.__current_profile = parent_profile
         # return the result of the method
         return result
     return do_profile
@@ -56,14 +55,14 @@ class MethodProfile:
         # name of the method
         self.name = name
         # list of all the measured execution times
-        self.execution_time = 0
+        self.execution_time = 0.
         # the total number of calls
         self.ncalls = 0
         # any nested method's and their profiles
         self.nested_profiles = {}
 
-    # drop all the nesting data and give a simple dictionary of each method's execution times
     def flattened_data(self):
+        """Drop all the nesting data and give a simple dictionary of each method's execution times"""
         # empty result dict
         data = {}
         # add own execution times to the result dict
@@ -81,8 +80,8 @@ class MethodProfile:
         # return the dict
         return data
 
-    # print the stats on this method's profile and all the nested methods recursively
     def print_stats(self, total_time, indentation=0, nested=True, last=False):
+        """Print the stats on this method's profile and all the nested methods recursively"""
         if self.execution_time > 0:
             # calculate stats
             Ncalls = self.ncalls
@@ -126,24 +125,24 @@ class Profiler:
 
     __start_time = None
     __root_profile = MethodProfile("")
-    current_profile = __root_profile
+    __current_profile = __root_profile
 
-    # (Re)start the Profiler
     @staticmethod
     def start():
+        """(Re)start the Profiler"""
         # reset the execution time dictionary
         Profiler.execution_times = {}
         # reset the start time
         Profiler.__start_time = time.time()
 
     @staticmethod
-    # Is the Profiler active/running?
     def is_active():
+        """Is the Profiler active/running?"""
         return Profiler.__start_time is not None
 
     @staticmethod
-    # Print a summary on the execution times of the methods that were decorated with @profile
     def print_summary(nested=True):
+        """Print a summary on the execution times of the methods that were decorated with @profile"""
         # check if Profiler is active
         if not Profiler.is_active():
             print("Profiler is inactive.")

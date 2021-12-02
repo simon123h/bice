@@ -11,13 +11,13 @@ class Solution:
     """
 
     # static variable counting the total number of Solutions
-    solution_count = 0
+    _solution_count = 0
 
     def __init__(self, problem=None):
         # generate solution ID
-        Solution.solution_count += 1
+        Solution._solution_count += 1
         # unique identifier of the solution
-        self.id = Solution.solution_count
+        self.id = Solution._solution_count
         # the current problem state as a dictionary of data (equation's unknowns and parameters)
         # TODO: storing each solution's data may eat up some memory
         #       do we need to save every solution? maybe save bifurcations only
@@ -89,9 +89,9 @@ class Solution:
         # if it is not a regular point, return True
         return bif_type not in [None, ""]
 
-    # what type of bifurcation is the solution
     # TODO: rename to "type" ? bifurcation.bifurcation_type() looks weird...
     def bifurcation_type(self, update=False):
+        """What type of bifurcation is the solution?"""
         # check if bifurcation type is cached
         if self._bifurcation_type is not None and not update:
             return self._bifurcation_type
@@ -134,13 +134,13 @@ class Branch:
     """
 
     # static variable counting the number of Branch instances
-    branch_count = 0
+    _branch_count = 0
 
     def __init__(self):
         # generate branch ID
-        Branch.branch_count += 1
+        Branch._branch_count += 1
         # unique identifier of the branch
-        self.id = Branch.branch_count
+        self.id = Branch._branch_count
         # list of solutions along the branch
         self.solutions = []
 
