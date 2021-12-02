@@ -120,8 +120,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
         p = p + self.ds * tangent[N]
 
         def f(up):
-            u = up[:-1]
-            p = up[-1]
+            u, p = up[:-1], up[-1]
             # extended rhs: model's rhs & arclength condition
             arclength_condition = (u - u_old).dot(tangent[:N]) + (p - p_old) * \
                 tangent[N] * self.parameter_arc_length_proportion - self.ds
@@ -129,8 +128,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
 
         # build extended jacobian in (u, parameter)-space
         def J(up):
-            u = up[:-1]
-            p = up[-1]
+            u, p = up[:-1], up[-1]
             problem.set_continuation_parameter(p)
             jac = problem.jacobian(u)
             if not sp.issparse(jac):
@@ -148,8 +146,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
 
         up = np.append(u, p)
         up = problem.newton_solver.solve(f, up, J)
-        u = up[:-1]
-        p = up[-1]
+        u, p = up[:-1], up[-1]
 
         # update number of steps taken
         self.nnewton_iter_taken = problem.newton_solver.niterations

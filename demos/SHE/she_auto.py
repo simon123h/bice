@@ -40,7 +40,7 @@ while dudtnorm > 1e-5:
 
 # start parameter continuation
 problem.settings.always_locate_bifurcations = True
-problem.settings.neigs = 0
+problem.settings.neigs = 6
 
 problem.newton_solver = MyNewtonSolver()
 # problem.newton_solver = NewtonSolver()
@@ -56,7 +56,7 @@ problem.generate_bifurcation_diagram(parameter_lims=(-0.016, -0.012),
                                      max_recursion=1,
                                      max_steps=1e3,
                                      ax=ax,
-                                     plotevery=2)
+                                     plotevery=60)
 
 
 Profiler.print_summary()

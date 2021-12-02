@@ -17,7 +17,7 @@ class AbstractNewtonSolver:
         # maximum number of steps during solve
         self.max_iterations = 100
         # absolute convergence tolerance for norm or residuals
-        self.convergence_tolerance = 6e-6
+        self.convergence_tolerance = 1e-8
         # how verbose should the solving be? 0 = quiet, larger numbers = print more details
         self.verbosity = 0
         # internal storage for the number of iterations taken during last solve
