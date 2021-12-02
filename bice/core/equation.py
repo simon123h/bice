@@ -33,22 +33,22 @@ class Equation:
         # variables accordingly. Otherwise, they only have the dimension of this equation.
         self.is_coupled = False
 
-    # The total number of unknowns / degrees of freedom of the equation
     @property
     def ndofs(self):
+        """The total number of unknowns / degrees of freedom of the equation"""
         return np.prod(self.shape)
 
-    # Returns the shape of the equation's unknowns: self.u.shape
     @property
     def shape(self):
+        """Returns the shape of the equation's unknowns: self.u.shape"""
         # if no shape is explicitly assigned, just return u.shape
         if self.__shape is None or len(self.__shape) == 0:
             return self.u.shape
         # else, return the assigned shape
         return self.__shape
 
-    # Change the shape of the equation / the equation's unknowns
     def reshape(self, shape):
+        """Change the shape of the equation / the equation's unknowns"""
         # resize the unknowns
         self.u = np.resize(self.u, shape)
         # update the internal shape variable
@@ -58,67 +58,81 @@ class Equation:
         if self.group is not None:
             self.group.map_unknowns()
 
-    # Calculate the right-hand side of the equation 0 = rhs(u)
     def rhs(self, u):
+        """Calculate the right-hand side of the equation 0 = rhs(u)"""
         raise NotImplementedError(
             "No right-hand side (rhs) implemented for this equation!")
 
-    # Calculate the Jacobian J = d rhs(u) / du for the unknowns u
     @profile
     def jacobian(self, u):
-        # default implementation: calculate Jacobian with finite differences
-        eps = 1e-10
-        use_central_differences = False
+        """
+        Calculate the Jacobian J = d rhs(u) / du for the unknowns u.
+        Defaults to automatic calculation of the Jacobian using finite differences.
+        """
+        eps = 1e-10  # the finite perturbation size
+        use_central_differences = False  # use central or forward differences?
         N = u.size
         J = np.zeros((N, N), dtype=u.dtype)
         # uncoupled equations require u to be reshaped the self.shape before calling rhs(u)
         shape = u.shape if self.is_coupled else self.shape
-        # reference rhs without central differences
-        if not use_central_differences:
-            f0 = self.rhs(u.reshape(shape)).ravel()
+        # make a copy of the unknowns
         u1 = u.copy().ravel()
-        # perturb every degree of freedom and calculate Jacobian using FD
-        for i in np.arange(N):
-            k = u1[i]
-            u1[i] = k + eps
-            f1 = self.rhs(u1.reshape(shape)).ravel()
-            if use_central_differences:
-                # central difference
+        if use_central_differences:
+            # perturb every degree of freedom and calculate Jacobian using central FD
+            for i in np.arange(N):
+                k = u1[i]
+                u1[i] = k + eps
+                f1 = self.rhs(u1.reshape(shape)).ravel()
                 u1[i] = k - eps
                 f2 = self.rhs(u1.reshape(shape)).ravel()
                 J[i] = (f1 - f2) / (2*eps)
-            else:
-                # forward difference
+                u1[i] = k
+        else:  # use forward differences
+            # reference rhs for unperturbed u
+            f0 = self.rhs(u.reshape(shape)).ravel()
+            # perturb every degree of freedom and calculate Jacobian using FD
+            for i in np.arange(N):
+                k = u1[i]
+                u1[i] = k + eps
+                f1 = self.rhs(u1.reshape(shape)).ravel()
                 J[i] = (f1 - f0) / eps
-            u1[i] = k
+                u1[i] = k
         return J.T
 
-    # The mass matrix M determines the linear relation of the rhs to the temporal derivatives:
-    # M * du/dt = rhs(u)
     def mass_matrix(self):
+        """
+        The mass matrix M determines the linear relation of the rhs to the temporal derivatives:
+        M * du/dt = rhs(u)
+        """
         # default case: assume the identity matrix I (--> du/dt = rhs(u))
         return sp.eye(self.ndofs)
 
-    # adapt the equation to the solution (mesh refinement or similar).
-    # May be overridden for specific types of equations,
-    # do not forget to adapt Equation.u_history as well!
     def adapt(self):
+        """
+        Adapt the equation to the solution (mesh refinement or similar).
+        May be overridden for specific types of equations,
+        do not forget to adapt Equation.u_history as well!
+        """
         pass
 
-    # Save everything that is relevant for this equation to a dict. The Problem class
-    # will call this and save the dict to the disk.
-    # May be overridden for saving more stuff for specific types of equations.
     def save(self):
+        """
+        Save everything that is relevant for this equation to a dict. The Problem class
+        will call this and save the dict to the disk.
+        May be overridden for saving more stuff for specific types of equations.
+        """
         return {'u': self.u}
 
-    # Restore unknowns / parameters / etc. from the given dictionary, that was created by
-    # Equation.save(). Equation.load() is the inverse of Equation.save().
-    # May be overridden for loading more stuff for specific types of equations.
     def load(self, data):
+        """
+        Restore unknowns / parameters / etc. from the given dictionary, that was created by
+        Equation.save(). Equation.load() is the inverse of Equation.save().
+        May be overridden for loading more stuff for specific types of equations.
+        """
         self.u = data['u']
 
-    # plot the solution into a matplotlib axes object
     def plot(self, ax):
+        """plot the solution into a matplotlib axes object"""
         # check if there is spatial coordinates, otherwise generate fake coordinates
         try:
             x = self.x
@@ -163,35 +177,35 @@ class EquationGroup:
             for eq in equations:
                 self.add_equation(eq)
 
-    # The number of unknowns / degrees of freedom of the group
     @property
     def ndofs(self):
+        """The number of unknowns / degrees of freedom of the group"""
         return sum([eq.ndofs for eq in self.equations])
 
-    # The shape of the unknowns
     @property
     def shape(self):
+        """The shape of the unknowns"""
         return (self.ndofs,)
 
-    # A group of equations should never couple to other groups
     @property
     def is_coupled(self):
+        """A group of equations should never couple to other groups"""
         return False
 
-    # The unknowns of the system: combined unknowns of the sub-equations
     @property
     def u(self):
+        """The unknowns of the system: combined unknowns of the sub-equations"""
         return np.concatenate([eq.u.ravel() for eq in self.equations])
 
-    # set the unknowns
     @u.setter
     def u(self, u):
+        """set the unknowns"""
         for eq in self.equations:
             # extract the equation's unknowns using the mapping and reshape to the equation's shape
             eq.u = u[self.idx[eq]].reshape(eq.shape)
 
-    # add an equation to the group
     def add_equation(self, eq):
+        """add an equation to the group"""
         # check if eq already in self.equations
         if eq in self.equations:
             print("Error: Equation is already part of this group!")
@@ -207,8 +221,8 @@ class EquationGroup:
         # redo the mapping from equation's to group's unknowns
         self.map_unknowns()
 
-    # remove an equation from the group
     def remove_equation(self, eq):
+        """remove an equation from the group"""
         # check if eq in self.equations
         if eq not in self.equations:
             print("Error: Equation is not part of this group!")
@@ -220,9 +234,11 @@ class EquationGroup:
         # redo the mapping from equation's to group's unknowns
         self.map_unknowns()
 
-    # create the mapping from equation unknowns to group unknowns, in the sense
-    # that group.u[idx[eq]] = eq.u.ravel() where idx is the mapping
     def map_unknowns(self):
+        """
+        Create the mapping from equation unknowns to group unknowns, in the sense
+        that group.u[idx[eq]] = eq.u.ravel() where idx is the mapping
+        """
         # counter for the current position in group.u
         i = 0
         # assign index range for each equation according to their dimension
@@ -240,9 +256,9 @@ class EquationGroup:
         if self.group:
             self.group.map_unknowns()
 
-    # Calculate the right-hand side of the group 0 = rhs(u)
     @profile
     def rhs(self, u):
+        """Calculate the right-hand side of the group 0 = rhs(u)"""
         # if there is only one equation, we can return the rhs directly
         if len(self.equations) == 1:
             eq = self.equations[0]
@@ -262,9 +278,9 @@ class EquationGroup:
         # everything assembled, return result
         return res
 
-    # Calculate the Jacobian J = d rhs(u) / du for the unknowns u
     @profile
     def jacobian(self, u):
+        """Calculate the Jacobian J = d rhs(u) / du for the unknowns u"""
         # if there is only one equation, we can return the matrix directly
         if len(self.equations) == 1:
             eq = self.equations[0]
@@ -290,9 +306,11 @@ class EquationGroup:
         # all entries assembled, return
         return J
 
-    # The mass matrix determines the linear relation of the rhs to the temporal derivatives:
-    # M * du/dt = rhs(u)
     def mass_matrix(self):
+        """
+        The mass matrix determines the linear relation of the rhs to the temporal derivatives:
+        M * du/dt = rhs(u)
+        """
         # if there is only one equation, we can return the matrix directly
         if len(self.equations) == 1:
             return self.equations[0].mass_matrix()
@@ -314,8 +332,8 @@ class EquationGroup:
         # all entries assembled, return
         return M
 
-    # return a flattened list of all equations in the group and sub-groups
     def list_equations(self):
+        """return a flattened list of all equations in the group and sub-groups"""
         res = []
         for eq in self.equations:
             if isinstance(eq, EquationGroup):
@@ -326,8 +344,8 @@ class EquationGroup:
                 res.append(eq)
         return res
 
-    # pretty-print EquationGroups in the terminal
     def __repr__(self):
+        """pretty-print EquationGroups in the terminal"""
         res = super().__repr__()
         # prints tree structure of nested equations
         for i, eq in enumerate(self.equations):
