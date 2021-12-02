@@ -1,8 +1,8 @@
 # BICE
 
-A continuation software written in Python
+A numerical path continuation software written in Python.
 
-TODO: find backronym!
+TODO: find new name!
 
 ## Example
 Example of a bifurcation diagram with snaking in the Swift-Hohenberg equation obtained with *bice*, see the [corresponding SHE demo](demos/SHE/).
