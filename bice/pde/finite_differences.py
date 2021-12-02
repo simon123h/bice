@@ -144,7 +144,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
                                               for n in range(nvars)])
             else:
                 self.u_history[t] = np.interp(x_new, x_old, u)
-        # re-build the FEM matrices
+        # re-build the finite difference matrices
         self.build_FD_matrices()
 
     @profile
