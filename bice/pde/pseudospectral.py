@@ -20,10 +20,12 @@ class PseudospectralEquation(PartialDifferentialEquation):
         self.k = None
         self.ksquare = None
 
-    # build the k-vectors for the Fourier space
-    # set real=True, if real input to the FFT can be assumed (rfft)
-    # (the k-vectors will be smaller and rfft is more performant than fft)
     def build_kvectors(self, real_fft=False):
+        """
+        Build the k-vectors for the Fourier space
+        set real=True, if real input to the FFT can be assumed (rfft)
+        (the k-vectors will be smaller and rfft is more performant than fft)
+        """
         if len(self.x) == 1:
             Lx = self.x[0][-1] - self.x[0][0]
             Nx = self.x[0].size
