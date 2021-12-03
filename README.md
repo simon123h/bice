@@ -6,7 +6,7 @@ TODO: find new name!
 
 ## Example
 
-Example of a bifurcation diagram with snaking in the Swift-Hohenberg equation obtained with _bice_, see the [corresponding SHE demo](demos/SHE/).
+Example of a bifurcation diagram with snaking in the Swift-Hohenberg equation obtained with _bice_, see the [corresponding SHE demo](demos/notebooks/she.ipynb).
 <img src="demos/SHE/sample.svg" alt="Sample bifurcation diagram with snaking" width="900"/>
 
 ## Installation
