@@ -30,9 +30,10 @@ All will be installed automatically when installing `bice`.
 
 ## Tutorials
 
-We have a first tutorial!
+We have a first tutorials!
 
-- [Heat equation tutorial](demos/notebooks/heat_eq.ipynb)
+- [Heat equation tutorial](demos/notebooks/heat_eq.ipynb): a simple tutorial on how to use bice to implement a first partial differential equation and perform a time simulation of it
+- [Swift-Hohenberg equation tutorial](demos/notebooks/she.ipynb): a simple tutorial on how to use bice's path continuation capabilities.
 
 More will follow soon.
 
