@@ -5,7 +5,7 @@ import numpy as np
 from scipy.sparse import diags
 import matplotlib.pyplot as plt
 from bice import Problem, time_steppers
-from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
+from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC, NeumannBC
 from bice.continuation import TranslationConstraint, VolumeConstraint
 from bice import profile, Profiler
 
@@ -27,6 +27,7 @@ class CahnHilliardEquation(FiniteDifferencesEquation):
         self.x = [np.linspace(-L/2, L/2, N), np.linspace(-L/2, L/2, N)]
         # build finite difference matrices
         self.bc = PeriodicBC()
+        # self.bc = NeumannBC()
         self.build_FD_matrices()
         # initial condition
         self.u = (np.random.random(N**2)-0.5)*0.02
@@ -105,22 +106,23 @@ if not os.path.exists("initial_state2D.npz"):
 
     # save the state, so we can reload it later
     problem.save("initial_state2D.npz")
+    Profiler.print_summary()
 else:
     # load the initial state
     problem.load("initial_state2D.npz")
-
-Profiler.print_summary()
 
 # start parameter continuation
 problem.continuation_stepper.ds = -1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
 
+# add constraints
 volume_constraint = VolumeConstraint(problem.che)
 problem.add_equation(volume_constraint)
-translation_constraint_x = TranslationConstraint(problem.che, direction=0)
-problem.add_equation(translation_constraint_x)
-translation_constraint_y = TranslationConstraint(problem.che, direction=1)
-problem.add_equation(translation_constraint_y)
+if isinstance(problem.che.bc, PeriodicBC):
+    translation_constraint_x = TranslationConstraint(problem.che, direction=0)
+    problem.add_equation(translation_constraint_x)
+    translation_constraint_y = TranslationConstraint(problem.che, direction=1)
+    problem.add_equation(translation_constraint_y)
 
 # create figure
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
@@ -129,7 +131,7 @@ Profiler.start()
 
 n = 0
 plotevery = 1
-while problem.che.a < 2 and n < 10:
+while problem.che.a < 2:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
