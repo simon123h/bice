@@ -36,10 +36,14 @@ We have a first tutorial!
 
 More will follow soon.
 
+Meanwhile you can check out the less documented [demos](demos/).
+
 ## Documentation
 
 Click here for the
 [online version of the documentation](https://s_hart20.zivgitlabpages.uni-muenster.de/bice/).
+
+### Building the documentation locally
 
 The documentation can also be generated locally with the commands
 
