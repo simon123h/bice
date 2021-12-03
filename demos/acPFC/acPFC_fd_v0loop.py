@@ -46,10 +46,10 @@ for idx in [0, 1]:
                 problem.plot(ax_sol)
                 fig.savefig(filepath + f'out/img/{plotID:07d}.svg')
                 plotID += 1
-                print("step #: {:}".format(n))
-                print("time:   {:}".format(problem.time))
-                print("dt:     {:}".format(problem.time_stepper.dt))
-                print("|dudt|: {:}".format(dudtnorm))
+                print(f"step #: {n}")
+                print(f"time:   {problem.time}")
+                print(f"dt:     {problem.time_stepper.dt}")
+                print(f"|dudt|: {dudtnorm}")
                 print('mean u0', problem.acpfc.u[0].mean())
 
             n += 1
@@ -81,10 +81,10 @@ for v0 in np.arange(0., 0.7, 0.05):
                 problem.save(filename=filepath + f'out/{plotID:07d}.npz')
 
                 plotID += 1
-                print("step #: {:}".format(i))
-                print("time:   {:}".format(problem.time))
-                print("dt:     {:}".format(problem.time_stepper.dt))
-                print("|dudt|: {:}".format(dudtnorm))
+                print(f"step #: {i}")
+                print(f"time:   {problem.time}")
+                print(f"dt:     {problem.time_stepper.dt}")
+                print(f"|dudt|: {dudtnorm}")
             i += 1
             # perform timestep
             problem.time_step()

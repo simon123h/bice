@@ -133,12 +133,12 @@ if __name__ == "__main__":
             problem.plot(ax_sol)
             ax_norm.clear()
             ax_norm.plot(times, L2norms)
-            fig.savefig("out/img/{:05d}.svg".format(plotID))
+            fig.savefig(f"out/img/{plotID:05d}.svg")
             plotID += 1
-            print("step #: {:}".format(n))
-            print("time:   {:}".format(problem.time))
-            print("dt:     {:}".format(problem.time_stepper.dt))
-            print("|dudt|: {:}".format(dudtnorm))
+            print(f"step #: {n}")
+            print(f"time:   {problem.time}")
+            print(f"dt:     {problem.time_stepper.dt}")
+            print(f"|dudt|: {dudtnorm}")
         n += 1
         # perform timestep
         problem.time_step()
@@ -165,12 +165,12 @@ if __name__ == "__main__":
             problem.plot(ax_sol)
             ax_norm.clear()
             ax_norm.plot(times, L2norms)
-            fig.savefig("out/img/{:05d}.svg".format(plotID))
+            fig.savefig(f"out/img/{plotID:05d}.svg")
             plotID += 1
-            print("step #: {:}".format(n))
-            print("time:   {:}".format(problem.time))
-            print("dt:     {:}".format(problem.time_stepper.dt))
-            print("|dudt|: {:}".format(dudtnorm))
+            print(f"step #: {n}")
+            print(f"time:   {problem.time}")
+            print(f"dt:     {problem.time_stepper.dt}")
+            print(f"|dudt|: {dudtnorm}")
         n += 1
         # perform timestep
         problem.time_step()

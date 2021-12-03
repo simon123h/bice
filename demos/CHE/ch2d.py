@@ -85,14 +85,14 @@ if not os.path.exists("initial_state2D.npz"):
             plt.cla()
             plt.pcolormesh(mx, my, problem.che.u, edgecolors='face')
             plt.colorbar()
-            plt.savefig("out/img/{:05d}.png".format(plotID))
+            plt.savefig(f"out/img/{plotID:05d}.png")
             plt.close()
             # problem.plot(ax)
-            # fig.savefig("out/img/{:05d}.svg".format(plotID))
+            # fig.savefig(f"out/img/{plotID:05d}.svg")
             plotID += 1
-            print("step #: {:}".format(n))
-            print("dt:     {:}".format(problem.time_stepper.dt))
-            print("|dudt|: {:}".format(dudtnorm))
+            print(f"step #: {n}")
+            print(f"dt:     {problem.time_stepper.dt}")
+            print(f"|dudt|: {dudtnorm}")
 
         n += 1
         # perform timestep
@@ -131,7 +131,7 @@ while problem.che.a < 2:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
-        fig.savefig("out/img/{:05d}.png".format(plotID))
+        fig.savefig(f"out/img/{plotID:05d}.png")
         plotID += 1
     # perform continuation step
     problem.continuation_step()

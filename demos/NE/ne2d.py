@@ -77,10 +77,10 @@ class NikolaevskiyEquation(PseudospectralEquation):
         pcol = ax.pcolor(x*Lx, y*Ly, self.u, cmap="coolwarm", rasterized=True)
         pcol.set_edgecolor('face')
         # put velocity labels into plot
-        ax.text(0.02, 0.06, "vx = {:.1g}".format(
-            self.translation_constraint_x.u[0]), transform=ax.transAxes)
-        ax.text(0.02, 0.02, "vy = {:.1g}".format(
-            self.translation_constraint_y.u[0]), transform=ax.transAxes)
+        ax.text(
+            0.02, 0.06, f"vx = {self.translation_constraint_x.u[0]:.1g}", transform=ax.transAxes)
+        ax.text(
+            0.02, 0.02, f"vy = {self.translation_constraint_y.u[0]:.1g}", transform=ax.transAxes)
 
 
 class NikolaevskiyProblem(Problem):
@@ -132,13 +132,13 @@ if not os.path.exists("initial_state.npz"):
         # plot
         if n % plotevery == 0:
             problem.plot(ax)
-            fig.savefig("out/img/{:05d}.png".format(plotID))
+            fig.savefig(f"out/img/{plotID:05d}.png")
             plotID += 1
-            print("step #: {:}".format(n))
-            print("time:   {:}".format(problem.time))
-            print("dt:     {:}".format(problem.time_stepper.dt))
-            print("|dudt|: {:}".format(dudtnorm))
-            print("norm:   {:}".format(problem.norm()))
+            print(f"step #: {n}")
+            print(f"time:   {problem.time}")
+            print(f"dt:     {problem.time_stepper.dt}")
+            print(f"|dudt|: {dudtnorm}")
+            print(f"norm:   {problem.norm()}")
         n += 1
         # perform timestep
         problem.time_step()
@@ -185,7 +185,7 @@ while problem.ne.m > 0:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
-        fig.savefig("out/img/{:05d}.png".format(plotID))
+        fig.savefig(f"out/img/{plotID:05d}.png")
         plotID += 1
 
     if problem.bifurcation_diagram.current_solution().is_bifurcation():
@@ -198,7 +198,7 @@ while problem.ne.m > 0:
 print("Branch switching started")
 problem.switch_branch(amplitude=1e-2)
 problem.plot(ax)
-fig.savefig("out/img/{:05d}.png".format(plotID))
+fig.savefig(f"out/img/{plotID:05d}.png")
 plotID += 1
 
 
@@ -210,5 +210,5 @@ while problem.ne.m > 0:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
-        fig.savefig("out/img/{:05d}.png".format(plotID))
+        fig.savefig(f"out/img/{plotID:05d}.png")
         plotID += 1

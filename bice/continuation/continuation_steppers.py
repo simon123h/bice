@@ -163,7 +163,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
             # if step size is already minimal, throw an error
             if abs(self.ds) < self.ds_min:
                 raise np.linalg.LinAlgError(
-                    "Newton solver did not converge after {:d} iterations!".format(count))
+                    f"Newton solver did not converge after {count} iterations!")
             # else, retry with a smaller step size
             self.ds /= 2
             print(
@@ -189,4 +189,3 @@ class PseudoArclengthContinuation(ContinuationStepper):
             return sp.linalg.spsolve(A, b)
         # ...or simply the one for full rank matrices
         return np.linalg.solve(A, b)
-

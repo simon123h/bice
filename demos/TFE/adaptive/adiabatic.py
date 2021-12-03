@@ -33,10 +33,10 @@ if not os.path.exists("initial_state.npz"):
         # plot
         if n % plotevery == 0:
             problem.plot(ax)
-            fig.savefig("out/img/{:05d}.svg".format(plotID))
+            fig.savefig(f"out/img/{plotID:05d}.svg")
             plotID += 1
-        print("step #:{:6d},  time:{:9.2e},  dt:{:9.2e},  norm:{:9.2e}".format(
-            n, problem.time, problem.time_stepper.dt, problem.norm()))
+        print(
+            f"step #:{n:6d},  time:{problem.time:9.2e},  dt:{problem.time_stepper.dt:9.2e},  norm:{problem.norm():9.2e}")
         n += 1
         # perform timestep
         problem.time_step()
@@ -57,7 +57,8 @@ while True:
         problem.time_step()
     n += 1
     vol = problem.tfe.liquid_volume()
-    print("step #:", n, "M:", problem.tfe.M, "dt:{:9.2e}".format(problem.time_stepper.dt), "vol:", vol)
+    print(
+        f"step  # : {n}, M: {problem.tfe.M}, dt: {problem.time_stepper.dt:9.2e}, vol: {vol}")
     problem.tfe.M = problem.tfe.M * 1.0001
 
     # add to branch
@@ -76,7 +77,7 @@ while True:
 
     # plot
     problem.plot(ax)
-    fig.savefig("out/img/{:05d}.svg".format(plotID))
+    fig.savefig(f"out/img/{plotID:05d}.svg")
     plotID += 1
 
 problem.save("final_state.npz")

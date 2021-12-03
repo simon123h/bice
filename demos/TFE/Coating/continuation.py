@@ -32,12 +32,12 @@ if not os.path.exists("initial_state.npz"):
         # plot
         if n % plotevery == 0:
             problem.plot(ax)
-            fig.savefig("out/img/{:05d}.png".format(plotID))
+            fig.savefig(f"out/img/{plotID:05d}.png")
             plotID += 1
-            print("step #: {:}".format(n))
-            print("time:   {:}".format(problem.time))
-            print("dt:     {:}".format(problem.time_stepper.dt))
-            print("|dudt|: {:}".format(dudtnorm))
+            print(f"step #: {n}")
+            print(f"time:   {problem.time}")
+            print(f"dt:     {problem.time_stepper.dt}")
+            print(f"|dudt|: {dudtnorm}")
         n += 1
         # perform timestep
         problem.time_step()
@@ -95,4 +95,4 @@ for n, hopf in enumerate(hopfs):
     problem.u = hopf.u
     problem.set_continuation_parameter(hopf.p)
     problem.history.clear()
-    problem.save("hopf_point_{:d}.npz".format(n))
+    problem.save(f"hopf_point_{n}.npz")

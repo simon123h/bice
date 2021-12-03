@@ -36,12 +36,12 @@ if not os.path.exists("initial_state.npz"):
         # plot
         if n % plotevery == 0:
             problem.plot(ax_sol)
-            fig.savefig("out/img/{:05d}.svg".format(plotID))
+            fig.savefig(f"out/img/{plotID:05d}.svg")
             plotID += 1
-            print("step #: {:}".format(n))
-            print("time:   {:}".format(problem.time))
-            print("dt:     {:}".format(problem.time_stepper.dt))
-            print("|dudt|: {:}".format(dudtnorm))
+            print(f"step #: {n}")
+            print(f"time:   {problem.time}")
+            print(f"dt:     {problem.time_stepper.dt}")
+            print(f"|dudt|: {dudtnorm}")
         n += 1
         # perform timestep
         problem.time_step()
@@ -60,7 +60,8 @@ else:
 
 # calculate Lyapunov exponents
 problem.time_stepper = time_steppers.BDF2(dt=0.1)
-lyapunov = LyapunovExponentCalculator(problem, nexponents=1, epsilon=1e-6, nintegration_steps=1)
+lyapunov = LyapunovExponentCalculator(
+    problem, nexponents=1, epsilon=1e-6, nintegration_steps=1)
 
 last10 = []
 largest = []
@@ -89,7 +90,7 @@ while True:
     ax_largest.plot(largest)
     ax_largest.set_xlabel('iterations')
     ax_largest.set_ylabel('largest lyapunov exponent')
-    fig.savefig(filepath + "out/img/{:07d}.svg".format(plotID))
+    fig.savefig(filepath + f"out/img/{plotID:07d}.svg")
     plotID += 1
     print("Lyapunov exponent(s):", lyapunov.exponents)
     print("L2-norm: ", L2norms[-1])

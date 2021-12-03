@@ -32,11 +32,11 @@ if not os.path.exists("initial_state.npz"):
         # plot
         if n % plotevery == 0:
             problem.plot(ax)
-            fig.savefig("out/img/{:05d}.svg".format(plotID))
+            fig.savefig(f"out/img/{plotID:05d}.svg")
             plotID += 1
-        print("step #: {:}".format(n))
-        print("time:   {:}".format(problem.time))
-        print("dt:     {:}".format(problem.time_stepper.dt))
+        print(f"step #: {n}")
+        print(f"time:   {problem.time}")
+        print(f"dt:     {problem.time_stepper.dt}")
         n += 1
         # perform timestep
         problem.time_step()
@@ -69,11 +69,11 @@ while True:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
-        fig.savefig("out/img/{:05d}.svg".format(plotID))
+        fig.savefig(f"out/img/{plotID:05d}.svg")
         plotID += 1
     # save bifurcation points
     if problem.bifurcation_diagram.current_solution().is_bifurcation():
-        problem.save("sav/sol{}.npz".format(n))
+        problem.save(f"sav/sol{n}.npz")
     # mesh refinement
     # problem.adapt()
 

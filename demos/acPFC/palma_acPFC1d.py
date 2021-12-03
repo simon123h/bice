@@ -137,10 +137,10 @@ if __name__ == "__main__":
             fig.savefig(filepath + "out/img/laststep.svg")
             problem.save(filepath + f"out/out/{n:07d}.npz")
             plotID += 1
-            print("step #: {:}".format(n))
-            print("time:   {:}".format(problem.time))
-            print("dt:     {:}".format(problem.time_stepper.dt))
-            print("|dudt|: {:}".format(dudtnorm))
+            print(f"step #: {n}")
+            print(f"time:   {problem.time}")
+            print(f"dt:     {problem.time_stepper.dt}")
+            print(f"|dudt|: {dudtnorm}")
         n += 1
         # perform timestep
         problem.time_step()

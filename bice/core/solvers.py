@@ -42,11 +42,11 @@ class AbstractNewtonSolver:
         if res is None:
             res = ""
         else:
-            res = " Max. residuals: {:.2e}".format(res)
+            res = f" Max. residuals: {res:.2e}"
         if self.niterations is None:
             it = ""
         else:
-            it = " after {:d} iterations".format(self.niterations)
+            it = f" after {self.niterations} iterations"
         name = type(self).__name__
         raise np.linalg.LinAlgError(
             name + " did not converge" + it + "!" + res)
@@ -72,8 +72,8 @@ class MyNewtonSolver(AbstractNewtonSolver):
             err = self.norm(f(u))
             # print some info on the step, if desired
             if self.verbosity > 1:
-                print("Newton step #{:d}, max. residuals: {:.2e}".format(
-                    self._iteration_count, err))
+                print(
+                    f"Newton step #{self._iteration_count}, max. residuals: {err:.2e}")
             # if system converged to new solution, return solution
             if err < self.convergence_tolerance:
                 if self.verbosity > 0:

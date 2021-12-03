@@ -113,7 +113,7 @@ plotID = 0
 
 # plot initial condition
 problem.tfe.plot(ax)
-fig.savefig("out/img/{:05d}.png".format(plotID))
+fig.savefig(f"out/img/{plotID:05d}.png")
 ax.clear()
 plotID += 1
 
@@ -128,7 +128,7 @@ for i in range(5):
     # plot
     print("plotting")
     problem.tfe.plot(ax)
-    fig.savefig("out/img/{:05d}.png".format(plotID))
+    fig.savefig(f"out/img/{plotID:05d}.png")
     ax.clear()
     plotID += 1
 
@@ -158,7 +158,7 @@ while problem.tfe.kappa < 0:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
-        fig.savefig("out/img/{:05d}.svg".format(plotID))
+        fig.savefig(f"out/img/{plotID:05d}.svg")
         plotID += 1
 
 

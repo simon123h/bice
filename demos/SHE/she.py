@@ -30,12 +30,12 @@ while dudtnorm > 1e-5:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
-        fig.savefig("out/img/{:05d}.png".format(plotID))
+        fig.savefig(f"out/img/{plotID:05d}.png")
         plotID += 1
-        print("step #: {:}".format(n))
-        print("time:   {:}".format(problem.time))
-        print("dt:     {:}".format(problem.time_stepper.dt))
-        print("|dudt|: {:}".format(dudtnorm))
+        print(f"step #: {n}")
+        print(f"time:   {problem.time}")
+        print(f"dt:     {problem.time_stepper.dt}")
+        print(f"|dudt|: {dudtnorm}")
     n += 1
     # perform timestep
     problem.time_step()
@@ -68,7 +68,7 @@ while problem.she.r > -0.016:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
-        fig.savefig("out/img/{:05d}.png".format(plotID))
+        fig.savefig(f"out/img/{plotID:05d}.png")
         plotID += 1
 
 Profiler.print_summary()
@@ -90,7 +90,7 @@ while problem.she.r < -0.002:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
-        fig.savefig("out/img/{:05d}.png".format(plotID))
+        fig.savefig(f"out/img/{plotID:05d}.png")
         plotID += 1
 
 Profiler.print_summary()

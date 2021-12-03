@@ -95,8 +95,7 @@ class MethodProfile:
             else:
                 name = self.name
             # pretty print the stats
-            print("{:<70} {:10.3f}s {:11.2%} {:8d}".format(
-                name, T_tot, T_rel, Ncalls))
+            print(f"{name:<70} {T_tot:10.3f}s {T_rel:11.2%} {Ncalls:8d}")
             # if nested view: increase indentation for nested methods and use relative total time
             if nested:
                 indentation += 1

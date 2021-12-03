@@ -306,7 +306,7 @@ class Problem():
         if ev_index is None:
             ev_index = np.argsort(np.abs(eigenvalues.real))[0]
         self.log(
-            "Attempting to switch branch with eigenvector #{:d}".format(ev_index))
+            f"Attempting to switch branch with eigenvector #{ev_index}")
         # get the eigenvector that corresponds to the bifurcation
         eigenvector = eigenvectors[ev_index]
         if not np.iscomplexobj(self.u):
@@ -538,11 +538,11 @@ class Problem():
                 break
             # print status
             sol = self.bifurcation_diagram.current_solution()
-            print("Branch #{:d}, Step #{:d}, ds={:.2e}, #+EVs: {}".format(
-                branch.id, n, self.continuation_stepper.ds, sol.nunstable_eigenvalues))
+            print(
+                f"Branch #{branch.id}, Step #{n}, ds={self.continuation_stepper.ds:.2e}, #+EVs: {sol.nunstable_eigenvalues}")
             if sol.is_bifurcation():
                 print(
-                    "Bifurcation found! #Null-EVs: {:d}".format(sol.neigenvalues_crossed))
+                    f"Bifurcation found! #Null-EVs: {sol.neigenvalues_crossed}")
             # plot every few steps
             if ax is not None and n % plotevery == 0:
                 self.plot(ax)
@@ -631,7 +631,7 @@ class ProblemHistory():
         # check length of history
         if t >= self.length:
             raise IndexError(
-                "Unknowns u[t=-{:d}] requested, but history length is {:d}".format(t, self.length))
+                f"Unknowns u[t=-{t}] requested, but history length is {self.length}")
         # backup the unknowns
         u_old = self.problem.u
         # set the equation's unknowns from history
@@ -651,7 +651,7 @@ class ProblemHistory():
         # check length of history
         if t >= self.length:
             raise IndexError(
-                "Unknowns u[t=-{:d}] requested, but history length is {:d}".format(t, self.length))
+                f"Unknowns u[t=-{t}] requested, but history length is {self.length}")
         # return the value
         return self.__t[t]
 
@@ -667,7 +667,7 @@ class ProblemHistory():
         # check length of history
         if t >= self.length:
             raise IndexError(
-                "Unknowns u[t=-{:d}] requested, but history length is {:d}".format(t, self.length))
+                f"Unknowns u[t=-{t}] requested, but history length is {self.length}")
         # return the value
         return self.__dt[t]
 
