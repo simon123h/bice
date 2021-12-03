@@ -17,7 +17,7 @@ class CahnHilliardEquation(FiniteDifferencesEquation):
     """
 
     def __init__(self, N, L):
-        super().__init__(shape=(N**2,))
+        super().__init__()
         # parameters
         self.a = -0.5
         self.kappa = 1.
