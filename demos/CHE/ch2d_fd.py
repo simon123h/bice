@@ -4,14 +4,14 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from bice import Problem, time_steppers
-from bice.pde import PseudospectralEquation
+from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
 from bice.continuation import TranslationConstraint, VolumeConstraint
 from bice import profile, Profiler
 
 
-class CahnHilliardEquation(PseudospectralEquation):
+class CahnHilliardEquation(FiniteDifferencesEquation):
     r"""
-    Pseudospectral implementation of the 1-dimensional Cahn-Hilliard Equation
+    Finite difference implementation of the 2-dimensional Cahn-Hilliard Equation
     equation, a nonlinear PDE
     \partial t c &= \Delta (c^3 + a * c - \kappa * \Delta c)
     """
@@ -24,7 +24,9 @@ class CahnHilliardEquation(PseudospectralEquation):
         # list of spatial coordinate. list is important,
         # to deal with several dimensions with different discretization/lengths
         self.x = [np.linspace(-L/2, L/2, N), np.linspace(-L/2, L/2, N)]
-        self.build_kvectors(real_fft=True)
+        # build finite difference matrices
+        self.bc = PeriodicBC()
+        self.build_FD_matrices()
         # initial condition
         self.u = (np.random.random((N, N))-0.5)*0.02
         # mx, my = np.meshgrid(*self.x)
@@ -33,16 +35,10 @@ class CahnHilliardEquation(PseudospectralEquation):
     # definition of the CHE (right-hand side)
     @profile
     def rhs(self, u):
-        u_k = np.fft.rfft2(u)
-        u3_k = np.fft.rfft2(u**3)
-        result_k = -self.ksquare * \
-            (self.kappa * self.ksquare * u_k + self.a * u_k + u3_k)
-        return np.fft.irfft2(result_k)
-
-    @profile
-    def du_dx(self, u, direction=0):
-        du_dx = 1j*self.k[direction]*np.fft.rfft2(u)
-        return np.fft.irfft2(du_dx)
+        u = u.ravel()
+        Delta = self.laplace
+        rhs = Delta.dot(u**3 + self.a*u - self.kappa * Delta.dot(u))
+        return rhs.reshape(self.shape)
 
 
 class CahnHilliardProblem(Problem):
@@ -53,9 +49,6 @@ class CahnHilliardProblem(Problem):
         self.che = CahnHilliardEquation(N, L)
         self.add_equation(self.che)
         # initialize time stepper
-        # self.time_stepper = time_steppers.RungeKuttaFehlberg45(dt=1e-3)
-        # self.time_stepper.error_tolerance = 1e-6
-        # self.time_stepper.max_rejections = 100
         self.time_stepper = time_steppers.BDF(self)
         self.time_stepper.dt = 1e-3
         # assign the continuation parameter

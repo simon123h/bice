@@ -36,13 +36,51 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         self.max_dx = 2
 
     @profile
-    def build_FD_matrices(self, approx_order=2, max_order=2):
-        """Build finite difference differentiation matrices using Fornberg (1988) algorithm"""
-        # TODO: support for higher dimensions than 1d
+    def build_FD_matrices(self, approx_order=2):
+        """Build finite difference differentiation matrices using 1d FD matrices"""
+        # check for spatial dimension:
+        if self.spatial_dimension == 1:
+            # 1d case: proceed with x-vector
+            return self.build_FD_matrices_1d(x=self.x[0], approx_order=approx_order)
+        # else, higher-than-1d case:
+        # construct FD matrices from 1d FD matrices for each spatial dimension
+        # TODO: support higher than 2 dimensions
+        if self.spatial_dimension > 2:
+            raise NotImplementedError("Finite difference operators for spatial dimensions"
+                                      "higher than 1d are not yet supported.")
+        # 2d case:
+        ops1d = []
+        for x in self.x:
+            # generate 1d operators
+            op1d = self.build_FD_matrices_1d(
+                x=x, approx_order=approx_order)[:3]
+            # check if we have inhomogeneous boundary conditions:
+            for op in op1d:
+                if not op.is_linear():
+                    raise NotImplementedError("Inhomogeneous boundary conditions are unfortunately"
+                                              "not supported spatial dimensions higher than 1d.")
+            # drop inhomogeneous part of affine operators (is zero for homogeneous BCs)
+            ops1d.append([op.Q for op in op1d])
+        # 2D FD matrices from 1D matrices  using Kronecker product
+        Ix, Dx_1d, D2x_1d = ops1d[0]
+        Iy, Dy_1d, D2y_1d = ops1d[1]
+        Dx_2d = sp.kron(Iy, Dx_1d)
+        Dy_2d = sp.kron(Dy_1d, Ix)
+        D2x_2d = sp.kron(Iy, D2x_1d)
+        D2y_2d = sp.kron(D2y_1d, Ix)
+        # store operators in class member variables
+        self.ddx = [[Ix, Iy], [Dx_2d, Dy_2d], [D2x_2d, D2y_2d]]
+        self.nabla = [Dx_2d, Dy_2d]  # nabla operator
+        self.laplace = D2x_2d + D2y_2d  # laplace operator
+        return self.ddx
+
+    @profile
+    def build_FD_matrices_1d(self, approx_order=2, x=None):
+        """Build 1d finite difference differentiation matrices using Fornberg (1988) algorithm"""
         # accuracy / approximation order of the FD scheme (size of stencil = 2*ao + 1)
-        ao = approx_order
-        # the spatial grid
-        x = self.x[0]
+        ao = 2 * (approx_order // 2)  # has to be an even number
+        # maximum derivative order of operators to build
+        max_order = 2
         N = len(x)
         # check if boundary conditions are set, otherwise set default
         if self.bc is None:
@@ -89,6 +127,8 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         self.nabla = self.ddx[1]
         # laplace operator: d^2 / dx^2
         self.laplace = self.ddx[2]
+        # return the resulting list of FD matrices
+        return self.ddx
 
     def jacobian(self, u):
         """Jacobian of the equation"""
@@ -221,9 +261,15 @@ class AffineOperator:
         # else, u is a vector, simply perform the Q*u + G
         return self.Q.dot(u) + g*self.G
 
-    # overload the dot method, so we can do operator.dot(u) as with numpy/scipy matrices
     def dot(self, u):
+        """Overloaded dot method, so we can do operator.dot(u) as with numpy/scipy matrices"""
         return self.__call__(u)
+
+    def is_linear(self):
+        """
+        Is the affine operator a linear operator, i.e., is the constant part G=0?
+        """
+        return not np.any(self.G)  # checks if all entries of G are zero
 
 
 class FDBoundaryConditions:

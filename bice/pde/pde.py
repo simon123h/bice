@@ -20,7 +20,9 @@ class PartialDifferentialEquation(Equation):
 
     @property
     def spatial_dimension(self):
-        """Obtain the spatial dimension of the equation"""
+        """Returns the spatial dimension of the domain self.x"""
+        if isinstance(self.x, np.ndarray):
+            return self.x.ndim
         return len(self.x)
 
     def du_dt(self, u=None):

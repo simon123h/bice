@@ -12,7 +12,7 @@ class CahnHilliardEquation(PseudospectralEquation):
     r"""
     Pseudospectral implementation of the 1-dimensional Cahn-Hilliard Equation
     equation, a nonlinear PDE
-    \partial t h &= (r - (kc^2 + \Delta)^2)h + v * h^2 - g * h^3
+    \partial t c &= \Delta (c^3 + a * c - \kappa * \Delta c)
     """
 
     def __init__(self, N, L):
