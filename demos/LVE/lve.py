@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 import time
-import matplotlib
-matplotlib.use("GTK3Agg")
-import matplotlib.pyplot as plt
-import numpy as np
-from bice import Problem, Equation, time_steppers
+import matplotlib  # noqa
+matplotlib.use("GTK3Agg")  # noqa
 from bice.continuation import TimePeriodicOrbitHandler
+from bice import Problem, Equation, time_steppers
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 # The Lotka-Volterra equations (predator prey model)

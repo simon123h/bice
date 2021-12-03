@@ -65,7 +65,8 @@ class NikolaevskiyEquation(FiniteDifferencesEquation):
         Delta = self.ddx[2][0] / Lx**2 + self.ddx[2][1] / Ly**2
         Delta2 = Delta.dot(Delta)
         lin = (1-self.r) * Delta + Delta.dot(2*Delta + Delta2)
-        nonlin = diags(nabla_x.dot(u)) * nabla_x + diags(nabla_y.dot(u)) * nabla_y
+        nonlin = diags(nabla_x.dot(u)) * nabla_x + \
+            diags(nabla_y.dot(u)) * nabla_y
         return lin - nonlin
 
     # plot the solution

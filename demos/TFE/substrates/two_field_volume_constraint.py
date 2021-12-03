@@ -84,7 +84,6 @@ class VolumeConstraint(ConstraintEquation):
         print("end")
         return J
 
-
     def jacobian(self, u):
         # TODO: implement analytical / semi-analytical Jacobian
         # convert FD Jacobian to sparse matrix

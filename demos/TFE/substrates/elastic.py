@@ -53,7 +53,8 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         deq1_dh = -self.laplace() - sp.diags(ddjp_dh)
         deq2_dh = -self.laplace()
         deq1_dxi = -self.laplace()
-        deq2_dxi = -self.laplace() - self.sigma * self.laplace() + sp.diags(10**self.kappa+xi*0)
+        deq2_dxi = -self.laplace() - self.sigma * self.laplace() + \
+            sp.diags(10**self.kappa+xi*0)
         return sp.bmat([[deq1_dh, deq1_dxi], [deq2_dh, deq2_dxi]])
 
     def plot(self, ax):
