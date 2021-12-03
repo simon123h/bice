@@ -5,7 +5,8 @@ A numerical path continuation software written in Python.
 TODO: find new name!
 
 ## Example
-Example of a bifurcation diagram with snaking in the Swift-Hohenberg equation obtained with *bice*, see the [corresponding SHE demo](demos/SHE/).
+
+Example of a bifurcation diagram with snaking in the Swift-Hohenberg equation obtained with _bice_, see the [corresponding SHE demo](demos/SHE/).
 <img src="demos/SHE/sample.svg" alt="Sample bifurcation diagram with snaking" width="900"/>
 
 ## Installation
@@ -26,6 +27,14 @@ in any directory of your choice. The installation is performed using `setup.py`.
 The software depends on Python 3 and the following third-party packages:
 `numpy`, `scipy`, `matplotlib`, `findiff`, and `numdifftools`.
 All will be installed automatically when installing `bice`.
+
+## Tutorials
+
+We have a first tutorial!
+
+- [Heat equation tutorial](demos/notebooks/heat_eq.ipynb)
+
+More will follow soon.
 
 ## Documentation
 
