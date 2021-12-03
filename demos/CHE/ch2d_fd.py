@@ -2,6 +2,7 @@
 import shutil
 import os
 import numpy as np
+from scipy.sparse import diags
 import matplotlib.pyplot as plt
 from bice import Problem, time_steppers
 from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
@@ -28,7 +29,7 @@ class CahnHilliardEquation(FiniteDifferencesEquation):
         self.bc = PeriodicBC()
         self.build_FD_matrices()
         # initial condition
-        self.u = (np.random.random(N, N)-0.5)*0.02
+        self.u = (np.random.random(N**2)-0.5)*0.02
         # mx, my = np.meshgrid(*self.x)
         # self.u = np.cos(np.sqrt(mx**2 + my**2)/(L/4)) - 0.1
         self.u = self.u.ravel()
@@ -38,6 +39,12 @@ class CahnHilliardEquation(FiniteDifferencesEquation):
     def rhs(self, u):
         Delta = self.laplace
         return Delta.dot(u**3 + self.a*u - self.kappa * Delta.dot(u))
+
+    # definition of the Jacobian
+    @profile
+    def jacobian(self, u):
+        Delta = self.laplace
+        return Delta.dot(3*diags(u**2) - self.kappa * Delta) + self.a * Delta
 
 
 class CahnHilliardProblem(Problem):
@@ -118,9 +125,11 @@ problem.add_equation(translation_constraint_y)
 # create figure
 fig, ax = plt.subplots(2, 2, figsize=(16, 9))
 
+Profiler.start()
+
 n = 0
 plotevery = 1
-while problem.che.a < 2:
+while problem.che.a < 2 and n < 10:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)
@@ -130,3 +139,5 @@ while problem.che.a < 2:
     problem.continuation_step()
     print("step #:", n, " ds:", problem.continuation_stepper.ds)
     n += 1
+
+Profiler.print_summary()
