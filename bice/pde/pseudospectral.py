@@ -16,7 +16,7 @@ class PseudospectralEquation(PartialDifferentialEquation):
             self.x = [np.linspace(0, 1, self.shape[-1])]
         else:
             self.x = None
-        # the wavevector
+        #: the wavevector
         self.k = None
         self.ksquare = None
 

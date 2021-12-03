@@ -14,11 +14,11 @@ class AbstractNewtonSolver:
     """
 
     def __init__(self):
-        # maximum number of steps during solve
+        #: maximum number of steps during solve
         self.max_iterations = 100
-        # absolute convergence tolerance for norm or residuals
+        #: absolute convergence tolerance for norm or residuals
         self.convergence_tolerance = 6e-6
-        # how verbose should the solving be? 0 = quiet, larger numbers = print more details
+        #: how verbose should the solving be? 0 = quiet, larger numbers = print more details
         self.verbosity = 0
         # internal storage for the number of iterations taken during last solve
         self._iteration_count = None
@@ -93,8 +93,8 @@ class NewtonSolver(AbstractNewtonSolver):
 
     def __init__(self):
         super().__init__()
-        # choose from the different methods of scipy.optimize.root
-        # NOTE: method = "krylov" might be faster, but then we can use NewtonKrylovSolver directly
+        #: choose from the different methods of scipy.optimize.root
+        #: NOTE: method = "krylov" might be faster, but then we can use NewtonKrylovSolver directly
         self.method = "hybr"
 
     @profile
@@ -102,9 +102,9 @@ class NewtonSolver(AbstractNewtonSolver):
         # methods that do not use the Jacobian, but use an approximation
         inexact_methods = ["krylov", "broyden1", "broyden2",
                            "diagbroyden", "anderson", "linearmixing", "excitingmixing"]
-        # wrapper for the Jacobian
 
         def jac_wrapper(u):
+            # wrapper for the Jacobian
             # sparse matrices are not supported by scipy's root method :-/ convert to dense
             j = jac(u)
             if sp.issparse(j):
@@ -139,7 +139,8 @@ class NewtonKrylovSolver(AbstractNewtonSolver):
 
     def __init__(self):
         super().__init__()
-        # choose from the different methods of scipy.optimize.root
+        #: Let the Krylov method approximate the Jacobian or use the one provided by
+        #: the equation (FD or analytical)?
         self.approximate_jacobian = True
 
     @profile
@@ -182,16 +183,25 @@ class EigenSolver:
     """
 
     def __init__(self):
-        # The shift used for the shift-invert method in the iterative eigensolver.
-        # If shift != None, the eigensolver will find the eigenvalues near the
-        # value of the shift first
+        #: The shift used for the shift-invert method in the iterative eigensolver.
+        #: If shift != None, the eigensolver will find the eigenvalues near the
+        #: value of the shift first
         self.shift = 0.0
-        # store results of the latest computation
-        # NOTE: this is currently only needed for plotting the problem
+        #: results of the latest eigenvalue computation
         self.latest_eigenvalues = None
+        #: results of the latest eigenvector computation
         self.latest_eigenvectors = None
 
     def solve(self, A, M=None, k=None):
+        """
+        Solve the eigenproblem A*x = v*x for the eigenvalues v and the eigenvectors x.
+
+        If an unsigned integer `k` is given, the iterative eigensolver ARPACK will calculate
+        the k first eigenvalues sorted by the largest real part. Otherwise a direct eigensolver
+        will be used to calculate all eigenvalues.
+
+        If a mass matrix `M` is given, the generalized eigenvalue A*x = v*M*x will be solved.
+        """
         if k is None:
             # if no number of values was specified, use a direct eigensolver for computing all eigenvalues
             eigenvalues, eigenvectors = scipy.linalg.eig(A, M)

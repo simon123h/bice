@@ -11,7 +11,7 @@ class ContinuationStepper:
 
     # constructor
     def __init__(self, ds=1e-3):
-        # continuation step size
+        #: continuation step size
         self.ds = ds
 
     def step(self, problem):
@@ -51,29 +51,29 @@ class PseudoArclengthContinuation(ContinuationStepper):
 
     def __init__(self, ds=1e-3):
         super().__init__(ds)
-        # convergence tolerance for the newton solver in the continuation step
+        #: convergence tolerance for the newton solver in the continuation step
         self.convergence_tolerance = 1e-8
-        # maximum number of newton iterations for solving
+        #: maximum number of newton iterations for solving
         self.max_newton_iterations = 30
-        # should the step size be adapted while stepping?
+        #: should the step size be adapted while stepping?
         self.adapt_stepsize = True
-        # the desired number of newton iterations for solving,
-        # step size is adapted if we over/undershoot this number
+        #: the desired number of newton iterations for solving,
+        #: step size is adapted if we over/undershoot this number
         self.ndesired_newton_steps = 3
-        # the actual number of newton iterations taken in the last continuation step
+        #: the actual number of newton iterations taken in the last continuation step
         self.nnewton_iter_taken = None
-        # ds decreases by this factor when less than desired_newton_steps are performed
+        #: ds decreases by this factor when less than desired_newton_steps are performed
         self.ds_decrease_factor = 0.5
-        # ds increases by this factor when more than desired_newton_steps are performed
+        #: ds increases by this factor when more than desired_newton_steps are performed
         self.ds_increase_factor = 1.1
-        # maximum step size
+        #: maximum step size
         self.ds_max = 1e0
-        # minimum step size
+        #: minimum step size
         self.ds_min = 1e-9
-        # rescale the parameter constraint, for numerical stability
-        # may be decreased for, e.g., very sharp folds
+        #: Rescale the parameter constraint, for numerical stability.
+        #: May be decreased, e.g. for very sharp folds.
         self.parameter_arc_length_proportion = 1
-        # finite-difference for calculating parameter derivatives
+        #: finite-difference for calculating parameter derivatives
         self.fd_epsilon = 1e-10
 
     def step(self, problem):
@@ -181,8 +181,8 @@ class PseudoArclengthContinuation(ContinuationStepper):
                 self.ds = min(
                     abs(self.ds)*self.ds_increase_factor, self.ds_max)*np.sign(self.ds)
 
-    # Solve the linear system A*x = b for x and return x
     def _linear_solve(self, A, b, use_sparse_matrices=False):
+        """Solve the linear system A*x = b for x and return x"""
         if use_sparse_matrices or sp.issparse(A):
             # use either solver for sparse matrices...
             A = sp.csr_matrix(A)

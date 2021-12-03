@@ -41,9 +41,13 @@ class BDF(TimeStepper):
 
     def __init__(self, problem, dt_max=np.inf):
         super().__init__()
+        # reference to the problem
         self.problem = problem
+        #: relative tolerance, see scipy.integrate.BDF
         self.rtol = 1e-5
+        #: absolute tolerance, see scipy.integrate.BDF
         self.atol = 1e-8
+        #: maximum time step size
         self.dt_max = dt_max
         self.factory_reset()
 

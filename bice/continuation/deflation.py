@@ -17,35 +17,35 @@ The parameters are:
 class DeflationOperator:
 
     def __init__(self):
-        # the order of the norm that will be used for the deflation operator
+        #: the order of the norm that will be used for the deflation operator
         self.p = 2
-        # small constant in the deflation operator, for numerical stability
+        #: small constant in the deflation operator, for numerical stability
         self.shift = 0.5
-        # list of solutions, that will be suppressed by the deflation operator
+        #: list of solutions, that will be suppressed by the deflation operator
         self.solutions = []
 
-    # obtain the value of the deflation operator for given u
     def operator(self, u):
+        """obtain the value of the deflation operator for given u"""
         return np.prod([np.dot(u_i - u, u_i - u)**-self.p
                         for u_i in self.solutions]) + self.shift
 
-    # Jacobian of deflation operator for given u
     def D_operator(self, u):
+        """Jacobian of deflation operator for given u"""
         op = self.operator(u)
         return self.p * op * 2 * \
             np.sum([(uk - u) / np.dot(uk - u, uk - u)
                     for uk in self.solutions], axis=0)
 
-    # deflate the rhs of some equation
     def deflated_rhs(self, rhs):
+        """deflate the rhs of some equation"""
         def new_rhs(u):
             # multiply rhs with deflation operator
             return self.operator(u) * rhs(u)
         # return the function object
         return new_rhs
 
-    # generate Jacobian of deflated rhs of some equation or problem
     def deflated_jacobian(self, rhs, jacobian):
+        """generate Jacobian of deflated rhs of some equation or problem"""
         def new_jac(u):
             # obtain operator and operator derivative
             op = self.operator(u)
@@ -55,14 +55,14 @@ class DeflationOperator:
         # return the function object
         return new_jac
 
-    # add a solution to the list of solutions used for deflation
     def add_solution(self, u):
+        """add a solution to the list of solutions used for deflation"""
         self.solutions.append(u)
 
-    # add a solution to the list of solutions used for deflation
     def remove_solution(self, u):
+        """remove a solution from the list of solutions used for deflation"""
         self.solutions.remove(u)
 
-    # clear the list of solutions used for deflation
     def clear_solutions(self):
+        """clear the list of solutions used for deflation"""
         self.solutions = []

@@ -10,7 +10,7 @@ class BifurcationConstraint(Equation):
         self.is_coupled = True
         # copy and normalize the null-eigenvector phi
         phi = phi.copy() / np.linalg.norm(phi)
-        # store the reference to the free parameter
+        #: reference to the free parameter
         self.free_parameter = free_parameter
         # get the value of the free parameter
         param_obj, param_name = tuple(self.free_parameter)

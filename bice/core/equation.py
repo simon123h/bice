@@ -18,19 +18,19 @@ class Equation:
     """
 
     def __init__(self, shape=None):
-        # The equation's storage for the unknowns
+        #: The equation's storage for the unknowns
         self.u = np.zeros(() if shape is None else shape)
         # we keep our own __shape variable, so that the shape is not unintentionally lost
         # when the user changes u. If stored shape is undefined, we'll simply fallback to u.shape
         self.__shape = self.u.shape
-        # a history of the unknowns, needed e.g. for implicit schemes
+        #: a history of the unknowns, needed e.g. for implicit schemes
         self.u_history = []
-        # optional reference to group of equations that this equation belongs to
+        #: optional reference to group of equations that this equation belongs to
         self.group = None
-        # Does the equation couple to any other unknowns?
-        # If it is coupled, then all unknowns and methods of this equation will have the
-        # full dimension of the problem and need to be mapped to the equation's
-        # variables accordingly. Otherwise, they only have the dimension of this equation.
+        #: Does the equation couple to any other unknowns?
+        #: If it is coupled, then all unknowns and methods of this equation will have the
+        #: full dimension of the problem and need to be mapped to the equation's
+        #: variables accordingly. Otherwise, they only have the dimension of this equation.
         self.is_coupled = False
 
     @property
@@ -166,11 +166,11 @@ class EquationGroup:
     """
 
     def __init__(self, equations=None):
-        # the list of sub-equations (or even sub-groups-of-equations)
+        #: the list of sub-equations (or even sub-groups-of-equations)
         self.equations = []
-        # The indices of the equation's unknowns to the group's unknowns and vice versa
+        #: The indices of the equation's unknowns to the group's unknowns and vice versa
         self.idx = {}
-        # optional reference to a parent EquationGroup
+        #: optional reference to a parent EquationGroup
         self.group = None
         # optionally add the given equations
         if equations is not None:

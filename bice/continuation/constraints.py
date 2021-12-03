@@ -36,13 +36,13 @@ class VolumeConstraint(ConstraintEquation):
 
     def __init__(self, reference_equation, variable=None):
         super().__init__(shape=(1,))
-        # on which equation/unknowns should the constraint be imposed?
+        #: on which equation/unknowns should the constraint be imposed?
         self.ref_eq = reference_equation
-        # on which variable (index) of the equation should the constraint be imposed?
+        #: on which variable (index) of the equation should the constraint be imposed?
         self.variable = variable
-        # this equation brings a single extra degree of freedom (influx Lagrange multiplier)
+        #: this equation brings a single extra degree of freedom (influx Lagrange multiplier)
         self.u = np.zeros(1)
-        # This parameter allows for prescribing a fixed volume (unless it is None)
+        #: This parameter allows for prescribing a fixed volume (unless it is None)
         self.fixed_volume = None
 
     def rhs(self, u):
@@ -89,13 +89,13 @@ class TranslationConstraint(ConstraintEquation):
     def __init__(self, reference_equation, variable=None, direction=0):
         # call parent constructor
         super().__init__(shape=(1,))
-        # on which equation/unknowns should the constraint be imposed?
+        #: on which equation/unknowns should the constraint be imposed?
         self.ref_eq = reference_equation
-        # on which variable (index) of the equation should the constraint be imposed?
+        #: on which variable (index) of the equation should the constraint be imposed?
         self.variable = variable
-        # which spatial direction (index of [x, y, ...]) should the constraint apply to
+        #: which spatial direction (index of [x, y, ...]) should the constraint apply to
         self.direction = direction
-        # initialize unknowns (velocity vector) to zero
+        #: the unknowns (velocity vector)
         self.u = np.zeros(1)
 
     def rhs(self, u):

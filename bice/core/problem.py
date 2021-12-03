@@ -19,26 +19,26 @@ class Problem():
 
     # Constructor
     def __init__(self):
-        # the equation (or system of equation) that governs the problem
+        #: the equation (or system of equation) that governs the problem
         self.eq = None
-        # Time variable
+        #: Time variable
         self.time = 0
-        # The time-stepper for integration in time
+        #: The time-stepper for integration in time
         self.time_stepper = RungeKutta4(dt=1e-2)
-        # The continuation stepper for parameter continuation
+        #: The continuation stepper for parameter continuation
         self.continuation_stepper = PseudoArclengthContinuation()
-        # The Newton solver for finding roots of equations
+        #: The Newton solver for finding roots of equations
         self.newton_solver = NewtonKrylovSolver()
-        # The eigensolver for eigenvalues and -vectors
+        #: The eigensolver for eigenvalues and -vectors
         self.eigen_solver = EigenSolver()
-        # The settings (tolerances, switches, etc.) are held by this ProblemSettings object
+        #: The settings (tolerances, switches, etc.) are held by this ProblemSettings object
         self.settings = ProblemSettings()
-        # The history of the unknown values is accessed and managed with the Problem.history object
+        #: The history of the unknown values is accessed and managed with the Problem.history object
         self.history = ProblemHistory(self)
-        # The bifurcation diagram of the problem holds all branches and their solutions
+        #: The bifurcation diagram of the problem holds all branches and their solutions
         self.bifurcation_diagram = BifurcationDiagram()
-        # The continuation parameter is defined by passing an object and the name of the
-        # object's attribute that corresponds to the continuation parameter as a tuple
+        #: The continuation parameter is defined by passing an object and the name of the
+        #: object's attribute that corresponds to the continuation parameter as a tuple
         self.continuation_parameter = None
 
     @property
@@ -693,14 +693,14 @@ class ProblemSettings():
     """
 
     def __init__(self):
-        # how many eigenvalues should be computed when problem.solve_eigenproblem() is called?
-        # TODO: should have a more verbose name
+        #: How many eigenvalues should be computed when problem.solve_eigenproblem() is called?
+        #: TODO: should have a more verbose name
         self.neigs = 20
-        # how small does an eigenvalue need to be in order to be counted as 'zero'?
+        #: How small does an eigenvalue need to be in order to be counted as 'zero'?
         self.eigval_zero_tolerance = 1e-16
-        # should we always try to exactly locate bifurcations when passing one?
+        #: Should we always try to exactly locate bifurcations when passing one?
         self.always_locate_bifurcations = False
-        # should sparse matrices be assumed when solving linear systems?
+        #: Should sparse matrices be assumed when solving linear systems?
         self.use_sparse_matrices = True
-        # should there be some extra output? useful for debugging
+        #: Should there be some extra output? useful for debugging
         self.verbose = False

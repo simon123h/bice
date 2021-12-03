@@ -7,6 +7,7 @@ class TimeStepper:
 
     # constructor
     def __init__(self, dt=1e-2):
+        #: the time step size
         self.dt = dt
 
     # # calculate the time derivative of the unknowns for a given problem

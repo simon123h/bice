@@ -16,23 +16,26 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
 
     def __init__(self, shape=None):
         super().__init__(shape)
-        # List of differential matrices: ddx[order] for d^order / dx^order operator
+        #: List of differential matrices: ddx[order] for d^order / dx^order operator
         self.ddx = []
-        # first order derivative
+        #: first order derivative
         self.nabla = None
-        # second order derivative
+        #: second order derivative
         self.laplace = None
-        # the spatial coordinates
+        #: the spatial coordinates
+        self.x = None
         if len(self.shape) > 0:
             self.x = [np.linspace(0, 1, self.shape[-1], endpoint=False)]
-        else:
-            self.x = None
-        # the boundary conditions, if None, defaults to periodic BCs
+        #: the boundary conditions, if None, defaults to periodic BCs
         self.bc = None
         # mesh adaption settings
+        #: mesh adaption: maximum error tolerance
         self.max_refinement_error = 1e-0
+        #: mesh adaption: minimum error tolerance
         self.min_refinement_error = 1e-2
+        #: minimum grid size for mesh adaption
         self.min_dx = 1e-3
+        #: maximum grid size for mesh adaption
         self.max_dx = 2
 
     @profile
@@ -239,9 +242,9 @@ class AffineOperator:
     """
 
     def __init__(self, Q, G=0):
-        # linear part
+        #: linear part
         self.Q = Q
-        # constant (affine) part
+        #: constant (affine) part
         self.G = G
 
     def __call__(self, u=None, g=1):
@@ -340,9 +343,9 @@ class PeriodicBC(FDBoundaryConditions):
 
     def __init__(self):
         super().__init__()
-        # how many ghost nodes at each boundary?
+        #: how many ghost nodes at each boundary?
         self.order = 1
-        # the virtual distance between the left and right boundary node
+        #: the virtual distance between the left and right boundary node
         self.boundary_dx = None
 
     def update(self, x, approx_order):

@@ -12,15 +12,15 @@ class LyapunovExponentCalculator():
     """
 
     def __init__(self, problem, nexponents=1, epsilon=1e-6, nintegration_steps=1):
-        # reference to the problem
+        #: reference to the problem
         self.problem = problem
-        # the number of exponents to be calculated
+        #: the number of exponents to be calculated
         self.nexponents = nexponents
-        # the norm of the perturbation
+        #: the norm of the perturbation
         self.epsilon = epsilon
-        # the number of time-integration steps for each trajectory
+        #: the number of time-integration steps for each trajectory
         self.nintegration_steps = nintegration_steps
-        # cumulative variable for the total integration time
+        #: cumulative variable for the total integration time
         self.T = 0
         # storage for the perturbation vectors and the reference trajectory
         self.perturbations = None

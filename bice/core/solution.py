@@ -16,22 +16,21 @@ class Solution:
     def __init__(self, problem=None):
         # generate solution ID
         Solution._solution_count += 1
-        # unique identifier of the solution
+        #: unique identifier of the solution
         self.id = Solution._solution_count
-        # the current problem state as a dictionary of data (equation's unknowns and parameters)
         # TODO: storing each solution's data may eat up some memory
         #       do we need to save every solution? maybe save bifurcations only
-        # save the current data of the problem, so we can restore the point
+        #: The current problem state as a dictionary of data (equation's unknowns and parameters)
         self.data = problem.save() if problem is not None else {}
-        # value of the continuation parameter
+        #: value of the continuation parameter
         self.p = problem.get_continuation_parameter() if problem is not None else 0
-        # value of the solution norm
+        #: value of the solution norm
         self.norm = problem.norm() if problem is not None else 0
-        # number of true positive eigenvalues
+        #: number of true positive eigenvalues
         self.nunstable_eigenvalues = None
-        # number of true positive and imaginary eigenvalues
+        #: number of true positive and imaginary eigenvalues
         self.nunstable_imaginary_eigenvalues = None
-        # optional reference to the corresponding branch
+        #: optional reference to the corresponding branch
         self.branch = None
         # cache for the bifurcation type
         self._bifurcation_type = None
@@ -139,9 +138,9 @@ class Branch:
     def __init__(self):
         # generate branch ID
         Branch._branch_count += 1
-        # unique identifier of the branch
+        #: unique identifier of the branch
         self.id = Branch._branch_count
-        # list of solutions along the branch
+        #: list of solutions along the branch
         self.solutions = []
 
     def is_empty(self):
@@ -213,17 +212,17 @@ class BifurcationDiagram:
     """
 
     def __init__(self):
-        # list of branches
+        #: list of branches
         self.branches = []
-        # storage for the currently active branch
+        #: storage for the currently active branch
         self.active_branch = self.new_branch()
-        # x-limits of the diagram
+        #: x-limits of the diagram
         self.xlim = None
-        # y-limits of the diagram
+        #: y-limits of the diagram
         self.ylim = None
-        # name of the continuation parameter
+        #: name of the continuation parameter
         self.parameter_name = None
-        # name of the norm
+        #: name of the norm
         self.norm_name = "norm"
 
     def new_branch(self, active=True):
