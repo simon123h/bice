@@ -155,7 +155,7 @@ while problem.volume_constraint.fixed_volume < 1000:
     problem.dealias()
     n += 1
     print("step #:", n, " ds:", problem.continuation_stepper.ds)
-    #print('largest EVs: ', problem.eigen_solver.latest_eigenvalues[:3])
+    # print('largest EVs: ', problem.eigen_solver.latest_eigenvalues[:3])
     # plot
     if n % plotevery == 0:
         problem.plot(ax)

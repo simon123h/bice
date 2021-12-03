@@ -25,7 +25,7 @@ class CahnHilliardEquation(PseudospectralEquation):
         self.x = [np.linspace(-L/2, L/2, N)]
         self.build_kvectors(real_fft=True)
         # initial condition
-        #self.u = (np.random.random(N)-0.5)*0.02
+        # self.u = (np.random.random(N)-0.5)*0.02
         self.u = np.cos(self.x[0]/(L/4)) - 0.1
         # calculate linear part beforehand
 

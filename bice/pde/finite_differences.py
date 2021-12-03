@@ -368,7 +368,6 @@ class PeriodicBC(FDBoundaryConditions):
         x_l = [x[0]-sum(dx[-n-1:]) for n in range(self.order)][::-1]
         x_r = [x[-1]+sum(dx[:n+1]) for n in range(self.order)]
         # concatenate for full padded x vector
-        x_pad = np.concatenate((x_l, x, x_r))
         return np.concatenate((x_l, x, x_r))
 
 

@@ -1,6 +1,7 @@
 import numpy as np
 from bice.core.profiling import profile
 
+
 class LyapunovExponentCalculator():
     """
     Calculates the spectrum of Lyapunov exponents for a given problem.

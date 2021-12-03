@@ -88,7 +88,7 @@ class NewtonSolver(AbstractNewtonSolver):
     """
     A Newton solver that uses scipy.optimize.root for solving.
     The method (algorithm) to be used can be adjusted with the attribute 'method'.
-    NOTE: does not work with sparse Jacobians, but converts it to a dense matrix instead! 
+    NOTE: does not work with sparse Jacobians, but converts it to a dense matrix instead!
     """
 
     def __init__(self):

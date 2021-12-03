@@ -1,4 +1,3 @@
-
 #!/usr/bin/python3
 import numpy as np
 from bice import Problem, time_steppers

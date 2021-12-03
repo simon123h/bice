@@ -60,6 +60,7 @@ class BDF(TimeStepper):
         def f(t, u):
             self.problem.time = t
             return self.problem.rhs(u)
+
         # create wrapper for the jacobian
         def jac(t, u):
             self.problem.time = t
