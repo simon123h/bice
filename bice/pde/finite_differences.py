@@ -139,6 +139,9 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
     @profile
     def adapt(self):
         """Perform adaption of the grid to the solution"""
+        # mesh adaption is only supported for 1d
+        if self.spatial_dimension > 1:
+            return
         # calculate error estimate
         error_estimate = self.refinement_error_estimate()
         # adapt the mesh
@@ -206,8 +209,9 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
 
     def du_dx(self, u, direction=0):
         """Default implementation for spatial derivative"""
-        # TODO: support dimensions higher than 1d
-        return self.nabla(u)
+        if self.spatial_dimension == 1:  # 1d case
+            return self.nabla(u)
+        return self.nabla[direction].dot(u)
 
     def save(self):
         """
@@ -300,7 +304,7 @@ class FDBoundaryConditions:
     stored using AffineOperator(Q', G') objects (see code above).
     For both periodic and homogeneous boundary conditions the boundary transformation is
     linear (G=0), i.e., the affine operators are simply classic matrices.
-    NOTE: the boundary conditions currently only support 1d grids!
+    NOTE: inhomogeneous boundary conditions are currently only supported by 1d grids!
     """
 
     def __init__(self):

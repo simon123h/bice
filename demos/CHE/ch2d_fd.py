@@ -17,7 +17,7 @@ class CahnHilliardEquation(FiniteDifferencesEquation):
     """
 
     def __init__(self, N, L):
-        super().__init__(shape=(N, N))
+        super().__init__(shape=(N**2,))
         # parameters
         self.a = -0.5
         self.kappa = 1.
@@ -28,17 +28,16 @@ class CahnHilliardEquation(FiniteDifferencesEquation):
         self.bc = PeriodicBC()
         self.build_FD_matrices()
         # initial condition
-        self.u = (np.random.random((N, N))-0.5)*0.02
+        self.u = (np.random.random(N**2)-0.5)*0.02
         # mx, my = np.meshgrid(*self.x)
         # self.u = np.cos(np.sqrt(mx**2 + my**2)/(L/4)) - 0.1
+        self.u = self.u.ravel()
 
     # definition of the CHE (right-hand side)
     @profile
     def rhs(self, u):
-        u = u.ravel()
         Delta = self.laplace
-        rhs = Delta.dot(u**3 + self.a*u - self.kappa * Delta.dot(u))
-        return rhs.reshape(self.shape)
+        return Delta.dot(u**3 + self.a*u - self.kappa * Delta.dot(u))
 
 
 class CahnHilliardProblem(Problem):
@@ -76,7 +75,8 @@ if not os.path.exists("initial_state2D.npz"):
         # plot
         if n % plotevery == 0:
             plt.cla()
-            plt.pcolormesh(mx, my, problem.che.u, edgecolors='face')
+            plt.pcolormesh(mx, my, problem.che.u.reshape(
+                mx.shape), edgecolors='face')
             plt.colorbar()
             plt.savefig(f"out/img/{plotID:05d}.png")
             plt.close()
