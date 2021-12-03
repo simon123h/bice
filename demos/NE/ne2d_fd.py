@@ -2,34 +2,34 @@
 import shutil
 import os
 import numpy as np
+from scipy.sparse import diags
 import matplotlib.pyplot as plt
 from bice import Problem, time_steppers
-from bice.pde import PseudospectralEquation
+from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
 from bice.continuation import TranslationConstraint, VolumeConstraint
 
 
-class NikolaevskiyEquation(PseudospectralEquation):
+class NikolaevskiyEquation(FiniteDifferencesEquation):
     r"""
-    Pseudospectral implementation of the 2-dimensional Nikolaevskiy Equation
+    Finite difference implementation of the 2-dimensional Nikolaevskiy Equation
     equation, a nonlinear PDE
     \partial t h &= -\Delta (r - (1+\Delta)^2) h - 1/2 (\nabla h)^2
     """
 
     def __init__(self, Nx, Ny):
         super().__init__()
-        # make sure N is even
-        Nx = int(2*(Nx//2))
-        Ny = int(2*(Ny//2))
-        self.reshape((Nx, Ny))
         # parameters
         self.r = 0.5  # drive
         self.m = 10  # characteristic system length
         self.ratio = 1  # length ratio Ly/Lx
         # space and fourier space
         self.x = [np.linspace(0, 1, Nx), np.linspace(0, 1, Ny)]
-        self.build_kvectors(real_fft=True)
+        # build finite difference matrices
+        self.bc = PeriodicBC()
+        self.build_FD_matrices()
         # initial condition
         self.u = 2*(np.random.rand(Nx, Ny)-0.5) * 1e-5
+        self.u = self.u.ravel()
         # create constraints
         self.volume_constraint = VolumeConstraint(self)
         self.translation_constraint_x = TranslationConstraint(
@@ -45,25 +45,28 @@ class NikolaevskiyEquation(PseudospectralEquation):
     # definition of the Nikolaevskiy equation (right-hand side)
     def rhs(self, u):
         # calculate the system length
-        L = self.L0 * self.m
-        # include length scale in the k-vectors
-        kx = self.k[0] / L
-        ky = self.k[1] / L / self.ratio
-        ksq = kx**2 + ky**2
-        # fourier transform
-        u_k = np.fft.rfft2(u)
-        # calculate linear part (in fourier space)
-        lin = ksq * (self.r - (1-ksq)**2) * u_k
-        # calculate nonlinear part (in real space)
-        nonlin = np.fft.irfft2(1j * kx * u_k)**2
-        nonlin += np.fft.irfft2(1j * ky * u_k)**2
-        # sum up and return
-        return np.fft.irfft2(lin) - 0.5 * nonlin
+        Lx = self.L0 * self.m
+        Ly = Lx * self.ratio
+        # include length scale in the differentiation operators
+        nabla_x = self.nabla[0] / Lx
+        nabla_y = self.nabla[1] / Ly
+        Delta = self.ddx[2][0] / Lx**2 + self.ddx[2][1] / Ly**2
+        Delta2 = Delta.dot(Delta)
+        lin = -Delta.dot(self.r*u - (u + 2*Delta.dot(u) + Delta2.dot(u)))
+        nonlin = nabla_x.dot(u)**2 + nabla_y.dot(u)**2
+        return lin - 0.5 * nonlin
 
-    # calculate the spatial derivative
-    def du_dx(self, u, direction=0):
-        du_dx = 1j*self.k[direction]*np.fft.rfft2(u)
-        return np.fft.irfft2(du_dx)
+    # definition of the Jacobian
+    def jacobian(self, u):
+        Lx = self.L0 * self.m
+        Ly = Lx * self.ratio
+        nabla_x = self.nabla[0] / Lx
+        nabla_y = self.nabla[1] / Ly
+        Delta = self.ddx[2][0] / Lx**2 + self.ddx[2][1] / Ly**2
+        Delta2 = Delta.dot(Delta)
+        lin = (1-self.r) * Delta + Delta.dot(2*Delta + Delta2)
+        nonlin = diags(nabla_x.dot(u)) * nabla_x + diags(nabla_y.dot(u)) * nabla_y
+        return lin - nonlin
 
     # plot the solution
     def plot(self, ax):
@@ -73,7 +76,8 @@ class NikolaevskiyEquation(PseudospectralEquation):
         x, y = np.meshgrid(self.x[0], self.x[1])
         Lx = self.L0 * self.m
         Ly = Lx * self.ratio
-        pcol = ax.pcolor(x*Lx, y*Ly, self.u, cmap="coolwarm", rasterized=True)
+        pcol = ax.pcolor(x*Lx, y*Ly, self.u.reshape(x.shape),
+                         cmap="coolwarm", rasterized=True)
         pcol.set_edgecolor('face')
         # put velocity labels into plot
         ax.text(
@@ -90,9 +94,6 @@ class NikolaevskiyProblem(Problem):
         self.ne = NikolaevskiyEquation(Nx, Ny)
         self.add_equation(self.ne)
         # initialize time stepper
-        # self.time_stepper = time_steppers.RungeKutta4(dt=1e-7)
-        # self.time_stepper = time_steppers.RungeKuttaFehlberg45(dt=1e-7, error_tolerance=1e-4)
-        # self.time_stepper = time_steppers.BDF2(dt=1e-3)
         self.time_stepper = time_steppers.BDF(self, dt_max=1e-1)
         # assign the continuation parameter
         self.continuation_parameter = (self.ne, "m")

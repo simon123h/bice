@@ -28,7 +28,7 @@ class CahnHilliardEquation(FiniteDifferencesEquation):
         self.bc = PeriodicBC()
         self.build_FD_matrices()
         # initial condition
-        self.u = (np.random.random(N**2)-0.5)*0.02
+        self.u = (np.random.random(N, N)-0.5)*0.02
         # mx, my = np.meshgrid(*self.x)
         # self.u = np.cos(np.sqrt(mx**2 + my**2)/(L/4)) - 0.1
         self.u = self.u.ravel()

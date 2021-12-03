@@ -61,7 +61,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
                                               "not supported spatial dimensions higher than 1d.")
             # drop inhomogeneous part of affine operators (is zero for homogeneous BCs)
             ops1d.append([op.Q for op in op1d])
-        # 2D FD matrices from 1D matrices  using Kronecker product
+        # 2D FD matrices from 1D matrices using Kronecker product
         Ix, Dx_1d, D2x_1d = ops1d[0]
         Iy, Dy_1d, D2y_1d = ops1d[1]
         Dx_2d = sp.kron(Iy, Dx_1d)
