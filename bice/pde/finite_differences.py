@@ -44,7 +44,8 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # check for spatial dimension:
         if self.spatial_dimension == 1:
             # 1d case: proceed with x-vector
-            return self.build_FD_matrices_1d(x=self.x[0], approx_order=approx_order)
+            x = self.x[0] if isinstance(self.x, list) else self.x
+            return self.build_FD_matrices_1d(x=x, approx_order=approx_order)
         # else, higher-than-1d case:
         # construct FD matrices from 1d FD matrices for each spatial dimension
         # TODO: support higher than 2 dimensions
