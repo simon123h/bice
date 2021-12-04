@@ -182,6 +182,7 @@ class Problem():
                 # adapt the number of unstable eigenvalues from the point that
                 # overshot the bifurcation
                 new_sol.nunstable_eigenvalues = sol.nunstable_eigenvalues
+                new_sol.nunstable_imaginary_eigenvalues = sol.nunstable_imaginary_eigenvalues
                 # TODO: add the original solution point back to the branch?
             # reset the state to the original solution, assures continuation in right direction
             self.u = u_old
@@ -222,7 +223,7 @@ class Problem():
         # TODO: or recover them from self.eigen_solver.latest_eigenvalues?
         eigenvalues, _ = self.solve_eigenproblem()
         # get the eigenvalue that corresponds to the bifurcation
-        # (the one with the smallest abolute real part)
+        # (the one with the smallest absolute real part)
         if ev_index is None:
             ev_index = np.argsort(np.abs(eigenvalues.real))[0]
         # TODO: location sometimes has troubles, when there is more than one null-eigenvalue
