@@ -4,7 +4,7 @@ import matplotlib
 
 from bice.core.solvers import MyNewtonSolver  # noqa
 matplotlib.use("GTK3Agg")  # noqa
-from bice.continuation import TimePeriodicOrbitHandler
+from bice.continuation import TimePeriodicOrbitHandler, NaturalContinuation
 from bice import Problem, Equation, time_steppers
 import numpy as np
 import matplotlib.pyplot as plt
@@ -90,15 +90,21 @@ plt.plot(y, x, "x", color="green", label="continuation initial condition")
 # Use simple MyNewtonSolver, because it is faster for small problems
 problem.newton_solver = MyNewtonSolver()
 
+# set up the natural continuation stepper
+problem.continuation_stepper = NaturalContinuation()
+problem.continuation_stepper.ds = 0.05
+problem.continuation_parameter = (problem.lve, "b")
+problem.neigs = 0
+
+# perform continuation steps
 n = 0
 while n < 20:
-    problem.newton_solve()
-    print("T =", orbitHandler.u[-1])
+    problem.continuation_step()
+    n += 1
+    # plot
     x, y = orbitHandler.u_orbit().T
     plt.plot(y, x, color="grey")
-    # problem.lve.a += 0.05
-    problem.lve.b += 0.05
-    n += 1
+    print("T =", orbitHandler.T)
     # NOTE: timestep adaption does not work well in this demo, because the solution is not unique
     # the LVE have a (complicated) conserved quantity, that we do not conserve, i.e., there is an
     # invariance to the solution. In timestep adaption, we easily shift to other solutions of the
