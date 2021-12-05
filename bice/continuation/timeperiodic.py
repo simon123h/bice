@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.sparse as sp
 from bice.core.equation import Equation
+from bice.core.profiling import profile
+import matplotlib.pyplot as plt
 
 # TODO: make this work for multiple variables, regarding ref_eq.shape
 
@@ -38,6 +40,11 @@ class TimePeriodicOrbitHandler(Equation):
         self.u[-1] = v
 
     @property
+    def t(self):
+        """Return the temporal domain vector"""
+        return np.cumsum(self.dt)
+
+    @property
     def Nt(self):
         """Number of points in time"""
         return len(self.dt)
@@ -69,6 +76,7 @@ class TimePeriodicOrbitHandler(Equation):
         # convert to sparse
         return sp.csr_matrix(ddt)
 
+    @profile
     def rhs(self, u):
         """Calculate the rhs of the full system of equations"""
         # number of unknowns of a single equation
@@ -99,6 +107,7 @@ class TimePeriodicOrbitHandler(Equation):
         # return the result
         return res
 
+    @profile
     def jacobian(self, u):
         """Calculate the Jacobian of rhs(u)"""
         # split the unknowns into:
@@ -128,8 +137,9 @@ class TimePeriodicOrbitHandler(Equation):
         # 4.: cnst equation dT: d ( \int_0^1 dt <u, dudt_old> = 0 ) / du = 0
         d_cnst_dT = 0*sp.csr_matrix((1, 1))
         # combine the contributions to the full jacobian and return
-        return sp.bmat([[d_bulk_du, d_bulk_dT],
-                        [d_cnst_du, d_cnst_dT]])
+        JJ = sp.bmat([[d_bulk_du, d_bulk_dT],
+                      [d_cnst_du, d_cnst_dT]])
+        return sp.csr_matrix(JJ)
 
     # TODO: test this
     # TODO: ddt does currently not support non-uniform time, make uniform?
@@ -198,3 +208,13 @@ class TimePeriodicOrbitHandler(Equation):
         """Load the state of the equation, including the dt-values"""
         self.dt = data['dt']
         super().load(data)
+
+    def plot(self, ax):
+        """Plot the solutions for different timesteps"""
+        orbit = self.u_orbit().T
+        num_plots = min(40, self.Nt)
+        cmap = plt.cm.viridis
+        ax.set_prop_cycle(plt.cycler('color', cmap(np.linspace(0, 1, num_plots))))
+        for i in range(0, self.Nt, self.Nt//num_plots):
+            self.ref_eq.u = orbit.T[i]
+            self.ref_eq.plot(ax)

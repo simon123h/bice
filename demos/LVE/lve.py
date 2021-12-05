@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 import time
-import matplotlib  # noqa
+import matplotlib
+
+from bice.core.solvers import MyNewtonSolver  # noqa
 matplotlib.use("GTK3Agg")  # noqa
 from bice.continuation import TimePeriodicOrbitHandler
 from bice import Problem, Equation, time_steppers
@@ -84,6 +86,9 @@ problem.add_equation(orbitHandler)
 
 x, y = orbitHandler.u_orbit().T
 plt.plot(y, x, "x", color="green", label="continuation initial condition")
+
+# Use simple MyNewtonSolver, because it is faster for small problems
+problem.newton_solver = MyNewtonSolver()
 
 n = 0
 while n < 20:
