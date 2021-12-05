@@ -8,13 +8,11 @@ from bice.continuation import TimePeriodicOrbitHandler, NaturalContinuation
 from bice import Problem, Equation, time_steppers
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy
-
 
 # The Lotka-Volterra equations (predator prey model)
-class LotkaVolterraEquation(Equation):
+class LotkaVolterraEquations(Equation):
     def __init__(self):
-        super().__init__(shape=(2))
+        super().__init__()
         # parameters
         self.a = 1
         self.b = 1
@@ -24,8 +22,7 @@ class LotkaVolterraEquation(Equation):
         self.u = np.array([1., 0.7])
 
     def rhs(self, u):
-        x = u[0]
-        y = u[1]
+        x, y = u
         return np.array([
             (self.a - self.b * y) * x,
             (self.d * x - self.c) * y
@@ -38,7 +35,7 @@ class LotkaVolterra(Problem):
     def __init__(self):
         super().__init__()
         # create and add the equation
-        self.lve = LotkaVolterraEquation()
+        self.lve = LotkaVolterraEquations()
         self.add_equation(self.lve)
         # time stepper
         # self.time_stepper = time_steppers.BDF(self)
