@@ -184,9 +184,11 @@ class PseudoArclengthContinuation(ContinuationStepper):
 
     def _linear_solve(self, A, b, use_sparse_matrices=False):
         """Solve the linear system A*x = b for x and return x"""
-        if use_sparse_matrices or sp.issparse(A):
-            # use either solver for sparse matrices...
+        # if desired, convert A to sparse matrix
+        if use_sparse_matrices and not sp.issparse(A):
             A = sp.csr_matrix(A)
+        # use either a solver for sparse matrices...
+        if sp.issparse(A):
             return sp.linalg.spsolve(A, b)
         # ...or simply the one for full rank matrices
         return np.linalg.solve(A, b)
