@@ -145,6 +145,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
             du_ext = self._linear_solve(jac_ext, rhs_ext)
             u -= du_ext[:N]
             p -= du_ext[N]
+            # TODO: should use max(rhs_ext(u)) < tol as convergence check, as in other solvers!
             # update counter and check for convergence
             count += 1
             converged = np.linalg.norm(du_ext) < self.convergence_tolerance
