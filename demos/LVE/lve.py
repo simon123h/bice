@@ -8,6 +8,7 @@ from bice.continuation import TimePeriodicOrbitHandler, NaturalContinuation
 from bice import Problem, Equation, time_steppers
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy
 
 
 # The Lotka-Volterra equations (predator prey model)
@@ -104,7 +105,19 @@ while n < 20:
     # plot
     x, y = orbitHandler.u_orbit().T
     plt.plot(y, x, color="grey")
+    print("\nStep", n)
     print("T =", orbitHandler.T)
+    print("param =", problem.get_continuation_parameter())
+
+    # calculate stability of orbits
+    floquet_mul = orbitHandler.floquet_multipliers()
+    print("Floquet multipliers:", floquet_mul)
+    tol = 1e-5
+    if np.any([abs(mul) > 1+tol for mul in floquet_mul]):
+        print("(unstable)")
+    else:
+        print("(stable)")
+
     # NOTE: timestep adaption does not work well in this demo, because the solution is not unique
     # the LVE have a (complicated) conserved quantity, that we do not conserve, i.e., there is an
     # invariance to the solution. In timestep adaption, we easily shift to other solutions of the

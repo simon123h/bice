@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.sparse as sp
+import scipy.linalg
 from bice.core.equation import Equation
 from bice.core.profiling import profile
 import matplotlib.pyplot as plt
@@ -28,7 +29,10 @@ class TimePeriodicOrbitHandler(Equation):
         # the period is also an unknown, append it to u
         # TODO: a good guess for T is 2pi / Im(lambda), with the unstable eigenvalue lambda
         self.u = np.append(u1, T)
+        # the finite differences matrix to compute the temporal derivative du/dt from given u[t]
         self.ddt = self.build_ddt_matrix()
+        # cache for storing the Jacobians J[u, t_i] = d(ref_eq.rhs)/du for each point in time t_i
+        self._jacobian_cache = []
 
     @property
     def T(self):
@@ -123,10 +127,14 @@ class TimePeriodicOrbitHandler(Equation):
         dudt_old = self.ddt.dot(u_old) / T_old
         # mass matrix
         M = self.ref_eq.mass_matrix()
+        # Jacobian of reference equation for each time step
+        # also, cache the Jacobians for later Floquet multiplier computation
+        self._jacobian_cache = [
+            sp.csr_matrix(self.ref_eq.jacobian(u[i])) for i in range(self.Nt)]
         # The different contributions to the jacobian: ((#1, #2), (#3, #4))
         # 1.: bulk equations du: d ( rhs(u) - M*dudt ) / du
         # jacobian of M.dot(dudt) w.r.t. u
-        d_bulk_du = sp.block_diag([self.ref_eq.jacobian(u[i])
+        d_bulk_du = sp.block_diag([self._jacobian_cache[i]
                                    for i in range(self.Nt)]) - sp.kron(self.ddt, M) / T
         # 2.: bulk equations dT: d ( rhs(u) - M*dudt ) / dT
         d_bulk_dT = sp.csr_matrix(np.concatenate(
@@ -137,9 +145,89 @@ class TimePeriodicOrbitHandler(Equation):
         # 4.: cnst equation dT: d ( \int_0^1 dt <u, dudt_old> = 0 ) / du = 0
         d_cnst_dT = 0*sp.csr_matrix((1, 1))
         # combine the contributions to the full jacobian and return
-        JJ = sp.bmat([[d_bulk_du, d_bulk_dT],
-                      [d_cnst_du, d_cnst_dT]])
-        return sp.csr_matrix(JJ)
+        final_jac = sp.bmat([[d_bulk_du, d_bulk_dT],
+                             [d_cnst_du, d_cnst_dT]])
+        return sp.csr_matrix(final_jac)
+
+    def monodromy_matrix(self, use_cache=True):
+        """
+        Calculate the monodromy matrix A that is used to calculate the stability of the orbit
+        using the Floquet multipliers (eigenvalues of A).
+
+        The matrix is computed as the product of the reference equations's Jacobians for
+        each point in time, i.e.:
+        A = J[u(t_N), t_N] * J[u(t_{N-1}), t_{N-1}] * ... * J[u(t_0), t_0]
+
+        The Jacobians J[u, t] are cached when the total Jacobian of the orbit handler
+        (TimePeriodicOrbitHandler.jacobian(u)) is computed. This normally happens during solving
+        (unless using a Krylov method), so they should be up to date as the stability calculation
+        should normally happen after solving. If caching is not desired, the cache can be ignored
+        by setting `use_cache = False`.
+        """
+        # store whether there was something cached
+        had_cache = len(self._jacobian_cache) > 0
+        # check if the number of cached Jacobians matches the number of time steps
+        if len(self._jacobian_cache) != self.Nt:
+            # if not, we will definitely need to regenerate the Jacobians
+            use_cache = False
+        # If we are not using the cached Jacobians, regenerate Jacobians by computing the
+        # orbit handlers Jacobian (this method updates the cache)
+        if not use_cache:
+            _ = self.jacobian(self.u)
+        # Cache should now be up to date
+        # multiply the Jacobians in reversed order
+        jacs = self._jacobian_cache[::-1]
+        mon_mat = jacs[0]
+        for i in range(1, self.Nt):
+            mon_mat = mon_mat.dot(jacs[i])
+        # If there was no cache, it is likely that we are using some matrix free method
+        # (e.g. Krylov subspace methods) for Jacobian estimation that does not generate a cache.
+        # If so, invalidate the cache:
+        if not had_cache:
+            self._jacobian_cache = []
+        # return the monodromy matrix
+        return mon_mat
+
+    def floquet_multipliers(self, k=20, use_cache=True):
+        """
+        Calculate the Floquet multipliers to obtain the stability of the orbit.
+        The Floquet multipliers are the eigenvalues of the monodromy matrix
+        (cf. TimePeriodicOrbitHander.monodromy_matrix(...)).
+
+        k is the number of desired Floquet multipliers to be calculated by the iterative eigensolver
+
+        If `use_cache=True` (default), the Jacobians will be cached from the last solving step.
+        This is typically a good choice, because it saves computation time and the solving should
+        happen right before the stability calculation. However, if a (matrix free) Krylov method
+        is used for solving, the Jacobians will never actually be computed, thus requiring
+        `use_cache=False`.
+        """
+        # obtain the monodromy matrix and mass matrix
+        A = self.monodromy_matrix(use_cache)
+        M = self.ref_eq.mass_matrix()
+        # number of degrees of freedom of the original equation (--> matrices are NxN)
+        N = self.ref_eq.ndofs
+        # make sure we do not request more Floquet multipliers than degrees of freedom
+        k = min(k, N)
+        # if N is very small, fallback to dense matrices
+        if N < 100:
+            # make sure both are dense
+            if sp.issparse(A):
+                A = A.todense()
+            if sp.issparse(M):
+                M = M.todense()
+            # calculate eigenvalues and return
+            eigval, _ = scipy.linalg.eig(A, M)
+            return eigval[:k]
+        else:
+            # make sure both are sparse
+            if not sp.issparse(A):
+                A = sp.csr_matrix(A)
+            if not sp.issparse(M):
+                M = sp.csr_matrix(M)
+            # calculate eigenvalues and return
+            eigval, _ = sp.linalg.eigs(A, k=k, M=M, sigma=1)
+            return eigval
 
     # TODO: test this
     # TODO: ddt does currently not support non-uniform time, make uniform?
@@ -195,6 +283,8 @@ class TimePeriodicOrbitHandler(Equation):
             self.group.map_unknowns()
         # rebuild FD time-derivative matrix
         self.ddt = self.build_ddt_matrix()
+        # invalidate the cached Jacobians
+        self._jacobian_cache = []
         # return min/max error estimates
         return (min(error_estimate), max(error_estimate))
 
@@ -207,6 +297,11 @@ class TimePeriodicOrbitHandler(Equation):
     def load(self, data):
         """Load the state of the equation, including the dt-values"""
         self.dt = data['dt']
+        # rebuild FD time-derivative matrix
+        self.ddt = self.build_ddt_matrix()
+        # invalidate the cached Jacobians
+        self._jacobian_cache = []
+
         super().load(data)
 
     def plot(self, ax):
@@ -214,7 +309,8 @@ class TimePeriodicOrbitHandler(Equation):
         orbit = self.u_orbit().T
         num_plots = min(40, self.Nt)
         cmap = plt.cm.viridis
-        ax.set_prop_cycle(plt.cycler('color', cmap(np.linspace(0, 1, num_plots))))
+        ax.set_prop_cycle(plt.cycler(
+            'color', cmap(np.linspace(0, 1, num_plots))))
         for i in range(0, self.Nt, self.Nt//num_plots):
             self.ref_eq.u = orbit.T[i]
             self.ref_eq.plot(ax)
