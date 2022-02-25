@@ -142,10 +142,11 @@ class PseudoArclengthContinuation(ContinuationStepper):
                 tangent[N] * self.parameter_arc_length_proportion - self.ds
             rhs_ext = np.append(problem.rhs(u), arclength_condition)
             # solving (jac_ext) * du_ext = rhs_ext for du_ext will now give the new solution
-            du_ext = self._linear_solve(jac_ext, rhs_ext)
+            du_ext = self._linear_solve(
+                jac_ext, rhs_ext, problem.settings.use_sparse_matrices)
             u -= du_ext[:N]
             p -= du_ext[N]
-            # TODO: should use max(rhs_ext(u)) < tol as convergence check, as in other solvers!
+            # TODO: use max(rhs_ext(u)) < tol as convergence check, as in other solvers?
             # update counter and check for convergence
             count += 1
             converged = np.linalg.norm(du_ext) < self.convergence_tolerance
