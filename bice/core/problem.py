@@ -204,7 +204,7 @@ class Problem():
             return
         # else, assign the new value using the builtin 'setattr'
         obj, attr_name = tuple(self.continuation_parameter)
-        setattr(obj, attr_name, val)
+        setattr(obj, attr_name, float(val))
 
     def locate_bifurcation(self, ev_index=None, tolerance=1e-5):
         """
