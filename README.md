@@ -11,9 +11,13 @@ Example of a bifurcation diagram with snaking in the Swift-Hohenberg equation ob
 
 ## Installation
 
-This package is not yet published on PyPI, therefore you need to install it locally.
+To install the latest published version from PyPI simply execute:
 
-Download `bice` and install it locally using:
+```bash
+pip3 install bice
+```
+
+If you instead want to install the package locally, e.g. for development purposes, you may download the latest version from this git and install it using:
 
 ```bash
 git clone https://zivgitlab.uni-muenster.de/s_hart20/bice
