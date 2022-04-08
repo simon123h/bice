@@ -1,12 +1,12 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(name='bice',
-      version='0.2',
+      version='0.2.1',
       description='Numerical continuation and bifurcation package',
       author='Simon Hartmann',
       author_email='s.hartmann@wwu.de',
       license='MIT',
-      packages=['bice'],
+      packages=find_packages(),
       install_requires=[
           'numpy',
           'scipy',
