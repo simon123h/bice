@@ -107,14 +107,14 @@ class PseudoArclengthContinuation(ContinuationStepper):
             problem.set_continuation_parameter(p)
             jac = sp.hstack((jac, drhs_dp.reshape((N, 1))))
             zero = np.zeros(N+1)
-            zero[N] = 1  # for solvability
+            zero[N] = 1  # for solvability, otherwise the tangent could have arbitrary length
             jac = sp.vstack((jac, zero.reshape((1, N+1))))
             # compute tangent by solving (jac)*tangent=0 and normalize
             tangent = self._linear_solve(
                 jac, zero, problem.settings.use_sparse_matrices)
             tangent /= np.linalg.norm(tangent)
-            # NOTE: if we multiply tangent with sign(tangent-1),
-            #       we could make sure that it points in positive parameter direction
+            # make sure that the tangent points in positive parameter direction
+            tangent *= np.sign(tangent[-1])
         # make initial guess: u -> u + ds * tangent
         u = u + self.ds * tangent[:N]
         p = p + self.ds * tangent[N]
