@@ -545,7 +545,7 @@ class Problem():
                 print(
                     f"Bifurcation found! #Null-EVs: {sol.neigenvalues_crossed}")
             # plot every few steps
-            if ax is not None and n % plotevery == 0:
+            if ax is not None and plotevery is not None and n % plotevery == 0:
                 self.plot(ax)
                 plt.show(block=False)
                 plt.pause(0.0001)

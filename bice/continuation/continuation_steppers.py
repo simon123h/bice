@@ -1,6 +1,6 @@
 import numpy as np
-import scipy.optimize
 import scipy.sparse as sp
+from bice.core.profiling import profile
 
 
 class ContinuationStepper:
@@ -76,6 +76,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
         #: finite-difference for calculating parameter derivatives
         self.fd_epsilon = 1e-10
 
+    @profile
     def step(self, problem):
         """Perform a continuation step on a problem"""
         p = problem.get_continuation_parameter()
@@ -107,7 +108,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
             problem.set_continuation_parameter(p)
             jac = sp.hstack((jac, drhs_dp.reshape((N, 1))))
             zero = np.zeros(N+1)
-            zero[N] = 1  # for solvability, otherwise the tangent could have arbitrary length
+            zero[N] = 1  # for solvability, determines length of tangent vector
             jac = sp.vstack((jac, zero.reshape((1, N+1))))
             # compute tangent by solving (jac)*tangent=0 and normalize
             tangent = self._linear_solve(

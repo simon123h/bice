@@ -191,6 +191,8 @@ class EigenSolver:
         self.latest_eigenvalues = None
         #: results of the latest eigenvector computation
         self.latest_eigenvectors = None
+        #: convergence tolerance of the eigensolver
+        self.tol = 1e-8
 
     def solve(self, A, M=None, k=None):
         """
@@ -218,7 +220,7 @@ class EigenSolver:
             # For more info, see the documentation:
             # https://docs.scipy.org/doc/scipy/reference/generated/sp.linalg.eigs.html
             eigenvalues, eigenvectors = sp.linalg.eigs(
-                A, k=k, M=M, sigma=self.shift, which='LM')
+                A, k=k, M=M, sigma=self.shift, which='LM', tol=self.tol)
         # sort by largest eigenvalue (largest real part) and filter infinite eigenvalues
         idx = np.argsort(eigenvalues)[::-1]
         idx = idx[np.isfinite(eigenvalues[idx])]
