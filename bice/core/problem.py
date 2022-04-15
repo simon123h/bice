@@ -158,7 +158,7 @@ class Problem():
         sol = Solution(self)
         branch.add_solution_point(sol)
         # if desired, solve the eigenproblem
-        if self.settings.neigs > 0:
+        if self.settings.neigs is None or self.settings.neigs > 0:
             # solve the eigenproblem
             eigenvalues, _ = self.solve_eigenproblem()
             # count number of positive eigenvalues
@@ -695,7 +695,8 @@ class ProblemSettings():
 
     def __init__(self):
         #: How many eigenvalues should be computed when problem.solve_eigenproblem() is called?
-        #: TODO: should have a more verbose name
+        #: Set to 'None' for computing all eigenvalues using a direct solver.
+        #: TODO: could have a more verbose name
         self.neigs = 20
         #: How small does an eigenvalue need to be in order to be counted as 'zero'?
         self.eigval_zero_tolerance = 1e-16

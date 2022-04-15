@@ -206,6 +206,8 @@ class EigenSolver:
         """
         if k is None:
             # if no number of values was specified, use a direct eigensolver for computing all eigenvalues
+            A = A.toarray() if sp.issparse(A) else A
+            M = M.toarray() if sp.issparse(M) else M
             eigenvalues, eigenvectors = scipy.linalg.eig(A, M)
         else:
             # else: compute only the largest k eigenvalues with an iterative eigensolver
