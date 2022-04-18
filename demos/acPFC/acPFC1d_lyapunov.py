@@ -66,7 +66,7 @@ lyapunov = LyapunovExponentCalculator(
 last10 = []
 largest = []
 L2norms = [problem.norm()]
-times = [problem.time()]
+times = [problem.time]
 
 
 # Profiler.start()
