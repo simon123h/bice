@@ -9,7 +9,7 @@ from bice.core.types import Array, Matrix
 
 class BifurcationConstraint(Equation):
     # TODO: add docstring
-    def __init__(self, phi: Array, free_parameter: Tuple[Any, str]):
+    def __init__(self, phi: np.ndarray, free_parameter: Tuple[Any, str]):
         super().__init__()
         # the constraint equation couples to some other equations of the problem
         self.is_coupled = True
