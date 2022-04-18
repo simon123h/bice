@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Optional, Tuple, Union, List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -99,7 +99,7 @@ class Problem():
             print("Equation was not removed, since it is not part of the problem!")
         # TODO: clear history?
 
-    def list_equations(self) -> list[Equation]:
+    def list_equations(self) -> List[Equation]:
         """list all equations that are part of the problem"""
         if isinstance(self.eq, Equation):
             return [self.eq]

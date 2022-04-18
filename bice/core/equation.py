@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import numpy as np
 import scipy.sparse as sp
@@ -171,7 +171,7 @@ class EquationGroup:
     subequation to another one.
     """
 
-    def __init__(self, equations: Optional[list[EquationLike]] = None):
+    def __init__(self, equations: Optional[List[EquationLike]] = None):
         #: the list of sub-equations (or even sub-groups-of-equations)
         self.equations = []
         #: The indices of the equation's unknowns to the group's unknowns and vice versa
@@ -345,7 +345,7 @@ class EquationGroup:
         # all entries assembled, return
         return M
 
-    def list_equations(self) -> list[Equation]:
+    def list_equations(self) -> List[Equation]:
         """return a flattened list of all equations in the group and sub-groups"""
         res = []
         for eq in self.equations:
