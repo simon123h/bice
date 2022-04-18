@@ -3,6 +3,8 @@ import scipy.sparse as sp
 import scipy.optimize
 import scipy.linalg
 from .profiling import profile
+from .types import Matrix
+from typing import Optional
 
 
 class AbstractNewtonSolver:
@@ -13,7 +15,7 @@ class AbstractNewtonSolver:
     Jacobian J = df/du will speed up the computation and is even required for some solvers.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         #: maximum number of steps during solve
         self.max_iterations = 100
         #: absolute convergence tolerance for norm or residuals
@@ -29,11 +31,11 @@ class AbstractNewtonSolver:
             "'AbstractNewtonSolver' is an abstract base class - do not use for actual solving!")
 
     @property
-    def niterations(self):
+    def niterations(self) -> Optional[int]:
         """access to the number of iterations taken in the last Newton solve"""
         return self._iteration_count
 
-    def norm(self, residuals):
+    def norm(self, residuals) -> float:
         """the norm used for checking the residuals for convergence"""
         return np.max(residuals)
 
@@ -59,6 +61,7 @@ class MyNewtonSolver(AbstractNewtonSolver):
     def solve(self, f, u0, jac):
         self._iteration_count = 0
         u = u0
+        err = 0
         while self._iteration_count < self.max_iterations:
             # do a classical Newton step
             J = jac(u)
@@ -91,7 +94,7 @@ class NewtonSolver(AbstractNewtonSolver):
     NOTE: does not work with sparse Jacobians, but converts it to a dense matrix instead!
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         #: choose from the different methods of scipy.optimize.root
         #: NOTE: method = "krylov" might be faster, but then we can use NewtonKrylovSolver directly
@@ -106,6 +109,7 @@ class NewtonSolver(AbstractNewtonSolver):
         def jac_wrapper(u):
             # wrapper for the Jacobian
             # sparse matrices are not supported by scipy's root method :-/ convert to dense
+            assert jac is not None
             j = jac(u)
             if sp.issparse(j):
                 return j.toarray()
@@ -182,7 +186,7 @@ class EigenSolver:
     that finds eigenvalues and eigenvectors of an eigenproblem.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         #: The shift used for the shift-invert method in the iterative eigensolver.
         #: If shift != None, the eigensolver will find the eigenvalues near the
         #: value of the shift first
@@ -194,7 +198,7 @@ class EigenSolver:
         #: convergence tolerance of the eigensolver
         self.tol = 1e-8
 
-    def solve(self, A, M=None, k=None):
+    def solve(self, A: Matrix, M: Optional[Matrix] = None, k: Optional[int] = None) -> tuple[np.ndarray, np.ndarray]:
         """
         Solve the eigenproblem A*x = v*x for the eigenvalues v and the eigenvectors x.
 
@@ -206,8 +210,8 @@ class EigenSolver:
         """
         if k is None:
             # if no number of values was specified, use a direct eigensolver for computing all eigenvalues
-            A = A.toarray() if sp.issparse(A) else A
-            M = M.toarray() if sp.issparse(M) else M
+            A = A.toarray() if isinstance(A, sp.spmatrix) else A
+            M = M.toarray() if isinstance(M, sp.spmatrix) else M
             eigenvalues, eigenvectors = scipy.linalg.eig(A, M)
         else:
             # else: compute only the largest k eigenvalues with an iterative eigensolver

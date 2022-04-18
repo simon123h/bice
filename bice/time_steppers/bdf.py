@@ -1,6 +1,9 @@
 import numpy as np
 import scipy.integrate
 from .time_steppers import TimeStepper
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from bice.core.problem import Problem
 
 
 class BDF2(TimeStepper):
@@ -8,11 +11,11 @@ class BDF2(TimeStepper):
     'Backward Differentiation Formula' scheme of order 2
     """
 
-    def __init__(self, dt=1e-3):
+    def __init__(self, dt: float = 1e-3) -> None:
         super().__init__(dt)
         self.order = 2
 
-    def step(self, problem):
+    def step(self, problem: 'Problem') -> None:
         # advance in time
         problem.time += self.dt
 
@@ -39,7 +42,7 @@ class BDF(TimeStepper):
     using scipy.integrate
     """
 
-    def __init__(self, problem, dt_max=np.inf):
+    def __init__(self, problem: 'Problem', dt_max=np.inf) -> None:
         super().__init__()
         # reference to the problem
         self.problem = problem
@@ -51,7 +54,7 @@ class BDF(TimeStepper):
         self.dt_max = dt_max
         self.factory_reset()
 
-    def step(self, problem):
+    def step(self, problem: 'Problem') -> None:
         # perform the step
         self.bdf.step()
         # assign the new variables
@@ -59,7 +62,7 @@ class BDF(TimeStepper):
         self.problem.time = self.bdf.t
         self.problem.u = self.bdf.y
 
-    def factory_reset(self):
+    def factory_reset(self) -> None:
         # create wrapper for the right-hand side
         def f(t, u):
             self.problem.time = t

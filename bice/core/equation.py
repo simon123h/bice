@@ -1,6 +1,10 @@
+from __future__ import annotations
+from optparse import Option
 import numpy as np
 import scipy.sparse as sp
 from .profiling import profile
+from .types import Matrix, Shape
+from typing import Optional, Union
 
 
 class Equation:
@@ -17,7 +21,7 @@ class Equation:
     An equation has a 'shape' that should at all times be equal to the shape of the unknowns 'u'.
     """
 
-    def __init__(self, shape=None):
+    def __init__(self, shape: Optional[Shape] = None) -> None:
         #: The equation's storage for the unknowns
         self.u = np.zeros(() if shape is None else shape)
         # we keep our own __shape variable, so that the shape is not unintentionally lost
@@ -26,7 +30,7 @@ class Equation:
         #: a history of the unknowns, needed e.g. for implicit schemes
         self.u_history = []
         #: optional reference to group of equations that this equation belongs to
-        self.group = None
+        self.group: Optional[EquationGroup] = None
         #: Does the equation couple to any other unknowns?
         #: If it is coupled, then all unknowns and methods of this equation will have the
         #: full dimension of the problem and need to be mapped to the equation's
@@ -34,12 +38,12 @@ class Equation:
         self.is_coupled = False
 
     @property
-    def ndofs(self):
+    def ndofs(self) -> int:
         """The total number of unknowns / degrees of freedom of the equation"""
         return np.prod(self.shape)
 
     @property
-    def shape(self):
+    def shape(self) -> tuple:
         """Returns the shape of the equation's unknowns: self.u.shape"""
         # if no shape is explicitly assigned, just return u.shape
         if self.__shape is None or len(self.__shape) == 0:
@@ -47,7 +51,7 @@ class Equation:
         # else, return the assigned shape
         return self.__shape
 
-    def reshape(self, shape):
+    def reshape(self, shape: Shape) -> None:
         """Change the shape of the equation / the equation's unknowns"""
         # resize the unknowns
         self.u = np.resize(self.u, shape)
@@ -58,13 +62,13 @@ class Equation:
         if self.group is not None:
             self.group.map_unknowns()
 
-    def rhs(self, u):
+    def rhs(self, u: np.ndarray) -> np.ndarray:
         """Calculate the right-hand side of the equation 0 = rhs(u)"""
         raise NotImplementedError(
             "No right-hand side (rhs) implemented for this equation!")
 
     @profile
-    def jacobian(self, u):
+    def jacobian(self, u: np.ndarray) -> Matrix:
         """
         Calculate the Jacobian J = d rhs(u) / du for the unknowns u.
         Defaults to automatic calculation of the Jacobian using finite differences.
@@ -99,7 +103,7 @@ class Equation:
                 u1[i] = k
         return J.T
 
-    def mass_matrix(self):
+    def mass_matrix(self) -> Matrix:
         """
         The mass matrix M determines the linear relation of the rhs to the temporal derivatives:
         M * du/dt = rhs(u)
@@ -107,7 +111,7 @@ class Equation:
         # default case: assume the identity matrix I (--> du/dt = rhs(u))
         return sp.eye(self.ndofs)
 
-    def adapt(self):
+    def adapt(self) -> None:
         """
         Adapt the equation to the solution (mesh refinement or similar).
         May be overridden for specific types of equations,
@@ -115,7 +119,7 @@ class Equation:
         """
         pass
 
-    def save(self):
+    def save(self) -> dict:
         """
         Save everything that is relevant for this equation to a dict. The Problem class
         will call this and save the dict to the disk.
@@ -123,7 +127,7 @@ class Equation:
         """
         return {'u': self.u}
 
-    def load(self, data):
+    def load(self, data) -> None:
         """
         Restore unknowns / parameters / etc. from the given dictionary, that was created by
         Equation.save(). Equation.load() is the inverse of Equation.save().
@@ -131,7 +135,7 @@ class Equation:
         """
         self.u = data['u']
 
-    def plot(self, ax):
+    def plot(self, ax) -> None:
         """plot the solution into a matplotlib axes object"""
         # check if there is spatial coordinates, otherwise generate fake coordinates
         try:
@@ -165,46 +169,46 @@ class EquationGroup:
     subequation to another one.
     """
 
-    def __init__(self, equations=None):
+    def __init__(self, equations: Optional[list[EqType]] = None):
         #: the list of sub-equations (or even sub-groups-of-equations)
         self.equations = []
         #: The indices of the equation's unknowns to the group's unknowns and vice versa
         self.idx = {}
         #: optional reference to a parent EquationGroup
-        self.group = None
+        self.group: Optional["EquationGroup"] = None
         # optionally add the given equations
         if equations is not None:
             for eq in equations:
                 self.add_equation(eq)
 
     @property
-    def ndofs(self):
+    def ndofs(self) -> int:
         """The number of unknowns / degrees of freedom of the group"""
         return sum([eq.ndofs for eq in self.equations])
 
     @property
-    def shape(self):
+    def shape(self) -> Shape:
         """The shape of the unknowns"""
         return (self.ndofs,)
 
     @property
-    def is_coupled(self):
+    def is_coupled(self) -> bool:
         """A group of equations should never couple to other groups"""
         return False
 
     @property
-    def u(self):
+    def u(self) -> np.ndarray:
         """The unknowns of the system: combined unknowns of the sub-equations"""
         return np.concatenate([eq.u.ravel() for eq in self.equations])
 
     @u.setter
-    def u(self, u):
+    def u(self, u) -> None:
         """set the unknowns"""
         for eq in self.equations:
             # extract the equation's unknowns using the mapping and reshape to the equation's shape
             eq.u = u[self.idx[eq]].reshape(eq.shape)
 
-    def add_equation(self, eq):
+    def add_equation(self, eq: Union[Equation, 'EquationGroup']) -> None:
         """add an equation to the group"""
         # check if eq already in self.equations
         if eq in self.equations:
@@ -221,7 +225,7 @@ class EquationGroup:
         # redo the mapping from equation's to group's unknowns
         self.map_unknowns()
 
-    def remove_equation(self, eq):
+    def remove_equation(self, eq: EqType) -> None:
         """remove an equation from the group"""
         # check if eq in self.equations
         if eq not in self.equations:
@@ -234,7 +238,7 @@ class EquationGroup:
         # redo the mapping from equation's to group's unknowns
         self.map_unknowns()
 
-    def map_unknowns(self):
+    def map_unknowns(self) -> None:
         """
         Create the mapping from equation unknowns to group unknowns, in the sense
         that group.u[idx[eq]] = eq.u.ravel() where idx is the mapping
@@ -257,7 +261,7 @@ class EquationGroup:
             self.group.map_unknowns()
 
     @profile
-    def rhs(self, u):
+    def rhs(self, u: np.ndarray) -> np.ndarray:
         """Calculate the right-hand side of the group 0 = rhs(u)"""
         # if there is only one equation, we can return the rhs directly
         if len(self.equations) == 1:
@@ -279,7 +283,7 @@ class EquationGroup:
         return res
 
     @profile
-    def jacobian(self, u):
+    def jacobian(self, u: np.ndarray) -> Matrix:
         """Calculate the Jacobian J = d rhs(u) / du for the unknowns u"""
         # if there is only one equation, we can return the matrix directly
         if len(self.equations) == 1:
@@ -313,7 +317,7 @@ class EquationGroup:
         # all entries assembled, return
         return J
 
-    def mass_matrix(self):
+    def mass_matrix(self) -> Matrix:
         """
         The mass matrix determines the linear relation of the rhs to the temporal derivatives:
         M * du/dt = rhs(u)
@@ -339,7 +343,7 @@ class EquationGroup:
         # all entries assembled, return
         return M
 
-    def list_equations(self):
+    def list_equations(self) -> list[Equation]:
         """return a flattened list of all equations in the group and sub-groups"""
         res = []
         for eq in self.equations:
@@ -362,3 +366,7 @@ class EquationGroup:
             else:
                 res += "\n └─" + eq_repr.replace("\n", "\n   ")
         return res
+
+
+# common type for Equations/grouped Equations
+EqType = Union[Equation, EquationGroup]

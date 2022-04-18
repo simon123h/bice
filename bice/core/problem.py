@@ -1,10 +1,13 @@
 import numpy as np
 from bice.time_steppers.runge_kutta import RungeKutta4
 from bice.continuation import PseudoArclengthContinuation
-from .equation import Equation, EquationGroup
+import matplotlib.pyplot as plt
+from .equation import Equation, EquationGroup, EqType
 from .solvers import NewtonKrylovSolver, EigenSolver
 from .solution import Solution, BifurcationDiagram
 from .profiling import profile
+from typing import Union, Optional
+from .types import Matrix
 
 
 class Problem():
@@ -17,8 +20,10 @@ class Problem():
     Custom problems should be implemented as children of this class.
     """
 
+    eq: Union[None, Equation, EquationGroup]
+
     # Constructor
-    def __init__(self):
+    def __init__(self) -> None:
         #: the equation (or system of equation) that governs the problem
         self.eq = None
         #: Time variable
@@ -39,24 +44,29 @@ class Problem():
         self.bifurcation_diagram = BifurcationDiagram()
         #: The continuation parameter is defined by passing an object and the name of the
         #: object's attribute that corresponds to the continuation parameter as a tuple
-        self.continuation_parameter = None
+        self.continuation_parameter = (None, "")
 
     @property
-    def ndofs(self):
+    def ndofs(self) -> int:
         """The number of unknowns / degrees of freedom of the problem"""
+        if self.eq is None:
+            return 0
         return self.eq.ndofs
 
     @property
-    def u(self):
+    def u(self) -> np.ndarray:
         """getter for unknowns of the problem"""
+        if self.eq is None:
+            return np.array([])
         return self.eq.u.ravel()
 
     @u.setter
-    def u(self, u):
+    def u(self, u) -> None:
         """set the unknowns of the problem"""
+        assert self.eq is not None
         self.eq.u = u.reshape(self.eq.shape)
 
-    def add_equation(self, eq):
+    def add_equation(self, eq: EqType) -> None:
         """add an equation to the problem"""
         if self.eq is self.list_equations() or self.eq is eq:
             # if the given equation equals self.eq, warn
@@ -72,7 +82,7 @@ class Problem():
             self.eq = eq
         # TODO: clear history?
 
-    def remove_equation(self, eq):
+    def remove_equation(self, eq: EqType) -> None:
         """remove an equation from the problem"""
         if self.eq is eq:
             # if the given equation equals self.eq, remove it
@@ -85,7 +95,7 @@ class Problem():
             print("Equation was not removed, since it is not part of the problem!")
         # TODO: clear history?
 
-    def list_equations(self):
+    def list_equations(self) -> list[Equation]:
         """list all equations that are part of the problem"""
         if isinstance(self.eq, Equation):
             return [self.eq]
@@ -94,33 +104,36 @@ class Problem():
         return []
 
     @profile
-    def rhs(self, u):
+    def rhs(self, u: np.ndarray) -> np.ndarray:
         """Calculate the right-hand side of the system 0 = rhs(u)"""
+        assert self.eq is not None
         # adjust the shape and return the rhs of the (system of) equations
         return self.eq.rhs(u.reshape(self.eq.shape)).ravel()
 
     @profile
-    def jacobian(self, u):
+    def jacobian(self, u) -> Matrix:
         """Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u"""
+        assert self.eq is not None
         # adjust the shape and return the Jacobian of the (system of) equations
         return self.eq.jacobian(u.reshape(self.eq.shape))
 
     @profile
-    def mass_matrix(self):
+    def mass_matrix(self) -> Matrix:
         """
         The mass matrix determines the linear relation of the rhs to the temporal derivatives:
         M * du/dt = rhs(u)
         """
+        assert self.eq is not None
         # return the mass matrix of the (system of) equations
         return self.eq.mass_matrix()
 
     @profile
-    def newton_solve(self):
+    def newton_solve(self) -> None:
         """Solve the system rhs(u) = 0 for u with Newton's method"""
         self.u = self.newton_solver.solve(self.rhs, self.u, self.jacobian)
 
     @profile
-    def solve_eigenproblem(self):
+    def solve_eigenproblem(self) -> tuple[np.ndarray, np.ndarray]:
         """
         Calculate the eigenvalues and eigenvectors of the Jacobian
         The method will only calculate as many eigenvalues as requested with self.settings.neigs
@@ -129,7 +142,7 @@ class Problem():
             self.jacobian(self.u), self.mass_matrix(), k=self.settings.neigs)
 
     @profile
-    def time_step(self):
+    def time_step(self) -> None:
         """Integrate in time with the assigned time-stepper"""
         # update the history with the current state
         self.history.update(history_type="time")
@@ -137,7 +150,7 @@ class Problem():
         self.time_stepper.step(self)
 
     @profile
-    def continuation_step(self):
+    def continuation_step(self) -> None:
         """Perform a parameter continuation step"""
         # update the history with the current state
         self.history.update(history_type="continuation")
@@ -145,7 +158,7 @@ class Problem():
         self.continuation_stepper.step(self)
         # make sure the bifurcation diagram is up to date
         # TODO: this could be encapsulated within the BifurcationDiagram class or somewhere else
-        if self.bifurcation_diagram.parameter_name is None:
+        if self.bifurcation_diagram.parameter_name == "":
             self.bifurcation_diagram.parameter_name = self.continuation_parameter[1]
         elif self.bifurcation_diagram.parameter_name != self.continuation_parameter[1]:
             print("Warning: continuation parameter changed from"
@@ -188,25 +201,23 @@ class Problem():
             self.u = u_old
             self.set_continuation_parameter(p_old)
 
-    def get_continuation_parameter(self):
+    def get_continuation_parameter(self) -> float:
         """return the value of the continuation parameter"""
-        # if no continuation parameter set, return None
-        if self.continuation_parameter is None:
-            return None
-        # else, get the value using the builtin 'getattr'
-        obj, attr_name = tuple(self.continuation_parameter)
+        # make sure the continuation parameter is set
+        assert self.continuation_parameter[0] is not None
+        # get the value using the builtin 'getattr'
+        obj, attr_name = self.continuation_parameter
         return getattr(obj, attr_name)
 
-    def set_continuation_parameter(self, val):
+    def set_continuation_parameter(self, val) -> None:
         """set the value of the continuation parameter"""
-        # if no continuation parameter set, do nothing
-        if self.continuation_parameter is None:
-            return
-        # else, assign the new value using the builtin 'setattr'
-        obj, attr_name = tuple(self.continuation_parameter)
+        # make sure the continuation parameter is set
+        assert self.continuation_parameter[0] is not None
+        # assign the new value using the builtin 'setattr'
+        obj, attr_name = self.continuation_parameter
         setattr(obj, attr_name, float(val))
 
-    def locate_bifurcation(self, ev_index=None, tolerance=1e-5):
+    def locate_bifurcation(self, ev_index: Optional[int] = None, tolerance: float = 1e-5) -> bool:
         """
         locate the closest bifurcation using bisection method
         (finds point where the real part of the eigenvalue closest to zero vanishes)
@@ -237,7 +248,7 @@ class Problem():
         intvl = (-1, 1)  # in multiples of step size
         pos = 1
         # bisection method loop
-        while abs(ev.real) > tolerance and intvl[1] - intvl[0] > 1e-4:
+        while np.abs(ev.real) > tolerance and intvl[1] - intvl[0] > 1e-4:
             if self.settings.verbose:
                 self.log("Bisection: [{:.6f} {:.6f}], Re: {:e}".format(
                     *intvl, ev.real))
@@ -263,7 +274,7 @@ class Problem():
         # restore the original stepsize
         self.continuation_stepper.ds = ds
         # if not converged, restore the initial state
-        if abs(ev.real) > tolerance * 100:
+        if np.abs(ev.real) > tolerance * 100:
             self.u = u_old
             self.set_continuation_parameter(p_old)
             print("Warning: Failed to converge onto bifurcation point.")
@@ -272,7 +283,7 @@ class Problem():
         # if converged, return True
         return True
 
-    def locate_bifurcation_using_constraint(self, eigenvector):
+    def locate_bifurcation_using_constraint(self, eigenvector: np.ndarray) -> None:
         """locate the bifurcation of the given eigenvector"""
         # TODO: does not yet work!
         # make sure it is real, if self.u is real
@@ -288,7 +299,7 @@ class Problem():
         # remove the constraint again
         self.remove_equation(bifurcation_constraint)
 
-    def switch_branch(self, ev_index=None, amplitude=1e-3, locate=True):
+    def switch_branch(self, ev_index: Optional[int] = None, amplitude: float = 1e-3, locate: bool = True) -> bool:
         """attempt to switch branches in a bifurcation"""
         # try to converge onto a bifurcation nearby
         if locate:
@@ -302,6 +313,8 @@ class Problem():
         # recover eigenvalues and -vectors from the eigensolver
         eigenvalues = self.eigen_solver.latest_eigenvalues
         eigenvectors = self.eigen_solver.latest_eigenvectors
+        if eigenvalues is None or eigenvectors is None:
+            return False
         # find the eigenvalue that corresponds to the bifurcation
         # (the one with the smallest abolute real part)
         if ev_index is None:
@@ -319,7 +332,7 @@ class Problem():
         self.new_branch()
         return True
 
-    def new_branch(self):
+    def new_branch(self) -> None:
         """create a new branch in the bifurcation diagram and prepare for a new continuation"""
         # create a new branch in the bifurcation diagram
         self.bifurcation_diagram.new_branch()
@@ -328,7 +341,7 @@ class Problem():
         # clear the history of unknowns because it would otherwise be invalid
         self.history.clear()
 
-    def norm(self):
+    def norm(self) -> np.floating:
         """the default norm of the solution, used for bifurcation diagrams"""
         # TODO: @simon: if we want to calculate more than one measure,
         #       we could just return an array here, and do the choosing what
@@ -337,7 +350,7 @@ class Problem():
         return np.linalg.norm(self.u)
 
     @profile
-    def save(self, filename=None):
+    def save(self, filename: Optional[str] = None) -> dict:
         """
         Save the current solution to the file <filename>.
         Returns a dictionary of the serialized data.
@@ -350,7 +363,7 @@ class Problem():
         # the problem's time
         data['Problem.time'] = self.time
         # store the value of the continuation parameter
-        if self.continuation_parameter is not None:
+        if self.continuation_parameter[0] is not None:
             data['Problem.p'] = self.get_continuation_parameter()
         # The problem's unknowns won't need to be stored, since unknowns are
         # individually saved by the respective equations.
@@ -368,7 +381,7 @@ class Problem():
         return data
 
     @profile
-    def load(self, data):
+    def load(self, data) -> None:
         """
         Load the current solution from the given data.
         where 'data' can be a filename, a Solution object of a dictionary as returned
@@ -387,7 +400,7 @@ class Problem():
         # load the time
         self.time = data['Problem.time']
         # load the value of the continuation parameter
-        if self.continuation_parameter is not None:
+        if self.continuation_parameter[0] is not None:
             self.set_continuation_parameter(data['Problem.p'])
         # let the equations restore their data
         for eq in self.list_equations():
@@ -399,12 +412,12 @@ class Problem():
             if eq_data:
                 eq.load(eq_data)
 
-    def adapt(self):
+    def adapt(self) -> None:
         """adapt the problem/equations to the solution (e.g. by mesh refinement)"""
         for eq in self.list_equations():
             eq.adapt()
 
-    def log(self, *args, **kwargs):
+    def log(self, *args, **kwargs) -> None:
         """
         print()-wrapper for log messages
         log messages are printed only if verbosity is switched on
@@ -413,7 +426,7 @@ class Problem():
             print(*args, **kwargs)
 
     @profile
-    def plot(self, sol_ax=None, bifdiag_ax=None, eigvec_ax=None, eigval_ax=None):
+    def plot(self, sol_ax=None, bifdiag_ax=None, eigvec_ax=None, eigval_ax=None) -> None:
         """
         Plot everything to the given axes.
         Axes may be given explicitly of as a list of axes, that is then expanded.
@@ -499,13 +512,12 @@ class Problem():
                                      ax=None,
                                      # plotting frequency
                                      plotevery=30
-                                     ):
+                                     ) -> None:
         """
         Automatically generate a full bifurcation diagram within the given bounds.
         Branch switching will be performed automatically up to the given maximum recursion level.
         """
         if ax is not None:
-            import matplotlib.pyplot as plt
             plt.ion()
         # perform continuation of current branch until bounds are exceeded
         branch = self.bifurcation_diagram.active_branch
@@ -585,7 +597,7 @@ class ProblemHistory():
     which is rather found in the equations itself, in order to support adaption.
     """
 
-    def __init__(self, problem):
+    def __init__(self, problem: Problem) -> None:
         # store reference to the problem
         self.problem = problem
         # maximum length of the history
@@ -599,7 +611,7 @@ class ProblemHistory():
         # storage for the values of the stepsize
         self.__dt = []
 
-    def update(self, history_type=None):
+    def update(self, history_type: Optional[str] = None) -> None:
         """update the history with the current unknowns of the problem"""
         # make sure that the history is of correct type, do not mix different types
         if self.type != history_type:
@@ -627,7 +639,7 @@ class ProblemHistory():
         self.__t = [val] + self.__t[:self.max_length-1]
         self.__dt = [dval] + self.__dt[:self.max_length-1]
 
-    def u(self, t=0):
+    def u(self, t: int = 0) -> np.ndarray:
         """get the unknowns at some point t in history"""
         # check length of history
         if t >= self.length:
@@ -645,7 +657,7 @@ class ProblemHistory():
         # return result
         return res
 
-    def time(self, t=0):
+    def time(self, t: int = 0) -> float:
         """get for the value of the time at some point t in history"""
         # accept negative and positive t
         t = abs(t)
@@ -656,12 +668,12 @@ class ProblemHistory():
         # return the value
         return self.__t[t]
 
-    def continuation_parameter(self, t=0):
+    def continuation_parameter(self, t: int = 0) -> float:
         """get for the value of the continuation_parameter at some point t in history"""
         # identical to fetching the time
         return self.time(t)
 
-    def step_size(self, t=0):
+    def step_size(self, t: int = 0) -> float:
         """get for the value of the (time / continuation) step size at some point t in history"""
         # accept negative and positive t
         t = abs(t)
@@ -673,11 +685,11 @@ class ProblemHistory():
         return self.__dt[t]
 
     @property
-    def length(self):
+    def length(self) -> int:
         """returns the length of the history"""
         return len(self.__t)
 
-    def clear(self):
+    def clear(self) -> None:
         """clears the history"""
         # clear the history type
         self.type = None
@@ -693,7 +705,7 @@ class ProblemSettings():
     A wrapper class that holds all the settings of a problem.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         #: How many eigenvalues should be computed when problem.solve_eigenproblem() is called?
         #: Set to 'None' for computing all eigenvalues using a direct solver.
         #: TODO: could have a more verbose name
