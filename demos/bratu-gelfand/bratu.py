@@ -83,3 +83,6 @@ problem.generate_bifurcation_diagram(norm_lims=(0, 6),
 
 
 fig.savefig("my_bifdiag.png")
+
+problem.plot(ax)
+plt.show(block=True)
