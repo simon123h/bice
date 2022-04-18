@@ -11,7 +11,7 @@ else:
 
 setup(
     name="bice",
-    version="0.3.6",
+    version="0.3.7",
     description="Numerical continuation and bifurcation package",
     long_description=long_description,
     long_description_content_type="text/markdown",
