@@ -30,7 +30,6 @@ class BifurcationConstraint(Equation):
         self.__disabled = False
 
     def rhs(self, u: Array) -> Array:
-        assert self.group is not None
         # if the constraint is disabled, no residuals will be calculated
         if self.__disabled:
             return 0*u
@@ -126,7 +125,6 @@ class BifurcationConstraint(Equation):
 
     def original_jacobian(self, u: Array) -> Array:
         """Calculate the original (unextended) Jacobian of the problem"""
-        assert self.group is not None
         # disable the null-space equations
         self.__disabled = True
         Gu = self.group.jacobian(u)

@@ -613,7 +613,7 @@ class ProblemHistory():
         #  - "continuation" for a history of continuation steps
         self.type = None
         # storage for the values of the time or the continuation parameter
-        self.__t = []
+        self.__t: List[float] = []
         # storage for the values of the stepsize
         self.__dt = []
 
@@ -633,15 +633,12 @@ class ProblemHistory():
         for eq in self.problem.list_equations():
             eq.u_history = [eq.u.copy()] + eq.u_history[:self.max_length-1]
         # add the value of the time / continuation parameter and step size to the history
-        if self.type == "time":
-            val = self.problem.time
-            dval = self.problem.time_stepper.dt
-        elif self.type == "continuation":
+        if self.type == "continuation":  # for continuation
             val = self.problem.get_continuation_parameter()
             dval = self.problem.continuation_stepper.ds
-        else:
-            val = None
-            dval = None
+        else:  # for time stepping
+            val = self.problem.time
+            dval = self.problem.time_stepper.dt
         self.__t = [val] + self.__t[:self.max_length-1]
         self.__dt = [dval] + self.__dt[:self.max_length-1]
 

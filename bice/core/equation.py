@@ -31,8 +31,9 @@ class Equation:
         self.__shape = self.u.shape
         #: a history of the unknowns, needed e.g. for implicit schemes
         self.u_history: list[Array] = []
-        #: optional reference to group of equations that this equation belongs to
-        self.group: Optional[EquationGroup] = None
+        #: Reference to a group of equations that this equation belongs to.
+        #: Initialized with the DummyEquationGroup that only contains the current equation.
+        self.group: EquationGroup = DummyEquationGroup(self)
         #: Does the equation couple to any other unknowns?
         #: If it is coupled, then all unknowns and methods of this equation will have the
         #: full dimension of the problem and need to be mapped to the equation's
@@ -210,15 +211,16 @@ class EquationGroup:
             # extract the equation's unknowns using the mapping and reshape to the equation's shape
             eq.u = u[self.idx[eq]].reshape(eq.shape)
 
-    def add_equation(self, eq: Union[Equation, 'EquationGroup']) -> None:
+    def add_equation(self, eq: EquationLike) -> None:
         """add an equation to the group"""
         # check if eq already in self.equations
         if eq in self.equations:
             print("Error: Equation is already part of this group!")
             return
         # check if eq already in other group
-        if eq.group is not None:
-            print("Error: Equation is already part of another group of equations!")
+        if hasattr(eq, "group") and not isinstance(eq.group, DummyEquationGroup):
+            print("Error: Equation is already part of another group of equations!"
+                  "Remove equation from other group first!")
             return
         # append to list of equations
         self.equations.append(eq)
@@ -235,8 +237,8 @@ class EquationGroup:
             return
         # remove from the list of equations
         self.equations.remove(eq)
-        # remove the equations association with the group
-        eq.group = None
+        # remove the equations association with the group, replace it with dummy group
+        eq.group = DummyEquationGroup(eq)
         # redo the mapping from equation's to group's unknowns
         self.map_unknowns()
 
@@ -368,6 +370,17 @@ class EquationGroup:
             else:
                 res += "\n └─" + eq_repr.replace("\n", "\n   ")
         return res
+
+
+class DummyEquationGroup(EquationGroup):
+    """
+    Equations are designed to always belong to a group. When an Equation is created, it
+    belongs to their own "dummy" EquationGroup that groups only the equation itself and
+    will be be replaced once the equation is added to any other EquationGroup.
+    """
+
+    def __init__(self, equation: EquationLike):
+        super().__init__([equation])
 
 
 # common type for Equations/EquationGroups

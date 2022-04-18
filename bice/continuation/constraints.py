@@ -54,10 +54,9 @@ class VolumeConstraint(ConstraintEquation):
         #: this equation brings a single extra degree of freedom (influx Lagrange multiplier)
         self.u = np.zeros(1)
         #: This parameter allows for prescribing a fixed volume (unless it is None)
-        self.fixed_volume = None
+        self.fixed_volume: Optional[float] = None
 
     def rhs(self, u: Array) -> Array:
-        assert self.group is not None
         # generate empty vector of residual contributions
         res = np.zeros((u.size))
         # reference to the indices of the unknowns that we work on
@@ -116,7 +115,6 @@ class TranslationConstraint(ConstraintEquation):
         self.u = np.zeros(1)
 
     def rhs(self, u: Array) -> Array:
-        assert self.group is not None
         # set up the vector of the residual contributions
         res = np.zeros((u.size))
         # reference to the equation, shape and indices of the unknowns that we work on

@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 
 from bice.core.problem import Problem
@@ -31,7 +29,7 @@ class LyapunovExponentCalculator():
         #: cumulative variable for the total integration time
         self.T = 0
         # storage for the perturbation vectors and the reference trajectory
-        self.perturbations = []
+        self.perturbations: list = []
         self.generate_perturbation_vectors()
         # cumulative sum of the exponents, the actual exponents are calculated from sum / T
         self.__sum = np.zeros(nexponents)
@@ -74,7 +72,7 @@ class LyapunovExponentCalculator():
         # generate perturbed trajectories from reference and perturbations
         trajectories = [reference + ptb *
                         self.epsilon for ptb in self.perturbations]
-        trajectories.append(reference)
+        trajectories.append(reference)  # type: ignore
         # integrate every trajectory, including reference
         time = float(self.problem.time)
         dt = self.problem.time_stepper.dt

@@ -8,8 +8,7 @@ import scipy.sparse as sp
 Shape = Union[int, Tuple[int, ...]]
 
 # Common type for Arrays, e.g. the vector of unknowns
-# TODO: also support complex values?
-Array = numpy.typing.NDArray[np.float64]
+Array = numpy.typing.NDArray[Union[np.float64, np.complexfloating, np.bool_]]
 
 # Objects that can be coerced into an Array
 ArrayLike = numpy.typing.ArrayLike
