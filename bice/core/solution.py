@@ -2,9 +2,12 @@
 This file describes a data structure for Solutions, Branches and BifurcationDiagrams of a Problem.
 """
 from __future__ import annotations
+
 from optparse import Option
-import numpy as np
 from typing import TYPE_CHECKING, Optional
+
+import numpy as np
+
 if TYPE_CHECKING:
     from bice.core.problem import Problem
 

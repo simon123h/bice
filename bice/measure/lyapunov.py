@@ -1,4 +1,5 @@
 import numpy as np
+
 from bice.core.problem import Problem
 from bice.core.profiling import profile
 

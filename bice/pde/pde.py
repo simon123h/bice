@@ -1,7 +1,9 @@
+from typing import Optional
+
 import numpy as np
+
 from bice.core.equation import Equation
 from bice.core.types import Shape
-from typing import Optional
 
 
 class PartialDifferentialEquation(Equation):

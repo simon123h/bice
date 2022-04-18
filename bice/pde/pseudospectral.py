@@ -1,7 +1,9 @@
-import numpy as np
 from typing import Optional
 
+import numpy as np
+
 from bice.core.types import Shape
+
 from .pde import PartialDifferentialEquation
 
 

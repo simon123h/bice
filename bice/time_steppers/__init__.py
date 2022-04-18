@@ -1,9 +1,8 @@
 
 
-from .time_steppers import Euler, ImplicitEuler
+from .bdf import BDF, BDF2
 from .runge_kutta import RungeKutta4, RungeKuttaFehlberg45
-from .bdf import BDF2, BDF
-
+from .time_steppers import Euler, ImplicitEuler
 
 __all__ = [
     'Euler', 'ImplicitEuler',

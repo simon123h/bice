@@ -1,6 +1,9 @@
-import numpy as np
-from .time_steppers import TimeStepper
 from typing import TYPE_CHECKING
+
+import numpy as np
+
+from .time_steppers import TimeStepper
+
 if TYPE_CHECKING:
     from bice.core.problem import Problem
 

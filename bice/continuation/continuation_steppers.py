@@ -1,8 +1,11 @@
+from typing import TYPE_CHECKING
+
 import numpy as np
 import scipy.sparse as sp
+
 from bice.core.profiling import profile
 from bice.core.types import Matrix
-from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from bice.core.problem import Problem
 

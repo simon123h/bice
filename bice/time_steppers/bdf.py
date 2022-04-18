@@ -1,7 +1,10 @@
+from typing import TYPE_CHECKING
+
 import numpy as np
 import scipy.integrate
+
 from .time_steppers import TimeStepper
-from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from bice.core.problem import Problem
 

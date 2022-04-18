@@ -1,10 +1,13 @@
 from __future__ import annotations
+
 from optparse import Option
+from typing import Optional, Union
+
 import numpy as np
 import scipy.sparse as sp
+
 from .profiling import profile
 from .types import Matrix, Shape
-from typing import Optional, Union
 
 
 class Equation:

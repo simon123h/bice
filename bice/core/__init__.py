@@ -2,11 +2,11 @@
 The 'core' package contains all of bice's basic functionality.
 """
 
-from .problem import Problem
 from .equation import Equation, EquationGroup
-from .solution import Solution, Branch, BifurcationDiagram
-from .solvers import MyNewtonSolver, NewtonSolver, EigenSolver
-from .profiling import profile, Profiler
+from .problem import Problem
+from .profiling import Profiler, profile
+from .solution import BifurcationDiagram, Branch, Solution
+from .solvers import EigenSolver, MyNewtonSolver, NewtonSolver
 
 __all__ = [
     'Problem',

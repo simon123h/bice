@@ -1,10 +1,12 @@
+from typing import Optional
+
 import numpy as np
-import scipy.sparse as sp
-import scipy.optimize
 import scipy.linalg
+import scipy.optimize
+import scipy.sparse as sp
+
 from .profiling import profile
 from .types import Matrix
-from typing import Optional
 
 
 class AbstractNewtonSolver:

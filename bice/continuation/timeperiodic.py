@@ -1,9 +1,10 @@
+import matplotlib.pyplot as plt
 import numpy as np
-import scipy.sparse as sp
 import scipy.linalg
+import scipy.sparse as sp
+
 from bice.core.equation import Equation
 from bice.core.profiling import profile
-import matplotlib.pyplot as plt
 
 # TODO: make this work for multiple variables, regarding ref_eq.shape
 

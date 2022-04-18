@@ -1,8 +1,9 @@
+from typing import Any, Union
+
 import numpy as np
 import scipy.sparse as sp
-from bice.core.equation import Equation
-from typing import Union, Any
 
+from bice.core.equation import Equation
 from bice.core.types import Matrix
 
 

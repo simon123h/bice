@@ -1,11 +1,11 @@
 
 
-from .continuation_steppers import NaturalContinuation
-from .continuation_steppers import PseudoArclengthContinuation
-from .constraints import ConstraintEquation, VolumeConstraint, TranslationConstraint
 from .bifurcations import BifurcationConstraint
+from .constraints import (ConstraintEquation, TranslationConstraint,
+                          VolumeConstraint)
+from .continuation_steppers import (NaturalContinuation,
+                                    PseudoArclengthContinuation)
 from .timeperiodic import TimePeriodicOrbitHandler
-
 
 __all__ = [
     'NaturalContinuation', 'PseudoArclengthContinuation',

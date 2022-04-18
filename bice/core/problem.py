@@ -1,15 +1,17 @@
-import numpy as np
+from typing import Any, Optional, Union
+
 import matplotlib.pyplot as plt
+import numpy as np
+
+from bice.continuation import PseudoArclengthContinuation
+from bice.time_steppers.runge_kutta import RungeKutta4
+from bice.time_steppers.time_steppers import TimeStepper
 
 from .equation import Equation, EquationGroup, _EquationLike
 from .profiling import profile
-from .solvers import AbstractNewtonSolver, NewtonKrylovSolver, EigenSolver
-from .solution import Solution, BifurcationDiagram
-from typing import Union, Optional, Any
+from .solution import BifurcationDiagram, Solution
+from .solvers import AbstractNewtonSolver, EigenSolver, NewtonKrylovSolver
 from .types import Matrix
-from bice.time_steppers.time_steppers import TimeStepper
-from bice.time_steppers.runge_kutta import RungeKutta4
-from bice.continuation import PseudoArclengthContinuation
 
 
 class Problem():

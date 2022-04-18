@@ -1,12 +1,14 @@
-import numpy as np
-import findiff
-import scipy.sparse as sp
-import numdifftools.fornberg as fornberg
-
-from bice.core.types import Shape, Matrix
-from .pde import PartialDifferentialEquation
-from bice.core import profile
 from typing import Optional
+
+import findiff
+import numdifftools.fornberg as fornberg
+import numpy as np
+import scipy.sparse as sp
+
+from bice.core import profile
+from bice.core.types import Matrix, Shape
+
+from .pde import PartialDifferentialEquation
 
 
 class FiniteDifferencesEquation(PartialDifferentialEquation):

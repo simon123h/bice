@@ -1,7 +1,8 @@
 from typing import Union
+
 import numpy as np
-import scipy.sparse as sp
 import numpy.typing
+import scipy.sparse as sp
 
 # common type for shapes
 Shape = Union[int, tuple[int, ...]]

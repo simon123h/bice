@@ -1,8 +1,10 @@
+from typing import Optional
+
 import numpy as np
 import scipy.sparse as sp
+
 from bice.core.equation import Equation
 from bice.core.types import Matrix, Shape
-from typing import Optional
 
 
 class ConstraintEquation(Equation):
