@@ -76,7 +76,7 @@ class LyapunovExponentCalculator():
                         self.epsilon for ptb in self.perturbations]
         trajectories.append(reference)
         # integrate every trajectory, including reference
-        time = self.problem.time
+        time = float(self.problem.time)
         dt = self.problem.time_stepper.dt
         for i in range(self.nexponents+1):
             self.problem.u = trajectories[i]

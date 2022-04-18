@@ -11,7 +11,7 @@ from .equation import Equation, EquationGroup, EquationLike
 from .profiling import profile
 from .solution import BifurcationDiagram, Solution
 from .solvers import EigenSolver, NewtonKrylovSolver
-from .types import Array, ArrayLike, Matrix
+from .types import Array, Matrix
 
 
 class Problem():
@@ -404,7 +404,7 @@ class Problem():
         # clear the history
         self.history.clear()
         # load the time
-        self.time = data['Problem.time']
+        self.time = float(data['Problem.time'])
         # load the value of the continuation parameter
         if self.continuation_parameter is not None and "Problem.p" in data:
             self.set_continuation_parameter(data['Problem.p'])
