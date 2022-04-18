@@ -7,7 +7,7 @@ long_description = (cwd / "doc/pypi-description.md").read_text()
 
 setup(
     name="bice",
-    version="0.3.4",
+    version="0.3.5",
     description="Numerical continuation and bifurcation package",
     long_description=long_description,
     long_description_content_type="text/markdown",
