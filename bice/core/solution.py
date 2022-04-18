@@ -218,17 +218,17 @@ class BifurcationDiagram:
 
     def __init__(self) -> None:
         #: list of branches
-        self.branches = []
+        self.branches: list[Branch] = []
         #: storage for the currently active branch
-        self.active_branch = self.new_branch()
+        self.active_branch: Branch = self.new_branch()
+        #: name of the continuation parameter
+        self.parameter_name: Optional[str] = None
+        #: name of the norm
+        self.norm_name = "norm"
         #: x-limits of the diagram
         self.xlim = None
         #: y-limits of the diagram
         self.ylim = None
-        #: name of the continuation parameter
-        self.parameter_name = ""
-        #: name of the norm
-        self.norm_name = "norm"
 
     def new_branch(self, active: bool = True) -> Branch:
         """Create a new branch"""

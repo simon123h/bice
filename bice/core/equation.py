@@ -169,7 +169,7 @@ class EquationGroup:
     subequation to another one.
     """
 
-    def __init__(self, equations: Optional[list[EqType]] = None):
+    def __init__(self, equations: Optional[list[_EquationLike]] = None):
         #: the list of sub-equations (or even sub-groups-of-equations)
         self.equations = []
         #: The indices of the equation's unknowns to the group's unknowns and vice versa
@@ -225,7 +225,7 @@ class EquationGroup:
         # redo the mapping from equation's to group's unknowns
         self.map_unknowns()
 
-    def remove_equation(self, eq: EqType) -> None:
+    def remove_equation(self, eq: _EquationLike) -> None:
         """remove an equation from the group"""
         # check if eq in self.equations
         if eq not in self.equations:
@@ -368,5 +368,5 @@ class EquationGroup:
         return res
 
 
-# common type for Equations/grouped Equations
-EqType = Union[Equation, EquationGroup]
+# common type for Equations/EquationGroups
+_EquationLike = Union[Equation, EquationGroup]

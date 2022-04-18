@@ -1,13 +1,15 @@
 import numpy as np
+import matplotlib.pyplot as plt
+
+from .equation import Equation, EquationGroup, _EquationLike
+from .profiling import profile
+from .solvers import AbstractNewtonSolver, NewtonKrylovSolver, EigenSolver
+from .solution import Solution, BifurcationDiagram
+from typing import Union, Optional, Any
+from .types import Matrix
+from bice.time_steppers.time_steppers import TimeStepper
 from bice.time_steppers.runge_kutta import RungeKutta4
 from bice.continuation import PseudoArclengthContinuation
-import matplotlib.pyplot as plt
-from .equation import Equation, EquationGroup, EqType
-from .solvers import NewtonKrylovSolver, EigenSolver
-from .solution import Solution, BifurcationDiagram
-from .profiling import profile
-from typing import Union, Optional
-from .types import Matrix
 
 
 class Problem():
@@ -25,11 +27,11 @@ class Problem():
     # Constructor
     def __init__(self) -> None:
         #: the equation (or system of equation) that governs the problem
-        self.eq = None
+        self.eq: Optional[_EquationLike] = None
         #: Time variable
         self.time = 0
         #: The time-stepper for integration in time
-        self.time_stepper = RungeKutta4(dt=1e-2)
+        self.time_stepper: TimeStepper = RungeKutta4(dt=1e-2)
         #: The continuation stepper for parameter continuation
         self.continuation_stepper = PseudoArclengthContinuation()
         #: The Newton solver for finding roots of equations
@@ -44,7 +46,7 @@ class Problem():
         self.bifurcation_diagram = BifurcationDiagram()
         #: The continuation parameter is defined by passing an object and the name of the
         #: object's attribute that corresponds to the continuation parameter as a tuple
-        self.continuation_parameter = (None, "")
+        self.continuation_parameter: Optional[tuple[Any, str]] = None
 
     @property
     def ndofs(self) -> int:
@@ -66,7 +68,7 @@ class Problem():
         assert self.eq is not None
         self.eq.u = u.reshape(self.eq.shape)
 
-    def add_equation(self, eq: EqType) -> None:
+    def add_equation(self, eq: _EquationLike) -> None:
         """add an equation to the problem"""
         if self.eq is self.list_equations() or self.eq is eq:
             # if the given equation equals self.eq, warn
@@ -82,7 +84,7 @@ class Problem():
             self.eq = eq
         # TODO: clear history?
 
-    def remove_equation(self, eq: EqType) -> None:
+    def remove_equation(self, eq: _EquationLike) -> None:
         """remove an equation from the problem"""
         if self.eq is eq:
             # if the given equation equals self.eq, remove it
@@ -152,13 +154,14 @@ class Problem():
     @profile
     def continuation_step(self) -> None:
         """Perform a parameter continuation step"""
+        assert self.continuation_parameter is not None
         # update the history with the current state
         self.history.update(history_type="continuation")
         # perform the step with a continuation stepper
         self.continuation_stepper.step(self)
         # make sure the bifurcation diagram is up to date
         # TODO: this could be encapsulated within the BifurcationDiagram class or somewhere else
-        if self.bifurcation_diagram.parameter_name == "":
+        if self.bifurcation_diagram.parameter_name is None:
             self.bifurcation_diagram.parameter_name = self.continuation_parameter[1]
         elif self.bifurcation_diagram.parameter_name != self.continuation_parameter[1]:
             print("Warning: continuation parameter changed from"
@@ -204,7 +207,7 @@ class Problem():
     def get_continuation_parameter(self) -> float:
         """return the value of the continuation parameter"""
         # make sure the continuation parameter is set
-        assert self.continuation_parameter[0] is not None
+        assert self.continuation_parameter is not None
         # get the value using the builtin 'getattr'
         obj, attr_name = self.continuation_parameter
         return getattr(obj, attr_name)
@@ -212,7 +215,7 @@ class Problem():
     def set_continuation_parameter(self, val) -> None:
         """set the value of the continuation parameter"""
         # make sure the continuation parameter is set
-        assert self.continuation_parameter[0] is not None
+        assert self.continuation_parameter is not None
         # assign the new value using the builtin 'setattr'
         obj, attr_name = self.continuation_parameter
         setattr(obj, attr_name, float(val))
@@ -363,7 +366,7 @@ class Problem():
         # the problem's time
         data['Problem.time'] = self.time
         # store the value of the continuation parameter
-        if self.continuation_parameter[0] is not None:
+        if self.continuation_parameter is not None:
             data['Problem.p'] = self.get_continuation_parameter()
         # The problem's unknowns won't need to be stored, since unknowns are
         # individually saved by the respective equations.
@@ -400,7 +403,7 @@ class Problem():
         # load the time
         self.time = data['Problem.time']
         # load the value of the continuation parameter
-        if self.continuation_parameter[0] is not None:
+        if self.continuation_parameter is not None and "Problem.p" in data:
             self.set_continuation_parameter(data['Problem.p'])
         # let the equations restore their data
         for eq in self.list_equations():
@@ -557,7 +560,7 @@ class Problem():
                 print(
                     f"Bifurcation found! #Null-EVs: {sol.neigenvalues_crossed}")
             # plot every few steps
-            if ax is not None and plotevery is not None and n % plotevery == 0:
+            if ax is not None and plotevery is not None and (n-1) % plotevery == 0:
                 self.plot(ax)
                 plt.show(block=False)
                 plt.pause(0.0001)
