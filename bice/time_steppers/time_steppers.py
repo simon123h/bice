@@ -1,4 +1,9 @@
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from bice.core.problem import Problem
+
+
 class TimeStepper:
     """
     Abstract base class for all time-steppers.
@@ -6,7 +11,7 @@ class TimeStepper:
     """
 
     # constructor
-    def __init__(self, dt=1e-2):
+    def __init__(self, dt: float = 1e-2) -> None:
         #: the time step size
         self.dt = dt
 
@@ -16,7 +21,7 @@ class TimeStepper:
     #         "Method 'get_dudt' not implemented for this time-stepper!")
 
     # perform a timestep on a problem
-    def step(self, problem):
+    def step(self, problem: 'Problem') -> None:
         raise NotImplementedError(
             "'TimeStepper' is an abstract base class - do not use for actual time-stepping!")
 
@@ -27,7 +32,7 @@ class Euler(TimeStepper):
     """
 
     # perform timestep
-    def step(self, problem):
+    def step(self, problem: 'Problem') -> None:
         problem.u += self.dt * problem.rhs(problem.u)
         problem.time += self.dt
 
@@ -37,7 +42,7 @@ class ImplicitEuler(TimeStepper):
     Implicit Euler scheme
     """
 
-    def step(self, problem):
+    def step(self, problem: 'Problem') -> None:
         # advance in time
         problem.time += self.dt
         # obtain the mass matrix

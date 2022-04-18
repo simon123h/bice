@@ -1,5 +1,8 @@
 import numpy as np
 from .time_steppers import TimeStepper
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from bice.core.problem import Problem
 
 
 class RungeKutta4(TimeStepper):
@@ -8,7 +11,7 @@ class RungeKutta4(TimeStepper):
     """
 
     # perform timestep
-    def step(self, problem):
+    def step(self, problem: 'Problem') -> None:
         k1 = problem.rhs(problem.u)
         problem.time += self.dt/2.
         k2 = problem.rhs(problem.u + self.dt / 2 * k1)
@@ -68,7 +71,7 @@ class RungeKuttaFehlberg45(TimeStepper):
     _c4 = 5.353313840155945e-01  # 2197/4104
     _c5 = -2.000000000000000e-01  # -1/5
 
-    def __init__(self, dt=1e-2, error_tolerance=1e-3):
+    def __init__(self, dt: float = 1e-2, error_tolerance: float = 1e-3) -> None:
         super().__init__(dt)
         # Local truncation error tolerance
         self.error_tolerance = error_tolerance
@@ -78,7 +81,7 @@ class RungeKuttaFehlberg45(TimeStepper):
         self.rejection_count = 0
 
     # perform timestep and adapt step size
-    def step(self, problem):
+    def step(self, problem: 'Problem') -> None:
         # Store evaluation values
         t = problem.time
         k1 = self.dt * problem.rhs(problem.u)

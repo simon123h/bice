@@ -51,7 +51,7 @@ class MethodProfile:
     as a node in the tree data structure of nested method calls.
     """
 
-    def __init__(self, name):
+    def __init__(self, name: str) -> None:
         # name of the method
         self.name = name
         # list of all the measured execution times
@@ -61,7 +61,7 @@ class MethodProfile:
         # any nested method's and their profiles
         self.nested_profiles = {}
 
-    def flattened_data(self):
+    def flattened_data(self) -> dict:
         """Drop all the nesting data and give a simple dictionary of each method's execution times"""
         # empty result dict
         data = {}
@@ -80,7 +80,7 @@ class MethodProfile:
         # return the dict
         return data
 
-    def print_stats(self, total_time, indentation=0, nested=True, last=False):
+    def print_stats(self, total_time, indentation=0, nested=True, last=False) -> None:
         """Print the stats on this method's profile and all the nested methods recursively"""
         if self.execution_time > 0:
             # calculate stats
@@ -122,12 +122,13 @@ class Profiler:
     needed for accessing/controlling the profiling of the code.
     """
 
-    __start_time = None
+    __start_time = 0
     __root_profile = MethodProfile("")
     _current_profile = __root_profile
+    execution_times = {}
 
     @staticmethod
-    def start():
+    def start() -> None:
         """(Re)start the Profiler"""
         # reset the execution time dictionary
         Profiler.execution_times = {}
@@ -135,12 +136,12 @@ class Profiler:
         Profiler.__start_time = time.time()
 
     @staticmethod
-    def is_active():
+    def is_active() -> bool:
         """Is the Profiler active/running?"""
         return Profiler.__start_time is not None
 
     @staticmethod
-    def print_summary(nested=True):
+    def print_summary(nested=True) -> None:
         """Print a summary on the execution times of the methods that were decorated with @profile"""
         # check if Profiler is active
         if not Profiler.is_active():

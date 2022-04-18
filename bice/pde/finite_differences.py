@@ -2,8 +2,11 @@ import numpy as np
 import findiff
 import scipy.sparse as sp
 import numdifftools.fornberg as fornberg
+
+from bice.core.types import Shape, Matrix
 from .pde import PartialDifferentialEquation
 from bice.core import profile
+from typing import Optional
 
 
 class FiniteDifferencesEquation(PartialDifferentialEquation):
@@ -14,7 +17,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
     Uses finite difference matrixes from the python package 'findiff'.
     """
 
-    def __init__(self, shape=None):
+    def __init__(self, shape: Optional[Shape] = None) -> None:
         super().__init__(shape)
         #: List of differential matrices: ddx[order] for d^order / dx^order operator
         self.ddx = []
@@ -39,8 +42,9 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         self.max_dx = 2
 
     @profile
-    def build_FD_matrices(self, approx_order=2):
+    def build_FD_matrices(self, approx_order: int = 2):
         """Build finite difference differentiation matrices using 1d FD matrices"""
+        assert self.x is not None
         # check for spatial dimension:
         if self.spatial_dimension == 1:
             # 1d case: proceed with x-vector
@@ -79,7 +83,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         return self.ddx
 
     @profile
-    def build_FD_matrices_1d(self, approx_order=2, x=None):
+    def build_FD_matrices_1d(self, approx_order=2, x=None) -> list[Matrix]:
         """Build 1d finite difference differentiation matrices using Fornberg (1988) algorithm"""
         # accuracy / approximation order of the FD scheme (size of stencil = 2*ao + 1)
         ao = 2 * (approx_order // 2)  # has to be an even number
@@ -134,14 +138,14 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # return the resulting list of FD matrices
         return self.ddx
 
-    def jacobian(self, u):
+    def jacobian(self, u) -> Matrix:
         """Jacobian of the equation"""
         # FD Jacobians are typically sparse, so we convert to a sparse matrix
         return sp.csr_matrix(super().jacobian(u))
 
     # TODO: support higher dimensions than 1d
     @profile
-    def adapt(self):
+    def adapt(self) -> None:
         """Perform adaption of the grid to the solution"""
         # mesh adaption is only supported for 1d
         if self.spatial_dimension > 1:
@@ -149,6 +153,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # calculate error estimate
         error_estimate = self.refinement_error_estimate()
         # adapt the mesh
+        assert self.x is not None
         x_old = self.x[0]
         x_new = []
         i = 0
@@ -195,29 +200,32 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         self.build_FD_matrices()
 
     @profile
-    def refinement_error_estimate(self):
+    def refinement_error_estimate(self) -> np.ndarray:
         """Estimate the error made in each grid point"""
         # calculate integral of curvature:
         # error = | \int d^2 u / dx^2 * test(x) dx |
         # NOTE: overwrite this method, if different weights of the curvatures are needed
         err = 0
+        assert self.x is not None
         dx = np.diff(self.x[0])
         dx = [max(dx[i], dx[i+1]) for i in range(len(dx)-1)]
         dx = np.concatenate(([0], dx, [0]))
         nvars = self.shape[0] if len(self.shape) > 1 else 1
         for n in range(nvars):
             u = self.u[n] if len(self.shape) > 1 else self.u
+            assert self.laplace is not None
             curv = self.laplace(u)
             err += np.abs(curv*dx)
         return err
 
-    def du_dx(self, u, direction=0):
+    def du_dx(self, u: np.ndarray, direction: int = 0) -> np.ndarray:
         """Default implementation for spatial derivative"""
+        assert self.nabla is not None
         if self.spatial_dimension == 1:  # 1d case
             return self.nabla(u)
         return self.nabla[direction].dot(u)
 
-    def save(self):
+    def save(self) -> dict:
         """
         Save the state of the equation, including the x-values.
         Override this method, if your equation needs to store more stuff.
@@ -226,7 +234,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         data.update({'x': self.x})
         return data
 
-    def load(self, data):
+    def load(self, data) -> None:
         """
         Load the state of the equation, including the x-values.
         Override this method, if your equation needs to recover more stuff.
@@ -328,6 +336,7 @@ class FDBoundaryConditions:
 
     def pad(self, u):
         """Transform a vector u to the boundary padded vector: u_pad = Q*u + G"""
+        assert self.Q is not None
         return self.Q.dot(u) + self.G
 
     def pad_x(self, x):

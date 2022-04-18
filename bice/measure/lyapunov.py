@@ -1,4 +1,5 @@
 import numpy as np
+from bice.core.problem import Problem
 from bice.core.profiling import profile
 
 
@@ -11,7 +12,11 @@ class LyapunovExponentCalculator():
     Physica D: Nonlinear Phenomena, 16(3), 285-317.
     """
 
-    def __init__(self, problem, nexponents=1, epsilon=1e-6, nintegration_steps=1):
+    def __init__(self,
+                 problem: Problem,
+                 nexponents: int = 1,
+                 epsilon: float = 1e-6,
+                 nintegration_steps: int = 1) -> None:
         #: reference to the problem
         self.problem = problem
         #: the number of exponents to be calculated
@@ -30,19 +35,19 @@ class LyapunovExponentCalculator():
 
     # return the Lyapunov exponents
     @property
-    def exponents(self):
+    def exponents(self) -> np.ndarray:
         # calculate average from sum
         return self.__sum / self.T
 
     # generate a new set of orthonormal perturbation vectors
-    def generate_perturbation_vectors(self):
+    def generate_perturbation_vectors(self) -> None:
         self.perturbations = [np.random.rand(self.problem.ndofs)
                               for i in range(self.nexponents)]
         self.orthonormalize()
 
     # orthonormalize the set of perturbation vectors using Gram-Schmidt-Orthonormalization
     @profile
-    def orthonormalize(self):
+    def orthonormalize(self) -> np.ndarray:
         # construct orthogonal vectors using Gram-Schmidt-method
         for i in range(self.nexponents):
             for j in range(i):
@@ -57,7 +62,7 @@ class LyapunovExponentCalculator():
 
     # integrate dt, reorthonormalize and update Lyapunov exponents
     @profile
-    def step(self):
+    def step(self) -> None:
         # if the number of points changed, regenerate the perturbation vectors
         if self.perturbations[0].size != self.problem.u.size:
             self.generate_perturbation_vectors()

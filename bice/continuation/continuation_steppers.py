@@ -1,6 +1,10 @@
 import numpy as np
 import scipy.sparse as sp
 from bice.core.profiling import profile
+from bice.core.types import Matrix
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from bice.core.problem import Problem
 
 
 class ContinuationStepper:
@@ -10,17 +14,17 @@ class ContinuationStepper:
     """
 
     # constructor
-    def __init__(self, ds=1e-3):
+    def __init__(self, ds: float = 1e-3) -> None:
         #: continuation step size
         self.ds = ds
 
-    def step(self, problem):
+    def step(self, problem: 'Problem') -> None:
         """Perform a continuation step on a problem"""
         raise NotImplementedError(
             "'ContinuationStepper' is an abstract base class - "
             "do not use for actual parameter continuation!")
 
-    def factory_reset(self):
+    def factory_reset(self) -> None:
         """
         Reset the continuation-stepper parameters & storage to default, e.g.,
         when starting off a new solution point, switching branches or
@@ -35,7 +39,7 @@ class NaturalContinuation(ContinuationStepper):
     Natural parameter continuation stepper
     """
 
-    def step(self, problem):
+    def step(self, problem: 'Problem') -> None:
         """Perform a continuation step on a problem"""
         # update the parameter value
         p = problem.get_continuation_parameter()
@@ -49,7 +53,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
     Pseudo-arclength parameter continuation stepper
     """
 
-    def __init__(self, ds=1e-3):
+    def __init__(self, ds: float = 1e-3) -> None:
         super().__init__(ds)
         #: convergence tolerance for the newton solver in the continuation step
         self.convergence_tolerance = 1e-8
@@ -77,7 +81,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
         self.fd_epsilon = 1e-10
 
     @profile
-    def step(self, problem):
+    def step(self, problem: 'Problem') -> None:
         """Perform a continuation step on a problem"""
         p = problem.get_continuation_parameter()
         u = problem.u
@@ -184,7 +188,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
                 self.ds = min(
                     abs(self.ds)*self.ds_increase_factor, self.ds_max)*np.sign(self.ds)
 
-    def _linear_solve(self, A, b, use_sparse_matrices=False):
+    def _linear_solve(self, A, b: np.ndarray, use_sparse_matrices: bool = False):
         """Solve the linear system A*x = b for x and return x"""
         # if desired, convert A to sparse matrix
         if use_sparse_matrices and not sp.issparse(A):

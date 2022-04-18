@@ -1,4 +1,7 @@
 import numpy as np
+from typing import Optional
+
+from bice.core.types import Shape
 from .pde import PartialDifferentialEquation
 
 
@@ -9,7 +12,7 @@ class PseudospectralEquation(PartialDifferentialEquation):
     PDEs with a pseudospectral scheme.
     """
 
-    def __init__(self, shape=None):
+    def __init__(self, shape: Optional[Shape] = None) -> None:
         super().__init__(shape)
         # the spatial coordinates
         if len(self.shape) > 0:
@@ -20,12 +23,13 @@ class PseudospectralEquation(PartialDifferentialEquation):
         self.k = None
         self.ksquare = None
 
-    def build_kvectors(self, real_fft=False):
+    def build_kvectors(self, real_fft: bool = False) -> None:
         """
         Build the k-vectors for the Fourier space
         set real=True, if real input to the FFT can be assumed (rfft)
         (the k-vectors will be smaller and rfft is more performant than fft)
         """
+        assert self.x is not None
         if len(self.x) == 1:
             Lx = self.x[0][-1] - self.x[0][0]
             Nx = self.x[0].size

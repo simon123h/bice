@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.sparse as sp
 from bice.core.equation import Equation
+from bice.core.types import Matrix, Shape
+from typing import Optional
 
 
 class ConstraintEquation(Equation):
@@ -9,17 +11,17 @@ class ConstraintEquation(Equation):
     For simple implementation of PDE constraints and less redundant code.
     """
 
-    def __init__(self, shape=(1,)):
+    def __init__(self, shape: Shape = (1,)) -> None:
         # default shape: (1,)
         super().__init__(shape=shape)
         # constraints typically couple to some other equation
         self.is_coupled = True
 
-    def mass_matrix(self):
+    def mass_matrix(self) -> float:
         # constraint usually couples to no time-derivatives
         return 0
 
-    def plot(self, ax):
+    def plot(self, ax) -> None:
         # nothing to plot
         pass
 
@@ -34,7 +36,9 @@ class VolumeConstraint(ConstraintEquation):
     multiplier that can be interpreted as an influx into the system.
     """
 
-    def __init__(self, reference_equation, variable=None):
+    def __init__(self,
+                 reference_equation: Equation,
+                 variable: Optional[int] = None) -> None:
         super().__init__(shape=(1,))
         #: on which equation/unknowns should the constraint be imposed?
         self.ref_eq = reference_equation
@@ -45,7 +49,8 @@ class VolumeConstraint(ConstraintEquation):
         #: This parameter allows for prescribing a fixed volume (unless it is None)
         self.fixed_volume = None
 
-    def rhs(self, u):
+    def rhs(self, u: np.ndarray) -> np.ndarray:
+        assert self.group is not None
         # generate empty vector of residual contributions
         res = np.zeros((u.size))
         # reference to the indices of the unknowns that we work on
@@ -71,7 +76,7 @@ class VolumeConstraint(ConstraintEquation):
         res[eq_idx] = u[self_idx]
         return res
 
-    def jacobian(self, u):
+    def jacobian(self, u: np.ndarray) -> sp.csr_matrix:
         # TODO: implement analytical / semi-analytical Jacobian
         # convert FD Jacobian to sparse matrix
         return sp.csr_matrix(super().jacobian(u))
@@ -86,7 +91,10 @@ class TranslationConstraint(ConstraintEquation):
     frame (advection term).
     """
 
-    def __init__(self, reference_equation, variable=None, direction=0):
+    def __init__(self,
+                 reference_equation: Equation,
+                 variable: Optional[int] = None,
+                 direction: int = 0) -> None:
         # call parent constructor
         super().__init__(shape=(1,))
         #: on which equation/unknowns should the constraint be imposed?
@@ -98,7 +106,8 @@ class TranslationConstraint(ConstraintEquation):
         #: the unknowns (velocity vector)
         self.u = np.zeros(1)
 
-    def rhs(self, u):
+    def rhs(self, u: np.ndarray) -> np.ndarray:
+        assert self.group is not None
         # set up the vector of the residual contributions
         res = np.zeros((u.size))
         # reference to the equation, shape and indices of the unknowns that we work on
@@ -129,7 +138,7 @@ class TranslationConstraint(ConstraintEquation):
         res[self_idx] = np.dot(eq_dudx, (eq_u - eq_u_old))
         return res
 
-    def jacobian(self, u):
+    def jacobian(self, u: np.ndarray) -> sp.csr_matrix:
         # contributions:
         # - d constraint eq. / du
         # - d bulk eq. / d u

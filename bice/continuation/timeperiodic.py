@@ -18,7 +18,7 @@ class TimePeriodicOrbitHandler(Equation):
     """
 
     # reference equation, initial guess for period length, initial number of points in time
-    def __init__(self, reference_equation, T, Nt):
+    def __init__(self, reference_equation, T, Nt) -> None:
         super().__init__(shape=(Nt*reference_equation.ndofs+1))
         # which equation to treat?
         self.ref_eq = reference_equation
@@ -35,30 +35,30 @@ class TimePeriodicOrbitHandler(Equation):
         self._jacobian_cache = []
 
     @property
-    def T(self):
+    def T(self) -> float:
         """Access the period length"""
         return self.u[-1]
 
     @T.setter
-    def T(self, v):
+    def T(self, v: float) -> None:
         self.u[-1] = v
 
     @property
-    def t(self):
+    def t(self) -> np.ndarray:
         """Return the temporal domain vector"""
         return np.cumsum(self.dt)
 
     @property
-    def Nt(self):
+    def Nt(self) -> int:
         """Number of points in time"""
         return len(self.dt)
 
-    def u_orbit(self):
+    def u_orbit(self) -> np.ndarray:
         """The unknowns in separate arrays for each point in time"""
         # split the period and reshape to (Nt, *ref_eq.shape)
         return self.u[:-1].reshape((self.Nt, *self.ref_eq.shape))
 
-    def build_ddt_matrix(self):
+    def build_ddt_matrix(self) -> sp.csr_matrix:
         """Build the time-derivative operator ddt, using periodic finite differences"""
         # time-derivative operator
         # TODO: build using FinDiff or numdifftoos.fornberg
@@ -81,7 +81,7 @@ class TimePeriodicOrbitHandler(Equation):
         return sp.csr_matrix(ddt)
 
     @profile
-    def rhs(self, u):
+    def rhs(self, u: np.ndarray) -> np.ndarray:
         """Calculate the rhs of the full system of equations"""
         # number of unknowns of a single equation
         N = self.ref_eq.ndofs
@@ -112,7 +112,7 @@ class TimePeriodicOrbitHandler(Equation):
         return res
 
     @profile
-    def jacobian(self, u):
+    def jacobian(self, u: np.ndarray) -> sp.csr_matrix:
         """Calculate the Jacobian of rhs(u)"""
         # split the unknowns into:
         # ... period length
@@ -149,7 +149,7 @@ class TimePeriodicOrbitHandler(Equation):
                              [d_cnst_du, d_cnst_dT]])
         return sp.csr_matrix(final_jac)
 
-    def monodromy_matrix(self, use_cache=True):
+    def monodromy_matrix(self, use_cache: bool = True) -> sp.csr_matrix:
         """
         Calculate the monodromy matrix A that is used to calculate the stability of the orbit
         using the Floquet multipliers (eigenvalues of A).
@@ -188,7 +188,7 @@ class TimePeriodicOrbitHandler(Equation):
         # return the monodromy matrix
         return mon_mat
 
-    def floquet_multipliers(self, k=20, use_cache=True):
+    def floquet_multipliers(self, k: int = 20, use_cache: bool = True) -> np.ndarray:
         """
         Calculate the Floquet multipliers to obtain the stability of the orbit.
         The Floquet multipliers are the eigenvalues of the monodromy matrix
@@ -231,7 +231,7 @@ class TimePeriodicOrbitHandler(Equation):
 
     # TODO: test this
     # TODO: ddt does currently not support non-uniform time, make uniform?
-    def adapt(self):
+    def adapt(self) -> tuple:
         """Adapt the time mesh to the solution"""
         # number of unknowns of a single equation
         N = self.ref_eq.ndofs
@@ -288,13 +288,13 @@ class TimePeriodicOrbitHandler(Equation):
         # return min/max error estimates
         return (min(error_estimate), max(error_estimate))
 
-    def save(self):
+    def save(self) -> dict:
         """Save the state of the equation, including the dt-values"""
         data = super().save()
         data.update({'dt': self.dt})
         return data
 
-    def load(self, data):
+    def load(self, data) -> None:
         """Load the state of the equation, including the dt-values"""
         self.dt = data['dt']
         # rebuild FD time-derivative matrix
@@ -304,7 +304,7 @@ class TimePeriodicOrbitHandler(Equation):
 
         super().load(data)
 
-    def plot(self, ax):
+    def plot(self, ax) -> None:
         """Plot the solutions for different timesteps"""
         orbit = self.u_orbit().T
         num_plots = min(40, self.Nt)

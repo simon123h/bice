@@ -16,7 +16,7 @@ The parameters are:
 
 class DeflationOperator:
 
-    def __init__(self):
+    def __init__(self) -> None:
         #: the order of the norm that will be used for the deflation operator
         self.p = 2
         #: small constant in the deflation operator, for numerical stability
@@ -24,12 +24,12 @@ class DeflationOperator:
         #: list of solutions, that will be suppressed by the deflation operator
         self.solutions = []
 
-    def operator(self, u):
+    def operator(self, u: np.ndarray):
         """obtain the value of the deflation operator for given u"""
         return np.prod([np.dot(u_i - u, u_i - u)**-self.p
                         for u_i in self.solutions]) + self.shift
 
-    def D_operator(self, u):
+    def D_operator(self, u: np.ndarray):
         """Jacobian of deflation operator for given u"""
         op = self.operator(u)
         return self.p * op * 2 * \
@@ -55,14 +55,14 @@ class DeflationOperator:
         # return the function object
         return new_jac
 
-    def add_solution(self, u):
+    def add_solution(self, u: np.ndarray) -> None:
         """add a solution to the list of solutions used for deflation"""
         self.solutions.append(u)
 
-    def remove_solution(self, u):
+    def remove_solution(self, u: np.ndarray) -> None:
         """remove a solution from the list of solutions used for deflation"""
         self.solutions.remove(u)
 
-    def clear_solutions(self):
+    def clear_solutions(self) -> None:
         """clear the list of solutions used for deflation"""
         self.solutions = []
