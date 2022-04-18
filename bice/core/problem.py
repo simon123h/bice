@@ -715,7 +715,7 @@ class ProblemSettings():
         #: How many eigenvalues should be computed when problem.solve_eigenproblem() is called?
         #: Set to 'None' for computing all eigenvalues using a direct solver.
         #: TODO: could have a more verbose name
-        self.neigs = 20
+        self.neigs: Union[int, None] = 20
         #: How small does an eigenvalue need to be in order to be counted as 'zero'?
         self.eigval_zero_tolerance = 1e-16
         #: Should we always try to exactly locate bifurcations when passing one?
