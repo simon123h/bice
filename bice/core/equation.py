@@ -293,13 +293,20 @@ class EquationGroup:
         for eq in self.equations:
             if eq.is_coupled:
                 # coupled equations work on the full set of variables
-                J += eq.jacobian(u)
+                eq_jac = eq.jacobian(u)
+                if not sp.issparse(eq_jac):
+                    eq_jac = sp.csr_matrix(eq_jac)
+                # simply add to the global Jacobian
+                J += eq_jac
                 # add dummy matrix to J_uncoupled
                 J_uncoupled.append(sp.csr_matrix((eq.ndofs, eq.ndofs)))
             else:
-                # uncoupled equations simply work on their own variables, so we do a mapping
+                # uncoupled equations work on their own variables, so we do a mapping
                 idx = self.idx[eq]
                 eq_jac = eq.jacobian(u[idx].reshape(eq.shape))
+                if not sp.issparse(eq_jac):
+                    eq_jac = sp.csr_matrix(eq_jac)
+                # add to list to later construct the global Jacobian
                 J_uncoupled.append(eq_jac)
         # add contributions of uncoupled equations
         J += sp.block_diag(J_uncoupled, format="csr")
