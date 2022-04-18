@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from optparse import Option
 from typing import Optional, Union
 
 import numpy as np
 import scipy.sparse as sp
 
 from .profiling import profile
-from .types import Matrix, Shape
+from .types import Array, Matrix, Shape
 
 
 class Equation:
@@ -26,12 +25,12 @@ class Equation:
 
     def __init__(self, shape: Optional[Shape] = None) -> None:
         #: The equation's storage for the unknowns
-        self.u = np.zeros(() if shape is None else shape)
+        self.u: Array = np.zeros(() if shape is None else shape)
         # we keep our own __shape variable, so that the shape is not unintentionally lost
         # when the user changes u. If stored shape is undefined, we'll simply fallback to u.shape
         self.__shape = self.u.shape
         #: a history of the unknowns, needed e.g. for implicit schemes
-        self.u_history = []
+        self.u_history: list[Array] = []
         #: optional reference to group of equations that this equation belongs to
         self.group: Optional[EquationGroup] = None
         #: Does the equation couple to any other unknowns?
@@ -65,13 +64,13 @@ class Equation:
         if self.group is not None:
             self.group.map_unknowns()
 
-    def rhs(self, u: np.ndarray) -> np.ndarray:
+    def rhs(self, u: Array) -> Array:
         """Calculate the right-hand side of the equation 0 = rhs(u)"""
         raise NotImplementedError(
             "No right-hand side (rhs) implemented for this equation!")
 
     @profile
-    def jacobian(self, u: np.ndarray) -> Matrix:
+    def jacobian(self, u: Array) -> Matrix:
         """
         Calculate the Jacobian J = d rhs(u) / du for the unknowns u.
         Defaults to automatic calculation of the Jacobian using finite differences.
@@ -141,9 +140,9 @@ class Equation:
     def plot(self, ax) -> None:
         """plot the solution into a matplotlib axes object"""
         # check if there is spatial coordinates, otherwise generate fake coordinates
-        try:
-            x = self.x
-        except AttributeError:
+        if hasattr(self, "x"):
+            x = getattr(self, "x")
+        else:
             x = [np.arange(self.shape[-1])]
         # for 1d
         if len(x) == 1:
@@ -172,7 +171,7 @@ class EquationGroup:
     subequation to another one.
     """
 
-    def __init__(self, equations: Optional[list[_EquationLike]] = None):
+    def __init__(self, equations: Optional[list[EquationLike]] = None):
         #: the list of sub-equations (or even sub-groups-of-equations)
         self.equations = []
         #: The indices of the equation's unknowns to the group's unknowns and vice versa
@@ -200,7 +199,7 @@ class EquationGroup:
         return False
 
     @property
-    def u(self) -> np.ndarray:
+    def u(self) -> Array:
         """The unknowns of the system: combined unknowns of the sub-equations"""
         return np.concatenate([eq.u.ravel() for eq in self.equations])
 
@@ -228,7 +227,7 @@ class EquationGroup:
         # redo the mapping from equation's to group's unknowns
         self.map_unknowns()
 
-    def remove_equation(self, eq: _EquationLike) -> None:
+    def remove_equation(self, eq: EquationLike) -> None:
         """remove an equation from the group"""
         # check if eq in self.equations
         if eq not in self.equations:
@@ -264,7 +263,7 @@ class EquationGroup:
             self.group.map_unknowns()
 
     @profile
-    def rhs(self, u: np.ndarray) -> np.ndarray:
+    def rhs(self, u: Array) -> Array:
         """Calculate the right-hand side of the group 0 = rhs(u)"""
         # if there is only one equation, we can return the rhs directly
         if len(self.equations) == 1:
@@ -286,7 +285,7 @@ class EquationGroup:
         return res
 
     @profile
-    def jacobian(self, u: np.ndarray) -> Matrix:
+    def jacobian(self, u: Array) -> Matrix:
         """Calculate the Jacobian J = d rhs(u) / du for the unknowns u"""
         # if there is only one equation, we can return the matrix directly
         if len(self.equations) == 1:
@@ -372,4 +371,4 @@ class EquationGroup:
 
 
 # common type for Equations/EquationGroups
-_EquationLike = Union[Equation, EquationGroup]
+EquationLike = Union[Equation, EquationGroup]

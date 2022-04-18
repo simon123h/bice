@@ -3,7 +3,7 @@ from typing import Optional
 import numpy as np
 
 from bice.core.equation import Equation
-from bice.core.types import Shape
+from bice.core.types import Array, Shape
 
 
 class PartialDifferentialEquation(Equation):
@@ -30,7 +30,7 @@ class PartialDifferentialEquation(Equation):
             return self.x.ndim
         return len(self.x)
 
-    def du_dt(self, u: Optional[np.ndarray] = None) -> np.ndarray:
+    def du_dt(self, u: Optional[Array] = None) -> Array:
         """calculate the time derivative du/dt of the unknowns"""
         # if u is not given, use self.u
         if u is None:
@@ -38,7 +38,7 @@ class PartialDifferentialEquation(Equation):
         # typically, the mass matrix determines which part of rhs(u) go into du/dt
         return self.mass_matrix().dot(self.rhs(u))
 
-    def du_dx(self, u: Optional[np.ndarray] = None, direction: int = 0) -> np.ndarray:
+    def du_dx(self, u: Optional[Array] = None, direction: int = 0) -> Array:
         """"
         Calculate the spatial derivative du/dx in a given spatial direction.
         (abstract, needs to be specified for child classes)

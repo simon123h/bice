@@ -1,10 +1,15 @@
-from typing import Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import scipy.sparse as sp
 
 from bice.core.equation import Equation
-from bice.core.types import Matrix, Shape
+from bice.core.types import Array, Shape
+
+if TYPE_CHECKING:
+    from bice.pde import PartialDifferentialEquation
 
 
 class ConstraintEquation(Equation):
@@ -51,7 +56,7 @@ class VolumeConstraint(ConstraintEquation):
         #: This parameter allows for prescribing a fixed volume (unless it is None)
         self.fixed_volume = None
 
-    def rhs(self, u: np.ndarray) -> np.ndarray:
+    def rhs(self, u: Array) -> Array:
         assert self.group is not None
         # generate empty vector of residual contributions
         res = np.zeros((u.size))
@@ -72,13 +77,15 @@ class VolumeConstraint(ConstraintEquation):
         else:
             # parametric constraint: calculate the difference between current
             # volume and the prescribed fixed_volume parameter
-            res[self_idx] = np.trapz(u[eq_idx],
-                                     self.ref_eq.x[0]) - self.fixed_volume
+            x = [np.arange(self.ref_eq.shape[-1])]
+            if hasattr(self.ref_eq, "x") and getattr(self.ref_eq, "x") is not None:
+                x = getattr(self.ref_eq, "x")
+            res[self_idx] = np.trapz(u[eq_idx], x) - self.fixed_volume
         # Add the constraint to the reference equation: unknown influx is the Langrange multiplier
         res[eq_idx] = u[self_idx]
         return res
 
-    def jacobian(self, u: np.ndarray) -> sp.csr_matrix:
+    def jacobian(self, u: Array) -> sp.csr_matrix:
         # TODO: implement analytical / semi-analytical Jacobian
         # convert FD Jacobian to sparse matrix
         return sp.csr_matrix(super().jacobian(u))
@@ -94,7 +101,7 @@ class TranslationConstraint(ConstraintEquation):
     """
 
     def __init__(self,
-                 reference_equation: Equation,
+                 reference_equation: 'PartialDifferentialEquation',
                  variable: Optional[int] = None,
                  direction: int = 0) -> None:
         # call parent constructor
@@ -108,7 +115,7 @@ class TranslationConstraint(ConstraintEquation):
         #: the unknowns (velocity vector)
         self.u = np.zeros(1)
 
-    def rhs(self, u: np.ndarray) -> np.ndarray:
+    def rhs(self, u: Array) -> Array:
         assert self.group is not None
         # set up the vector of the residual contributions
         res = np.zeros((u.size))
@@ -132,6 +139,7 @@ class TranslationConstraint(ConstraintEquation):
             eq_dudx = eq.du_dx(
                 eq_u.reshape(eq_shape), self.direction).ravel()
         except AttributeError:  # if not, get it from the gradient
+            assert eq.x is not None
             eq_dudx = np.gradient(eq_u, eq.x[self.direction])
         res[eq_idx] = velocity * eq_dudx
         # calculate the difference in center of masses between current
@@ -140,7 +148,7 @@ class TranslationConstraint(ConstraintEquation):
         res[self_idx] = np.dot(eq_dudx, (eq_u - eq_u_old))
         return res
 
-    def jacobian(self, u: np.ndarray) -> sp.csr_matrix:
+    def jacobian(self, u: Array) -> sp.csr_matrix:
         # contributions:
         # - d constraint eq. / du
         # - d bulk eq. / d u

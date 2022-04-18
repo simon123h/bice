@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Optional
 
 import findiff
@@ -6,7 +8,7 @@ import numpy as np
 import scipy.sparse as sp
 
 from bice.core import profile
-from bice.core.types import Matrix, Shape
+from bice.core.types import Array, Matrix, Shape
 
 from .pde import PartialDifferentialEquation
 
@@ -85,7 +87,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         return self.ddx
 
     @profile
-    def build_FD_matrices_1d(self, approx_order=2, x=None) -> list[Matrix]:
+    def build_FD_matrices_1d(self, approx_order=2, x=None) -> list['AffineOperator']:
         """Build 1d finite difference differentiation matrices using Fornberg (1988) algorithm"""
         # accuracy / approximation order of the FD scheme (size of stencil = 2*ao + 1)
         ao = 2 * (approx_order // 2)  # has to be an even number
@@ -220,10 +222,11 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
             err += np.abs(curv*dx)
         return err
 
-    def du_dx(self, u: np.ndarray, direction: int = 0) -> np.ndarray:
+    def du_dx(self, u: Array, direction: int = 0) -> Array:
         """Default implementation for spatial derivative"""
         assert self.nabla is not None
         if self.spatial_dimension == 1:  # 1d case
+            assert isinstance(self.nabla, AffineOperator)
             return self.nabla(u)
         return self.nabla[direction].dot(u)
 
@@ -376,9 +379,9 @@ class PeriodicBC(FDBoundaryConditions):
         # obtain the (constant!) virtual distance between the left and right boundary nodes
         if self.boundary_dx is None:
             self.boundary_dx = x[1] - x[0]
-        dx_lr = self.boundary_dx
+        dx_lr = np.array([self.boundary_dx])
         # build the full list of dx's for the periodic domain
-        dx = np.concatenate(([dx_lr], np.diff(x), [dx_lr]))
+        dx = np.concatenate((dx_lr, np.diff(x), dx_lr))
         # construct the left and right ghost nodes (number of ghost points = self.order)
         x_l = [x[0]-sum(dx[-n-1:]) for n in range(self.order)][::-1]
         x_r = [x[-1]+sum(dx[:n+1]) for n in range(self.order)]

@@ -107,21 +107,22 @@ class NewtonSolver(AbstractNewtonSolver):
         # methods that do not use the Jacobian, but use an approximation
         inexact_methods = ["krylov", "broyden1", "broyden2",
                            "diagbroyden", "anderson", "linearmixing", "excitingmixing"]
-
-        def jac_wrapper(u):
-            # wrapper for the Jacobian
-            # sparse matrices are not supported by scipy's root method :-/ convert to dense
-            assert jac is not None
-            j = jac(u)
-            if sp.issparse(j):
-                return j.toarray()
-            return j
         # check if Jacobian is required by the method
         if jac is None or self.method in inexact_methods:
-            jac_wrapper = None
+            my_jac = None
+        else:
+            def jac_wrapper(u):
+                # wrapper for the Jacobian
+                # sparse matrices are not supported by scipy's root method :-/ convert to dense
+                assert jac is not None
+                j = jac(u)
+                if sp.issparse(j):
+                    return j.toarray()
+                return j
+            my_jac = jac_wrapper
         # solve!
         opt_result = scipy.optimize.root(
-            f, u0, jac=jac_wrapper, method=self.method)
+            f, u0, jac=my_jac, method=self.method)
         # fetch number of iterations, residuals and status
         err = self.norm(opt_result.fun)
         self._iteration_count = opt_result.nit if 'nit' in opt_result.keys() else opt_result.nfev

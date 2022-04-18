@@ -5,6 +5,7 @@ import scipy.sparse as sp
 
 from bice.core.equation import Equation
 from bice.core.profiling import profile
+from bice.core.types import Array
 
 # TODO: make this work for multiple variables, regarding ref_eq.shape
 
@@ -45,7 +46,7 @@ class TimePeriodicOrbitHandler(Equation):
         self.u[-1] = v
 
     @property
-    def t(self) -> np.ndarray:
+    def t(self) -> Array:
         """Return the temporal domain vector"""
         return np.cumsum(self.dt)
 
@@ -54,7 +55,7 @@ class TimePeriodicOrbitHandler(Equation):
         """Number of points in time"""
         return len(self.dt)
 
-    def u_orbit(self) -> np.ndarray:
+    def u_orbit(self) -> Array:
         """The unknowns in separate arrays for each point in time"""
         # split the period and reshape to (Nt, *ref_eq.shape)
         return self.u[:-1].reshape((self.Nt, *self.ref_eq.shape))
@@ -82,7 +83,7 @@ class TimePeriodicOrbitHandler(Equation):
         return sp.csr_matrix(ddt)
 
     @profile
-    def rhs(self, u: np.ndarray) -> np.ndarray:
+    def rhs(self, u: Array) -> Array:
         """Calculate the rhs of the full system of equations"""
         # number of unknowns of a single equation
         N = self.ref_eq.ndofs
@@ -113,7 +114,7 @@ class TimePeriodicOrbitHandler(Equation):
         return res
 
     @profile
-    def jacobian(self, u: np.ndarray) -> sp.csr_matrix:
+    def jacobian(self, u: Array) -> sp.csr_matrix:
         """Calculate the Jacobian of rhs(u)"""
         # split the unknowns into:
         # ... period length
@@ -189,7 +190,7 @@ class TimePeriodicOrbitHandler(Equation):
         # return the monodromy matrix
         return mon_mat
 
-    def floquet_multipliers(self, k: int = 20, use_cache: bool = True) -> np.ndarray:
+    def floquet_multipliers(self, k: int = 20, use_cache: bool = True) -> Array:
         """
         Calculate the Floquet multipliers to obtain the stability of the orbit.
         The Floquet multipliers are the eigenvalues of the monodromy matrix

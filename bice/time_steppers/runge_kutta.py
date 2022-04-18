@@ -113,7 +113,7 @@ class RungeKuttaFehlberg45(TimeStepper):
         dt_old = self.dt
         if eps != 0:
             self.dt = self.dt * \
-                min(max(1 * (self.error_tolerance / eps)**0.25, 0.5), 2)
+                min(max(1 * (self.error_tolerance / float(eps))**0.25, 0.5), 2)
 
         # If it is less than the tolerance, the step is accepted and RK4 value is stored
         if eps <= self.error_tolerance:

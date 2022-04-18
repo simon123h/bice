@@ -2,6 +2,8 @@
 import numpy as np
 import scipy.sparse as sp
 
+from bice.core.types import Array
+
 """
 A deflation operator M for deflated continuation.
 Adds singularities to the equation at given solutions u_i
@@ -24,12 +26,12 @@ class DeflationOperator:
         #: list of solutions, that will be suppressed by the deflation operator
         self.solutions = []
 
-    def operator(self, u: np.ndarray):
+    def operator(self, u: Array):
         """obtain the value of the deflation operator for given u"""
         return np.prod([np.dot(u_i - u, u_i - u)**-self.p
                         for u_i in self.solutions]) + self.shift
 
-    def D_operator(self, u: np.ndarray):
+    def D_operator(self, u: Array):
         """Jacobian of deflation operator for given u"""
         op = self.operator(u)
         return self.p * op * 2 * \
@@ -55,11 +57,11 @@ class DeflationOperator:
         # return the function object
         return new_jac
 
-    def add_solution(self, u: np.ndarray) -> None:
+    def add_solution(self, u: Array) -> None:
         """add a solution to the list of solutions used for deflation"""
         self.solutions.append(u)
 
-    def remove_solution(self, u: np.ndarray) -> None:
+    def remove_solution(self, u: Array) -> None:
         """remove a solution from the list of solutions used for deflation"""
         self.solutions.remove(u)
 

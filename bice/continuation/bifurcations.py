@@ -4,12 +4,12 @@ import numpy as np
 import scipy.sparse as sp
 
 from bice.core.equation import Equation
-from bice.core.types import Matrix
+from bice.core.types import Array, Matrix
 
 
 class BifurcationConstraint(Equation):
     # TODO: add docstring
-    def __init__(self, phi: np.ndarray, free_parameter: tuple[Any, str]):
+    def __init__(self, phi: Array, free_parameter: tuple[Any, str]):
         super().__init__()
         # the constraint equation couples to some other equations of the problem
         self.is_coupled = True
@@ -29,11 +29,11 @@ class BifurcationConstraint(Equation):
         # preventing redundant, recursive or duplicate calculations
         self.__disabled = False
 
-    def rhs(self, u: np.ndarray) -> Union[np.ndarray, float]:
+    def rhs(self, u: Array) -> Array:
         assert self.group is not None
         # if the constraint is disabled, no residuals will be calculated
         if self.__disabled:
-            return 0
+            return 0*u
         # reference to the indices of the own unknowns
         self_idx = self.group.idx[self]
         # get the value of the current and the previous null-eigenvector phi
@@ -54,7 +54,7 @@ class BifurcationConstraint(Equation):
         res[self_idx] = np.concatenate((res1, res2))
         return res
 
-    def jacobian(self, u: np.ndarray) -> Union[Matrix, float]:
+    def jacobian(self, u: Array) -> Union[Matrix, float]:
         # if the constraint is disabled, no Jacobian will be calculated
         if self.__disabled:
             return 0
@@ -124,7 +124,7 @@ class BifurcationConstraint(Equation):
         # couples to no time-derivatives
         return 0
 
-    def original_jacobian(self, u: np.ndarray) -> np.ndarray:
+    def original_jacobian(self, u: Array) -> Array:
         """Calculate the original (unextended) Jacobian of the problem"""
         assert self.group is not None
         # disable the null-space equations
@@ -139,7 +139,7 @@ class BifurcationConstraint(Equation):
         # so we are left with the original (unextended) Jacobian
         return np.delete(np.delete(Gu, self_idx, axis=0), self_idx, axis=1)
 
-    def actions_before_evaluation(self, u: np.ndarray) -> None:
+    def actions_before_evaluation(self, u: Array) -> None:
         # TODO: these methods are currently not called from anywhere in the code!
         # write the free parameter back from the given unknowns
         param_obj, param_name = tuple(self.free_parameter)

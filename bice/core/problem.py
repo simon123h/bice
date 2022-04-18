@@ -7,11 +7,11 @@ from bice.continuation import PseudoArclengthContinuation
 from bice.time_steppers.runge_kutta import RungeKutta4
 from bice.time_steppers.time_steppers import TimeStepper
 
-from .equation import Equation, EquationGroup, _EquationLike
+from .equation import Equation, EquationGroup, EquationLike
 from .profiling import profile
 from .solution import BifurcationDiagram, Solution
-from .solvers import AbstractNewtonSolver, EigenSolver, NewtonKrylovSolver
-from .types import Matrix
+from .solvers import EigenSolver, NewtonKrylovSolver
+from .types import Array, ArrayLike, Matrix
 
 
 class Problem():
@@ -29,7 +29,7 @@ class Problem():
     # Constructor
     def __init__(self) -> None:
         #: the equation (or system of equation) that governs the problem
-        self.eq: Optional[_EquationLike] = None
+        self.eq: Optional[EquationLike] = None
         #: Time variable
         self.time = 0
         #: The time-stepper for integration in time
@@ -58,7 +58,7 @@ class Problem():
         return self.eq.ndofs
 
     @property
-    def u(self) -> np.ndarray:
+    def u(self) -> Array:
         """getter for unknowns of the problem"""
         if self.eq is None:
             return np.array([])
@@ -70,7 +70,7 @@ class Problem():
         assert self.eq is not None
         self.eq.u = u.reshape(self.eq.shape)
 
-    def add_equation(self, eq: _EquationLike) -> None:
+    def add_equation(self, eq: EquationLike) -> None:
         """add an equation to the problem"""
         if self.eq is self.list_equations() or self.eq is eq:
             # if the given equation equals self.eq, warn
@@ -86,7 +86,7 @@ class Problem():
             self.eq = eq
         # TODO: clear history?
 
-    def remove_equation(self, eq: _EquationLike) -> None:
+    def remove_equation(self, eq: EquationLike) -> None:
         """remove an equation from the problem"""
         if self.eq is eq:
             # if the given equation equals self.eq, remove it
@@ -108,7 +108,7 @@ class Problem():
         return []
 
     @profile
-    def rhs(self, u: np.ndarray) -> np.ndarray:
+    def rhs(self, u: Array) -> Array:
         """Calculate the right-hand side of the system 0 = rhs(u)"""
         assert self.eq is not None
         # adjust the shape and return the rhs of the (system of) equations
@@ -290,6 +290,7 @@ class Problem():
 
     def locate_bifurcation_using_constraint(self, eigenvector: np.ndarray) -> None:
         """locate the bifurcation of the given eigenvector"""
+        assert self.continuation_parameter is not None
         # TODO: does not yet work!
         # make sure it is real, if self.u is real
         if not np.iscomplexobj(self.u):
@@ -565,7 +566,7 @@ class Problem():
             if ax is not None and plotevery is not None and (n-1) % plotevery == 0:
                 self.plot(ax)
                 plt.show(block=False)
-                plt.pause(0.0001)
+                plt.pause(0.0001)  # type: ignore
         # return if no more recursion is allowed
         if max_recursion < 1:
             return
@@ -644,7 +645,7 @@ class ProblemHistory():
         self.__t = [val] + self.__t[:self.max_length-1]
         self.__dt = [dval] + self.__dt[:self.max_length-1]
 
-    def u(self, t: int = 0) -> np.ndarray:
+    def u(self, t: int = 0) -> Array:
         """get the unknowns at some point t in history"""
         # check length of history
         if t >= self.length:
