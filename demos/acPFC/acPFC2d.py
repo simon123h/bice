@@ -84,7 +84,7 @@ class acPFCProblem(Problem):
         self.acpfc = acPFCEquation(Nx, Lx, Ny, Ly, particles1, particles2)
         self.add_equation(self.acpfc)
         # initialize time stepper
-        self.time_stepper = time_steppers.RungeKuttaFehlberg45(self, 1e-2)
+        self.time_stepper = time_steppers.RungeKuttaFehlberg45(1e-2)
         self.continuation_parameter = (self.acpfc, "phi01")
 
     # Norm is the L2-norm of the three fields
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     while problem.time < T:
         # plot
         if not n % plotevery:
-            problem.plot(sol_ax=ax_sol)
+            problem.acpfc.plot(ax_sol)
             ax_norm.clear()
             ax_norm.plot(times, L2norms)
             fig.savefig(f"out/img/{plotID:05d}.svg")
@@ -157,7 +157,7 @@ if __name__ == "__main__":
     while problem.time < T:
         # plot
         if not n % plotevery:
-            problem.plot(ax_sol)
+            problem.acpfc.plot(ax_sol)
             ax_norm.clear()
             ax_norm.plot(times, L2norms)
             fig.savefig(f"out/img/{plotID:05d}.svg")
