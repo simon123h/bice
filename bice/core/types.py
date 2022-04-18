@@ -1,11 +1,11 @@
-from typing import Union
+from typing import Tuple, Union
 
 import numpy as np
 import numpy.typing
 import scipy.sparse as sp
 
 # common type for shapes
-Shape = Union[int, tuple[int, ...]]
+Shape = Union[int, Tuple[int, ...]]
 
 # Common type for Arrays, e.g. the vector of unknowns
 # TODO: also support complex values?

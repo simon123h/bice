@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 import scipy.linalg
@@ -201,7 +201,7 @@ class EigenSolver:
         #: convergence tolerance of the eigensolver
         self.tol = 1e-8
 
-    def solve(self, A: Matrix, M: Optional[Matrix] = None, k: Optional[int] = None) -> tuple[np.ndarray, np.ndarray]:
+    def solve(self, A: Matrix, M: Optional[Matrix] = None, k: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
         """
         Solve the eigenproblem A*x = v*x for the eigenvalues v and the eigenvectors x.
 

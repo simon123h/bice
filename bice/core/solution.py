@@ -3,8 +3,7 @@ This file describes a data structure for Solutions, Branches and BifurcationDiag
 """
 from __future__ import annotations
 
-from optparse import Option
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import numpy as np
 
@@ -178,7 +177,7 @@ class Branch:
         """List all bifurcation points on the branch"""
         return [s for s in self.solutions if s.is_bifurcation()]
 
-    def data(self, only=None) -> tuple[np.ndarray, np.ndarray]:
+    def data(self, only=None) -> Tuple[np.ndarray, np.ndarray]:
         """
         Returns the list of parameters and norms of the branch
         optional argument only (str) may restrict the data to:

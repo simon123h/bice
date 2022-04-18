@@ -1,4 +1,4 @@
-from typing import Any, Optional, Union
+from typing import Any, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -48,7 +48,7 @@ class Problem():
         self.bifurcation_diagram = BifurcationDiagram()
         #: The continuation parameter is defined by passing an object and the name of the
         #: object's attribute that corresponds to the continuation parameter as a tuple
-        self.continuation_parameter: Optional[tuple[Any, str]] = None
+        self.continuation_parameter: Optional[Tuple[Any, str]] = None
 
     @property
     def ndofs(self) -> int:
@@ -137,7 +137,7 @@ class Problem():
         self.u = self.newton_solver.solve(self.rhs, self.u, self.jacobian)
 
     @profile
-    def solve_eigenproblem(self) -> tuple[np.ndarray, np.ndarray]:
+    def solve_eigenproblem(self) -> Tuple[np.ndarray, np.ndarray]:
         """
         Calculate the eigenvalues and eigenvectors of the Jacobian
         The method will only calculate as many eigenvalues as requested with self.settings.neigs
