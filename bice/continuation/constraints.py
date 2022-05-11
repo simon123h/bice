@@ -67,7 +67,7 @@ class VolumeConstraint(ConstraintEquation):
             eq_shape = self.ref_eq.shape[1:]
             var_ndofs = np.prod(eq_shape)
             start = eq_idx.start + self.variable * var_ndofs
-            eq_idx = slice(start, start + var_ndofs)
+            eq_idx = slice(int(start), int(start + var_ndofs))
         # employ the constraint equation
         if self.fixed_volume is None:
             # calculate the difference in volumes between current
