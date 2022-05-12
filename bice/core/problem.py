@@ -369,7 +369,7 @@ class Problem():
         # the problem's time
         data['Problem.time'] = self.time
         # store the value of the continuation parameter
-        if self.continuation_parameter is not None:
+        if self.continuation_parameter is not None and self.get_continuation_parameter() is not None:
             data['Problem.p'] = self.get_continuation_parameter()
         # The problem's unknowns won't need to be stored, since unknowns are
         # individually saved by the respective equations.
