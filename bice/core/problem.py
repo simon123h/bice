@@ -489,8 +489,8 @@ class Problem():
                 if self.eigen_solver.latest_eigenvectors is not None:
                     ev = self.eigen_solver.latest_eigenvectors[0]
                     # fix orientation of eigenvector
-                    if (sign := np.sign(ev.real.dot(self.u))) != 0:
-                        ev *= sign
+                    sign = np.sign(ev.real.dot(self.u))
+                    ev *= sign if sign != 0 else 1
                     # backup the unknowns
                     u_old = self.u.copy()
                     # overwrite the unknowns with the eigenvalues (or their real part only)
