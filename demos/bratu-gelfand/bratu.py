@@ -13,8 +13,7 @@ The resulting bifurcation diagram, matches figure 1.1 (left) of Farrell, Birkiss
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.sparse import dia_matrix
-from skfem import asm, condense, InteriorBasis, MeshLine, ElementLineP1
+from skfem import asm, InteriorBasis, MeshLine, ElementLineP1
 from skfem.models.poisson import laplace, mass
 from bice import Problem, Equation
 
