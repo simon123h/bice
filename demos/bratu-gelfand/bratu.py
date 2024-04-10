@@ -32,7 +32,7 @@ class Bratu1dEquation(Equation):
         self.lap = asm(laplace, self.basis)
         self.mass = asm(mass, self.basis)
         # boundary node indices
-        self.D = self.basis.find_dofs()['all'].nodal['u']
+        self.D = self.basis.get_dofs()
         # initial unknowns
         self.u = np.zeros(self.basis.N)
         # parameter
