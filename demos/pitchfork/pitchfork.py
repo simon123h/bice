@@ -5,11 +5,6 @@ in parts stolen from BifurcationKit.jl's Example 1: "solving the perturbed pitch
 
 https://bifurcationkit.github.io/BifurcationKitDocs.jl/stable/gettingstarted/#Example-3:-continuing-periodic-orbits
 
-u'' + \lambda e^u = 0,  0 < x < 1,
-with `u(0)=u(1)=0` and where `\lambda > 0` is a parameter.
-
-The resulting bifurcation diagram, matches figure 1.1 (left) of Farrell, Birkisson, & Funke (2015).
-
 """
 
 from pathlib import Path
