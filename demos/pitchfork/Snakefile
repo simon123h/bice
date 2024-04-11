@@ -1,0 +1,10 @@
+rule all:
+    input: "pitchfork.png"
+
+rule run:
+    input: "{a}.py"
+    output: "{a}.png"
+    shell: "python {input}"
+
+rule clean:
+    shell: "del *.png"
