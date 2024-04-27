@@ -47,7 +47,7 @@ Meanwhile you can check out the less documented [demos](demos/).
 ## Documentation
 
 Click here for the
-[online version of the documentation](https://simon123h.gitlabpages.com/bice/).
+[online version of the documentation](https://simon123h.gitlab.io/bice).
 
 ### Building the documentation locally
 
