@@ -1,5 +1,5 @@
 r"""
-Peturbed pitchfork problem
+Perturbed pitchfork problem
 
 in parts stolen from BifurcationKit.jl's Example 1: "solving the perturbed pitchfork equation"
 
