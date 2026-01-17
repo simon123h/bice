@@ -2,6 +2,7 @@
 This is bice.
 """
 
+from . import time_steppers
 from .core import (
     BifurcationDiagram,
     Branch,
@@ -15,7 +16,6 @@ from .core import (
     Solution,
     profile,
 )
-from . import time_steppers
 
 __all__ = [
     "Problem",

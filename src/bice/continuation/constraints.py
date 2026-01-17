@@ -57,7 +57,6 @@ class ConstraintEquation(Equation):
             The matplotlib axes.
         """
         # nothing to plot
-        pass
 
 
 class VolumeConstraint(ConstraintEquation):

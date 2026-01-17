@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-import scipy.sparse as sp
 
 from bice.core.solvers import MyNewtonSolver, NewtonSolver
 

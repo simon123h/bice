@@ -196,7 +196,6 @@ class Equation:
         May be overridden for specific types of equations,
         do not forget to adapt Equation.u_history as well!
         """
-        pass
 
     def save(self) -> dict:
         """

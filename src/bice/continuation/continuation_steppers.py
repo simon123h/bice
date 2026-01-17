@@ -59,7 +59,6 @@ class ContinuationStepper:
         switching the principal continuation parameter.
         """
         # TODO: is this method even needed?
-        pass
 
 
 class NaturalContinuation(ContinuationStepper):

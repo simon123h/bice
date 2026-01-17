@@ -249,4 +249,3 @@ class BifurcationConstraint(Equation):
             The matplotlib axes.
         """
         # nothing to plot
-        pass
