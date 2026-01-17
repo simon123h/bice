@@ -1,3 +1,5 @@
+"Core Equation classes for the bice package."
+
 from __future__ import annotations
 
 from typing import List, Optional, Union
@@ -11,43 +13,72 @@ from .types import Array, Matrix, Shape
 
 class Equation:
     """
-    The Equation class holds algebraic (Cauchy) equations of the form
-    M du/dt = rhs(u, t, r)
-    where M is the mass matrix, u is the vector of unknowns, t is the time
-    and r is a parameter vector. This may include ODEs and PDEs.
-    All custom equations must inherit from this class and implement the rhs(u) method.
-    Time and parameters are implemented as member attributes.
-    This is a very fundamental class. Specializations of the Equation class exist for covering
-    more intricate types of equations, i.e., particular discretizations for spatial fields, e.g.,
-    finite difference schemes or pseudospectral methods.
-    An equation has a 'shape' that should at all times be equal to the shape of the unknowns 'u'.
+    Base class for algebraic (Cauchy) equations.
+
+    Holds equations of the form M du/dt = rhs(u, t, r) where M is the mass matrix,
+    u is the vector of unknowns, t is the time and r is a parameter vector.
+    This may include ODEs and PDEs. All custom equations must inherit from this
+    class and implement the rhs(u) method. Time and parameters are implemented
+    as member attributes.
+
+    This is a very fundamental class. Specializations of the Equation class exist
+    for covering more intricate types of equations, i.e., particular discretizations
+    for spatial fields, e.g., finite difference schemes or pseudospectral methods.
+
+    An equation has a 'shape' that should at all times be equal to the shape of
+    the unknowns 'u'.
     """
 
     def __init__(self, shape: Optional[Shape] = None) -> None:
+        """
+        Initialize the equation.
+
+        Parameters
+        ----------
+        shape
+            The shape of the unknowns. If None, defaults to ().
+        """
         #: The equation's storage for the unknowns
         self.u: Array = np.zeros(() if shape is None else shape)
-        # we keep our own __shape variable, so that the shape is not unintentionally lost
-        # when the user changes u. If stored shape is undefined, we'll simply fallback to u.shape
+        # we keep our own __shape variable, so that the shape is not unintentionally
+        # lost when the user changes u. If stored shape is undefined, we'll simply
+        # fallback to u.shape
         self.__shape = self.u.shape
         #: a history of the unknowns, needed e.g. for implicit schemes
         self.u_history: list[Array] = []
         #: Reference to a group of equations that this equation belongs to.
-        #: Initialized with the DummyEquationGroup that only contains the current equation.
+        #: Initialized with the DummyEquationGroup that only contains the current
+        #: equation.
         self.group: EquationGroup = DummyEquationGroup(self)
         #: Does the equation couple to any other unknowns?
-        #: If it is coupled, then all unknowns and methods of this equation will have the
-        #: full dimension of the problem and need to be mapped to the equation's
-        #: variables accordingly. Otherwise, they only have the dimension of this equation.
+        #: If it is coupled, then all unknowns and methods of this equation will have
+        #: the full dimension of the problem and need to be mapped to the equation's
+        #: variables accordingly. Otherwise, they only have the dimension of this
+        #: equation.
         self.is_coupled = False
 
     @property
     def ndofs(self) -> int:
-        """The total number of unknowns / degrees of freedom of the equation"""
+        """
+        Return the total number of unknowns / degrees of freedom of the equation.
+
+        Returns
+        -------
+        int
+            The total number of degrees of freedom.
+        """
         return np.prod(self.shape)
 
     @property
     def shape(self) -> tuple:
-        """Returns the shape of the equation's unknowns: self.u.shape"""
+        """
+        Return the shape of the equation's unknowns: self.u.shape.
+
+        Returns
+        -------
+        tuple
+            The shape of the unknowns.
+        """
         # if no shape is explicitly assigned, just return u.shape
         if self.__shape is None or len(self.__shape) == 0:
             return self.u.shape
@@ -55,18 +86,42 @@ class Equation:
         return self.__shape
 
     def reshape(self, shape: Shape) -> None:
-        """Change the shape of the equation / the equation's unknowns"""
+        """
+        Change the shape of the equation / the equation's unknowns.
+
+        Parameters
+        ----------
+        shape
+            The new shape of the unknowns.
+        """
         # resize the unknowns
         self.u = np.resize(self.u, shape)
         # update the internal shape variable
         self.__shape = self.u.shape
-        # if the equation belongs to a group of equations, redo it's mapping of the unknowns
-        # since the number of unknowns changed
+        # if the equation belongs to a group of equations, redo it's mapping of the
+        # unknowns since the number of unknowns changed
         if self.group is not None:
             self.group.map_unknowns()
 
     def rhs(self, u: Array) -> Array:
-        """Calculate the right-hand side of the equation 0 = rhs(u)"""
+        """
+        Calculate the right-hand side of the equation 0 = rhs(u).
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns.
+
+        Returns
+        -------
+        Array
+            The result of the right-hand side evaluation.
+
+        Raises
+        ------
+        NotImplementedError
+            If the method is not implemented by the subclass.
+        """
         raise NotImplementedError(
             "No right-hand side (rhs) implemented for this equation!"
         )
@@ -75,13 +130,25 @@ class Equation:
     def jacobian(self, u: Array) -> Matrix:
         """
         Calculate the Jacobian J = d rhs(u) / du for the unknowns u.
+
         Defaults to automatic calculation of the Jacobian using finite differences.
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns.
+
+        Returns
+        -------
+        Matrix
+            The Jacobian matrix.
         """
         eps = 1e-10  # the finite perturbation size
         use_central_differences = False  # use central or forward differences?
         N = u.size
         J = np.zeros((N, N), dtype=u.dtype)
-        # uncoupled equations require u to be reshaped the self.shape before calling rhs(u)
+        # uncoupled equations require u to be reshaped the self.shape before calling
+        # rhs(u)
         shape = u.shape if self.is_coupled else self.shape
         # make a copy of the unknowns
         u1 = u.copy().ravel()
@@ -109,8 +176,15 @@ class Equation:
 
     def mass_matrix(self) -> Matrix:
         """
-        The mass matrix M determines the linear relation of the rhs to the temporal derivatives:
-        M * du/dt = rhs(u)
+        Return the mass matrix M.
+
+        The mass matrix determines the linear relation of the rhs to the temporal
+        derivatives: M * du/dt = rhs(u).
+
+        Returns
+        -------
+        Matrix
+            The mass matrix.
         """
         # default case: assume the identity matrix I (--> du/dt = rhs(u))
         return sp.eye(self.ndofs)
@@ -118,6 +192,7 @@ class Equation:
     def adapt(self) -> None:
         """
         Adapt the equation to the solution (mesh refinement or similar).
+
         May be overridden for specific types of equations,
         do not forget to adapt Equation.u_history as well!
         """
@@ -125,22 +200,42 @@ class Equation:
 
     def save(self) -> dict:
         """
-        Save everything that is relevant for this equation to a dict. The Problem class
-        will call this and save the dict to the disk.
+        Save everything that is relevant for this equation to a dict.
+
+        The Problem class will call this and save the dict to the disk.
         May be overridden for saving more stuff for specific types of equations.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the state of the equation.
         """
         return {"u": self.u}
 
     def load(self, data) -> None:
         """
-        Restore unknowns / parameters / etc. from the given dictionary, that was created by
-        Equation.save(). Equation.load() is the inverse of Equation.save().
-        May be overridden for loading more stuff for specific types of equations.
+        Restore unknowns / parameters / etc. from the given dictionary.
+
+        The dictionary was created by Equation.save(). Equation.load() is the
+        inverse of Equation.save(). May be overridden for loading more stuff for
+        specific types of equations.
+
+        Parameters
+        ----------
+        data
+            The data dictionary to load from.
         """
         self.u = data["u"]
 
     def plot(self, ax) -> None:
-        """plot the solution into a matplotlib axes object"""
+        """
+        Plot the solution into a matplotlib axes object.
+
+        Parameters
+        ----------
+        ax
+            The matplotlib axes to plot into.
+        """
         # check if there is spatial coordinates, otherwise generate fake coordinates
         if hasattr(self, "x"):
             x = getattr(self, "x")
@@ -167,13 +262,22 @@ class Equation:
 
 class EquationGroup:
     """
-    An EquationGroup groups multiple equations into a single new equation (a system of equations).
+    Groups multiple equations into a single new equation (a system of equations).
+
     All properties and functions are assembled from the subequations.
-    EquationGroups may even form hierarchical trees, where one group of equations serves as a
-    subequation to another one.
+    EquationGroups may even form hierarchical trees, where one group of equations
+    serves as a subequation to another one.
     """
 
     def __init__(self, equations: Optional[List[EquationLike]] = None):
+        """
+        Initialize the EquationGroup.
+
+        Parameters
+        ----------
+        equations
+            A list of equations or equation groups to include.
+        """
         #: the list of sub-equations (or even sub-groups-of-equations)
         self.equations = []
         #: The indices of the equation's unknowns to the group's unknowns and vice versa
@@ -187,33 +291,78 @@ class EquationGroup:
 
     @property
     def ndofs(self) -> int:
-        """The number of unknowns / degrees of freedom of the group"""
+        """
+        Return the number of unknowns / degrees of freedom of the group.
+
+        Returns
+        -------
+        int
+            The total number of degrees of freedom.
+        """
         return sum([eq.ndofs for eq in self.equations])
 
     @property
     def shape(self) -> Shape:
-        """The shape of the unknowns"""
+        """
+        Return the shape of the unknowns.
+
+        Returns
+        -------
+        Shape
+            The shape of the unknowns vector.
+        """
         return (self.ndofs,)
 
     @property
     def is_coupled(self) -> bool:
-        """A group of equations should never couple to other groups"""
+        """
+        Return whether the group is coupled.
+
+        A group of equations should never couple to other groups.
+
+        Returns
+        -------
+        bool
+            Always False.
+        """
         return False
 
     @property
     def u(self) -> Array:
-        """The unknowns of the system: combined unknowns of the sub-equations"""
+        """
+        Return the unknowns of the system: combined unknowns of the sub-equations.
+
+        Returns
+        -------
+        Array
+            The combined vector of unknowns.
+        """
         return np.concatenate([eq.u.ravel() for eq in self.equations])
 
     @u.setter
     def u(self, u) -> None:
-        """set the unknowns"""
+        """
+        Set the unknowns.
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns to set.
+        """
         for eq in self.equations:
-            # extract the equation's unknowns using the mapping and reshape to the equation's shape
+            # extract the equation's unknowns using the mapping and reshape to the
+            # equation's shape
             eq.u = u[self.idx[eq]].reshape(eq.shape)
 
     def add_equation(self, eq: EquationLike) -> None:
-        """add an equation to the group"""
+        """
+        Add an equation to the group.
+
+        Parameters
+        ----------
+        eq
+            The equation or equation group to add.
+        """
         # check if eq already in self.equations
         if eq in self.equations:
             print("Error: Equation is already part of this group!")
@@ -233,7 +382,14 @@ class EquationGroup:
         self.map_unknowns()
 
     def remove_equation(self, eq: EquationLike) -> None:
-        """remove an equation from the group"""
+        """
+        Remove an equation from the group.
+
+        Parameters
+        ----------
+        eq
+            The equation or equation group to remove.
+        """
         # check if eq in self.equations
         if eq not in self.equations:
             print("Error: Equation is not part of this group!")
@@ -247,8 +403,9 @@ class EquationGroup:
 
     def map_unknowns(self) -> None:
         """
-        Create the mapping from equation unknowns to group unknowns, in the sense
-        that group.u[idx[eq]] = eq.u.ravel() where idx is the mapping
+        Create the mapping from equation unknowns to group unknowns.
+
+        This ensures that group.u[idx[eq]] = eq.u.ravel() where idx is the mapping.
         """
         # counter for the current position in group.u
         i = 0
@@ -269,7 +426,19 @@ class EquationGroup:
 
     @profile
     def rhs(self, u: Array) -> Array:
-        """Calculate the right-hand side of the group 0 = rhs(u)"""
+        """
+        Calculate the right-hand side of the group 0 = rhs(u).
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns.
+
+        Returns
+        -------
+        Array
+            The result of the right-hand side evaluation.
+        """
         # if there is only one equation, we can return the rhs directly
         if len(self.equations) == 1:
             eq = self.equations[0]
@@ -283,7 +452,8 @@ class EquationGroup:
                 # coupled equations work on the full set of variables
                 res += eq.rhs(u)
             else:
-                # uncoupled equations simply work on their own variables, so we do the mapping
+                # uncoupled equations simply work on their own variables, so we do the
+                # mapping
                 idx = self.idx[eq]
                 res[idx] += eq.rhs(u[idx].reshape(eq.shape)).ravel()
         # everything assembled, return result
@@ -291,7 +461,19 @@ class EquationGroup:
 
     @profile
     def jacobian(self, u: Array) -> Matrix:
-        """Calculate the Jacobian J = d rhs(u) / du for the unknowns u"""
+        """
+        Calculate the Jacobian J = d rhs(u) / du for the unknowns u.
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns.
+
+        Returns
+        -------
+        Matrix
+            The Jacobian matrix.
+        """
         # if there is only one equation, we can return the matrix directly
         if len(self.equations) == 1:
             eq = self.equations[0]
@@ -326,8 +508,15 @@ class EquationGroup:
 
     def mass_matrix(self) -> Matrix:
         """
-        The mass matrix determines the linear relation of the rhs to the temporal derivatives:
-        M * du/dt = rhs(u)
+        Return the mass matrix.
+
+        The mass matrix determines the linear relation of the rhs to the temporal
+        derivatives: M * du/dt = rhs(u).
+
+        Returns
+        -------
+        Matrix
+            The mass matrix.
         """
         # if there is only one equation, we can return the matrix directly
         if len(self.equations) == 1:
@@ -343,7 +532,8 @@ class EquationGroup:
                 # add dummy matrix to M_uncoupled
                 M_uncoupled.append(sp.csr_matrix((eq.ndofs, eq.ndofs)))
             else:
-                # uncoupled equations simply work on their own variables, so we do a mapping
+                # uncoupled equations simply work on their own variables, so we do a
+                # mapping
                 M_uncoupled.append(eq.mass_matrix())
         # add contributions of uncoupled equations
         M += sp.block_diag(M_uncoupled, format="csr")
@@ -351,7 +541,14 @@ class EquationGroup:
         return M
 
     def list_equations(self) -> List[Equation]:
-        """return a flattened list of all equations in the group and sub-groups"""
+        """
+        Return a flattened list of all equations in the group and sub-groups.
+
+        Returns
+        -------
+        List[Equation]
+            The list of equations.
+        """
         res = []
         for eq in self.equations:
             if isinstance(eq, EquationGroup):
@@ -363,7 +560,14 @@ class EquationGroup:
         return res
 
     def __repr__(self):
-        """pretty-print EquationGroups in the terminal"""
+        """
+        Return a string representation of the EquationGroups in the terminal.
+
+        Returns
+        -------
+        str
+            The string representation.
+        """
         res = super().__repr__()
         # prints tree structure of nested equations
         for i, eq in enumerate(self.equations):
@@ -377,12 +581,22 @@ class EquationGroup:
 
 class DummyEquationGroup(EquationGroup):
     """
-    Equations are designed to always belong to a group. When an Equation is created, it
-    belongs to their own "dummy" EquationGroup that groups only the equation itself and
-    will be be replaced once the equation is added to any other EquationGroup.
+    A dummy equation group.
+
+    Equations are designed to always belong to a group. When an Equation is created,
+    it belongs to their own "dummy" EquationGroup that groups only the equation itself
+    and will be be replaced once the equation is added to any other EquationGroup.
     """
 
     def __init__(self, equation: EquationLike):
+        """
+        Initialize the DummyEquationGroup.
+
+        Parameters
+        ----------
+        equation
+            The equation to contain.
+        """
         super().__init__([equation])
 
 

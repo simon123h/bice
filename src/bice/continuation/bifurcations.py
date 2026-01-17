@@ -1,3 +1,5 @@
+"Bifurcation tracking classes for the bice package."
+
 from typing import Any, Tuple, Union
 
 import numpy as np
@@ -8,8 +10,25 @@ from bice.core.types import Array, Matrix
 
 
 class BifurcationConstraint(Equation):
-    # TODO: add docstring
+    """
+    Implements a constraint equation for bifurcation tracking.
+
+    This class extends the original problem with an additional constraint that forces
+    the system to remain at a bifurcation point (e.g., by ensuring the existence of
+    a null vector).
+    """
+
     def __init__(self, phi: np.ndarray, free_parameter: Tuple[Any, str]):
+        """
+        Initialize the BifurcationConstraint.
+
+        Parameters
+        ----------
+        phi
+            The initial guess for the null-eigenvector.
+        free_parameter
+            A tuple (object, attribute_name) specifying the parameter to vary.
+        """
         super().__init__()
         # the constraint equation couples to some other equations of the problem
         self.is_coupled = True
@@ -30,6 +49,24 @@ class BifurcationConstraint(Equation):
         self.__disabled = False
 
     def rhs(self, u: Array) -> Array:
+        """
+        Calculate the right-hand side of the extended system.
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns.
+
+        Returns
+        -------
+        Array
+            The residuals of the extended system.
+
+        Raises
+        ------
+        Exception
+            If the dimension of the problem mismatches the null-eigenvector.
+        """
         # if the constraint is disabled, no residuals will be calculated
         if self.__disabled:
             return 0 * u
@@ -56,6 +93,19 @@ class BifurcationConstraint(Equation):
         return res
 
     def jacobian(self, u: Array) -> Union[Matrix, float]:
+        """
+        Calculate the Jacobian of the extended system.
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns.
+
+        Returns
+        -------
+        Union[Matrix, float]
+            The Jacobian matrix or 0 if disabled.
+        """
         # if the constraint is disabled, no Jacobian will be calculated
         if self.__disabled:
             return 0
@@ -76,7 +126,8 @@ class BifurcationConstraint(Equation):
             \   d(res2)/d(u_orig) = 0 [1xN]  | d(res2)/d(phi) = phi_old [1xN]  |                 /
         """
 
-        # upper left block: d(rhs_orig)/d(u_orig) will be assembled by their respective equations
+        # upper left block: d(rhs_orig)/d(u_orig) will be assembled by their
+        #                   respective equations
 
         # reference to the indices of the own unknowns
         self_idx = self.group.idx[self]
@@ -93,7 +144,8 @@ class BifurcationConstraint(Equation):
             k = u1[i]
             u1[i] = k + eps
             # calculate the original Jacobian of the problem
-            # NOTE: okay, here we'd also need N times evaluation of the Jacobian, that's also slow
+            # NOTE: okay, here we'd also need N times evaluation of the Jacobian,
+            #       that's also slow
             Gu1 = self.original_jacobian(u1)
             # NOTE: the following line is not general, wrt. self_idx
             J[:, i] = np.matmul(Gu1 - Gu, phi) / eps
@@ -123,11 +175,31 @@ class BifurcationConstraint(Equation):
         return J
 
     def mass_matrix(self) -> float:
+        """
+        Return the mass matrix contribution.
+
+        Returns
+        -------
+        float
+            Always 0 as it couples to no time-derivatives.
+        """
         # couples to no time-derivatives
         return 0
 
     def original_jacobian(self, u: Array) -> Array:
-        """Calculate the original (unextended) Jacobian of the problem"""
+        """
+        Calculate the original (unextended) Jacobian of the problem.
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns.
+
+        Returns
+        -------
+        Array
+            The Jacobian of the original unconstrained system.
+        """
         # disable the null-space equations
         self.__disabled = True
         Gu = self.group.jacobian(u)
@@ -141,17 +213,40 @@ class BifurcationConstraint(Equation):
         return np.delete(np.delete(Gu, self_idx, axis=0), self_idx, axis=1)
 
     def actions_before_evaluation(self, u: Array) -> None:
+        """
+        Perform actions before evaluating the system.
+
+        Updates the free parameter from the unknowns vector.
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns.
+        """
         # TODO: these methods are currently not called from anywhere in the code!
         # write the free parameter back from the given unknowns
         param_obj, param_name = tuple(self.free_parameter)
         setattr(param_obj, param_name, u[-1])
 
     def actions_after_newton_solve(self) -> None:
+        """
+        Perform actions after the Newton solver has finished.
+
+        Updates the free parameter from the stored unknowns.
+        """
         # TODO: these methods are currently not called from anywhere in the code!
         # write the free parameter back from the unknowns
         param_obj, param_name = tuple(self.free_parameter)
         setattr(param_obj, param_name, self.u[-1])
 
     def plot(self, ax) -> None:
+        """
+        Plot the constraint state (no-op).
+
+        Parameters
+        ----------
+        ax
+            The matplotlib axes.
+        """
         # nothing to plot
         pass
