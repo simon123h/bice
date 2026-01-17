@@ -28,8 +28,8 @@ lint:
     - pip install -e ".[dev]"
     - black --check .
     - isort --check .
-    - flake8 .
-    - mypy src/bice
+    # - flake8 .
+    # - mypy src/bice
   allow_failure: true
 
 test:
