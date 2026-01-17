@@ -2,9 +2,32 @@
 This is bice.
 """
 
-__all__ = []
+from .core import (
+    BifurcationDiagram,
+    Branch,
+    EigenSolver,
+    Equation,
+    EquationGroup,
+    MyNewtonSolver,
+    NewtonSolver,
+    Problem,
+    Profiler,
+    Solution,
+    profile,
+)
+from . import time_steppers
 
-# 'from bice import *' should import everything defined in core.__all__
-from . import core
-
-__all__.extend(core.__all__)
+__all__ = [
+    "Problem",
+    "Equation",
+    "EquationGroup",
+    "Solution",
+    "Branch",
+    "BifurcationDiagram",
+    "MyNewtonSolver",
+    "NewtonSolver",
+    "EigenSolver",
+    "profile",
+    "Profiler",
+    "time_steppers",
+]
