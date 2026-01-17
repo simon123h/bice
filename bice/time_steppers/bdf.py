@@ -18,7 +18,7 @@ class BDF2(TimeStepper):
         super().__init__(dt)
         self.order = 2
 
-    def step(self, problem: 'Problem') -> None:
+    def step(self, problem: "Problem") -> None:
         # advance in time
         problem.time += self.dt
 
@@ -30,11 +30,12 @@ class BDF2(TimeStepper):
 
         def f(u):
             # assemble the system
-            return self.dt * problem.rhs(u) - M.dot(3*u - 4*u_1 + u_2)
+            return self.dt * problem.rhs(u) - M.dot(3 * u - 4 * u_1 + u_2)
 
         def J(u):
             # Jacobian of the system
-            return self.dt * problem.jacobian(u) - 3*M
+            return self.dt * problem.jacobian(u) - 3 * M
+
         # solve it with a Newton solver
         problem.u = problem.newton_solver.solve(f, problem.u, J)
 
@@ -45,7 +46,7 @@ class BDF(TimeStepper):
     using scipy.integrate
     """
 
-    def __init__(self, problem: 'Problem', dt_max=np.inf) -> None:
+    def __init__(self, problem: "Problem", dt_max=np.inf) -> None:
         super().__init__()
         # reference to the problem
         self.problem = problem
@@ -57,7 +58,7 @@ class BDF(TimeStepper):
         self.dt_max = dt_max
         self.factory_reset()
 
-    def step(self, problem: 'Problem') -> None:
+    def step(self, problem: "Problem") -> None:
         # perform the step
         self.bdf.step()
         # assign the new variables
@@ -75,6 +76,16 @@ class BDF(TimeStepper):
         def jac(t, u):
             self.problem.time = t
             return self.problem.jacobian(u)
+
         # create instance of scipy.integrate.BDF
         self.bdf = scipy.integrate.BDF(
-            f, self.problem.time, self.problem.u, self.problem.time+1e18, jac=jac, max_step=self.dt_max, rtol=self.rtol, atol=self.atol, vectorized=False)
+            f,
+            self.problem.time,
+            self.problem.u,
+            self.problem.time + 1e18,
+            jac=jac,
+            max_step=self.dt_max,
+            rtol=self.rtol,
+            atol=self.atol,
+            vectorized=False,
+        )

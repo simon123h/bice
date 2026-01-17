@@ -12,7 +12,8 @@ from pathlib import Path
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from bice import Problem, Equation
+
+from bice import Equation, Problem
 
 # figures won't steal window focus if the right backend is chosen
 matplotlib.use("Tkagg")

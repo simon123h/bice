@@ -1,11 +1,12 @@
 #!/usr/bin/python3
-import shutil
 import os
-import numpy as np
+import shutil
+
 import matplotlib.pyplot as plt
-from bice import Profiler, Solution
+import numpy as np
 from adaptive_problem import AdaptiveSubstrateProblem
 
+from bice import Profiler, Solution
 
 # create output folder
 shutil.rmtree("out", ignore_errors=True)
@@ -36,7 +37,8 @@ if not os.path.exists("initial_state.npz"):
             fig.savefig(f"out/img/{plotID:05d}.svg")
             plotID += 1
         print(
-            f"step #:{n:6d},  time:{problem.time:9.2e},  dt:{problem.time_stepper.dt:9.2e},  norm:{problem.norm():9.2e}")
+            f"step #:{n:6d},  time:{problem.time:9.2e},  dt:{problem.time_stepper.dt:9.2e},  norm:{problem.norm():9.2e}"
+        )
         n += 1
         # perform timestep
         problem.time_step()
@@ -58,7 +60,8 @@ while True:
     n += 1
     vol = problem.tfe.liquid_volume()
     print(
-        f"step  # : {n}, M: {problem.tfe.M}, dt: {problem.time_stepper.dt:9.2e}, vol: {vol}")
+        f"step  # : {n}, M: {problem.tfe.M}, dt: {problem.time_stepper.dt:9.2e}, vol: {vol}"
+    )
     problem.tfe.M = problem.tfe.M * 1.0001
 
     # add to branch

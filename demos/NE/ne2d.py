@@ -1,11 +1,13 @@
 #!/usr/bin/python3
-import shutil
 import os
-import numpy as np
+import shutil
+
 import matplotlib.pyplot as plt
+import numpy as np
+
 from bice import Problem, time_steppers
-from bice.pde import PseudospectralEquation
 from bice.continuation import TranslationConstraint, VolumeConstraint
+from bice.pde import PseudospectralEquation
 
 
 class NikolaevskiyEquation(PseudospectralEquation):
@@ -18,8 +20,8 @@ class NikolaevskiyEquation(PseudospectralEquation):
     def __init__(self, Nx, Ny):
         super().__init__()
         # make sure N is even
-        Nx = int(2*(Nx//2))
-        Ny = int(2*(Ny//2))
+        Nx = int(2 * (Nx // 2))
+        Ny = int(2 * (Ny // 2))
         self.reshape((Nx, Ny))
         # parameters
         self.r = 0.5  # drive
@@ -29,18 +31,16 @@ class NikolaevskiyEquation(PseudospectralEquation):
         self.x = [np.linspace(0, 1, Nx), np.linspace(0, 1, Ny)]
         self.build_kvectors(real_fft=True)
         # initial condition
-        self.u = 2*(np.random.rand(Nx, Ny)-0.5) * 1e-5
+        self.u = 2 * (np.random.rand(Nx, Ny) - 0.5) * 1e-5
         # create constraints
         self.volume_constraint = VolumeConstraint(self)
-        self.translation_constraint_x = TranslationConstraint(
-            self, direction=0)
-        self.translation_constraint_y = TranslationConstraint(
-            self, direction=1)
+        self.translation_constraint_x = TranslationConstraint(self, direction=0)
+        self.translation_constraint_y = TranslationConstraint(self, direction=1)
 
     # characteristic length scale
     @property
     def L0(self):
-        return 2*np.pi / np.sqrt(1+np.sqrt(self.r))
+        return 2 * np.pi / np.sqrt(1 + np.sqrt(self.r))
 
     # definition of the Nikolaevskiy equation (right-hand side)
     def rhs(self, u):
@@ -53,16 +53,16 @@ class NikolaevskiyEquation(PseudospectralEquation):
         # fourier transform
         u_k = np.fft.rfft2(u)
         # calculate linear part (in fourier space)
-        lin = ksq * (self.r - (1-ksq)**2) * u_k
+        lin = ksq * (self.r - (1 - ksq) ** 2) * u_k
         # calculate nonlinear part (in real space)
-        nonlin = np.fft.irfft2(1j * kx * u_k)**2
-        nonlin += np.fft.irfft2(1j * ky * u_k)**2
+        nonlin = np.fft.irfft2(1j * kx * u_k) ** 2
+        nonlin += np.fft.irfft2(1j * ky * u_k) ** 2
         # sum up and return
         return np.fft.irfft2(lin) - 0.5 * nonlin
 
     # calculate the spatial derivative
     def du_dx(self, u, direction=0):
-        du_dx = 1j*self.k[direction]*np.fft.rfft2(u)
+        du_dx = 1j * self.k[direction] * np.fft.rfft2(u)
         return np.fft.irfft2(du_dx)
 
     # plot the solution
@@ -73,13 +73,21 @@ class NikolaevskiyEquation(PseudospectralEquation):
         x, y = np.meshgrid(self.x[0], self.x[1])
         Lx = self.L0 * self.m
         Ly = Lx * self.ratio
-        pcol = ax.pcolor(x*Lx, y*Ly, self.u, cmap="coolwarm", rasterized=True)
-        pcol.set_edgecolor('face')
+        pcol = ax.pcolor(x * Lx, y * Ly, self.u, cmap="coolwarm", rasterized=True)
+        pcol.set_edgecolor("face")
         # put velocity labels into plot
         ax.text(
-            0.02, 0.06, f"vx = {self.translation_constraint_x.u[0]:.1g}", transform=ax.transAxes)
+            0.02,
+            0.06,
+            f"vx = {self.translation_constraint_x.u[0]:.1g}",
+            transform=ax.transAxes,
+        )
         ax.text(
-            0.02, 0.02, f"vy = {self.translation_constraint_y.u[0]:.1g}", transform=ax.transAxes)
+            0.02,
+            0.02,
+            f"vy = {self.translation_constraint_y.u[0]:.1g}",
+            transform=ax.transAxes,
+        )
 
 
 class NikolaevskiyProblem(Problem):

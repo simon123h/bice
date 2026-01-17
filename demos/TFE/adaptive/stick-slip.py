@@ -1,11 +1,12 @@
 #!/usr/bin/python3
-import shutil
 import os
-import numpy as np
+import shutil
+
 import matplotlib.pyplot as plt
-from bice import Profiler
+import numpy as np
 from adaptive_problem import AdaptiveSubstrateProblem
 
+from bice import Profiler
 
 # create output folder
 shutil.rmtree("out", ignore_errors=True)
@@ -35,8 +36,11 @@ if not os.path.exists("initial_state.npz"):
             problem.plot(ax)
             fig.savefig(f"out/img/{plotID:05d}.svg")
             plotID += 1
-        print("step #:{:6d},  time:{:9.2e},  dt:{:9.2e},  norm:{:9.2e}".format(
-            n, problem.time, problem.time_stepper.dt, problem.norm()))
+        print(
+            "step #:{:6d},  time:{:9.2e},  dt:{:9.2e},  norm:{:9.2e}".format(
+                n, problem.time, problem.time_stepper.dt, problem.norm()
+            )
+        )
         n += 1
         # perform timestep
         problem.time_step()

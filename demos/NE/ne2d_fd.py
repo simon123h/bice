@@ -1,12 +1,14 @@
 #!/usr/bin/python3
-import shutil
 import os
+import shutil
+
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.sparse import diags
-import matplotlib.pyplot as plt
+
 from bice import Problem, time_steppers
-from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
 from bice.continuation import TranslationConstraint, VolumeConstraint
+from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
 
 
 class NikolaevskiyEquation(FiniteDifferencesEquation):
@@ -28,19 +30,17 @@ class NikolaevskiyEquation(FiniteDifferencesEquation):
         self.bc = PeriodicBC()
         self.build_FD_matrices()
         # initial condition
-        self.u = 2*(np.random.rand(Nx, Ny)-0.5) * 1e-5
+        self.u = 2 * (np.random.rand(Nx, Ny) - 0.5) * 1e-5
         self.u = self.u.ravel()
         # create constraints
         self.volume_constraint = VolumeConstraint(self)
-        self.translation_constraint_x = TranslationConstraint(
-            self, direction=0)
-        self.translation_constraint_y = TranslationConstraint(
-            self, direction=1)
+        self.translation_constraint_x = TranslationConstraint(self, direction=0)
+        self.translation_constraint_y = TranslationConstraint(self, direction=1)
 
     # characteristic length scale
     @property
     def L0(self):
-        return 2*np.pi / np.sqrt(1+np.sqrt(self.r))
+        return 2 * np.pi / np.sqrt(1 + np.sqrt(self.r))
 
     # definition of the Nikolaevskiy equation (right-hand side)
     def rhs(self, u):
@@ -52,8 +52,8 @@ class NikolaevskiyEquation(FiniteDifferencesEquation):
         nabla_y = self.nabla[1] / Ly
         Delta = self.ddx[2][0] / Lx**2 + self.ddx[2][1] / Ly**2
         Delta2 = Delta.dot(Delta)
-        lin = -Delta.dot(self.r*u - (u + 2*Delta.dot(u) + Delta2.dot(u)))
-        nonlin = nabla_x.dot(u)**2 + nabla_y.dot(u)**2
+        lin = -Delta.dot(self.r * u - (u + 2 * Delta.dot(u) + Delta2.dot(u)))
+        nonlin = nabla_x.dot(u) ** 2 + nabla_y.dot(u) ** 2
         return lin - 0.5 * nonlin
 
     # definition of the Jacobian
@@ -64,9 +64,8 @@ class NikolaevskiyEquation(FiniteDifferencesEquation):
         nabla_y = self.nabla[1] / Ly
         Delta = self.ddx[2][0] / Lx**2 + self.ddx[2][1] / Ly**2
         Delta2 = Delta.dot(Delta)
-        lin = (1-self.r) * Delta + Delta.dot(2*Delta + Delta2)
-        nonlin = diags(nabla_x.dot(u)) * nabla_x + \
-            diags(nabla_y.dot(u)) * nabla_y
+        lin = (1 - self.r) * Delta + Delta.dot(2 * Delta + Delta2)
+        nonlin = diags(nabla_x.dot(u)) * nabla_x + diags(nabla_y.dot(u)) * nabla_y
         return lin - nonlin
 
     # plot the solution
@@ -77,14 +76,23 @@ class NikolaevskiyEquation(FiniteDifferencesEquation):
         x, y = np.meshgrid(self.x[0], self.x[1])
         Lx = self.L0 * self.m
         Ly = Lx * self.ratio
-        pcol = ax.pcolor(x*Lx, y*Ly, self.u.reshape(x.shape),
-                         cmap="coolwarm", rasterized=True)
-        pcol.set_edgecolor('face')
+        pcol = ax.pcolor(
+            x * Lx, y * Ly, self.u.reshape(x.shape), cmap="coolwarm", rasterized=True
+        )
+        pcol.set_edgecolor("face")
         # put velocity labels into plot
         ax.text(
-            0.02, 0.06, f"vx = {self.translation_constraint_x.u[0]:.1g}", transform=ax.transAxes)
+            0.02,
+            0.06,
+            f"vx = {self.translation_constraint_x.u[0]:.1g}",
+            transform=ax.transAxes,
+        )
         ax.text(
-            0.02, 0.02, f"vy = {self.translation_constraint_y.u[0]:.1g}", transform=ax.transAxes)
+            0.02,
+            0.02,
+            f"vy = {self.translation_constraint_y.u[0]:.1g}",
+            transform=ax.transAxes,
+        )
 
 
 class NikolaevskiyProblem(Problem):

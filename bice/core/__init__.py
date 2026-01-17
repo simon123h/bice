@@ -9,9 +9,15 @@ from .solution import BifurcationDiagram, Branch, Solution
 from .solvers import EigenSolver, MyNewtonSolver, NewtonSolver
 
 __all__ = [
-    'Problem',
-    'Equation', 'EquationGroup',
-    'Solution', 'Branch', 'BifurcationDiagram',
-    'MyNewtonSolver', 'NewtonSolver', 'EigenSolver',
-    'profile', 'Profiler'
+    "Problem",
+    "Equation",
+    "EquationGroup",
+    "Solution",
+    "Branch",
+    "BifurcationDiagram",
+    "MyNewtonSolver",
+    "NewtonSolver",
+    "EigenSolver",
+    "profile",
+    "Profiler",
 ]

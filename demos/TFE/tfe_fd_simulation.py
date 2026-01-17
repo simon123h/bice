@@ -1,27 +1,34 @@
 #!/usr/bin/python3
-import shutil
 import os
-import numpy as np
+import shutil
+
 import matplotlib.pyplot as plt
+import numpy as np
 import scipy.sparse as sp
-from bice import Problem, time_steppers
+
+from bice import Problem, Profiler, profile, time_steppers
+from bice.continuation import TranslationConstraint, VolumeConstraint
+from bice.core.solvers import MyNewtonSolver, NewtonKrylovSolver, NewtonSolver
 from bice.pde import FiniteDifferencesEquation
-from bice.pde.finite_differences import RobinBC, PeriodicBC, NeumannBC, DirichletBC, NoBoundaryConditions
-from bice.continuation import VolumeConstraint, TranslationConstraint
-from bice import profile, Profiler
-from bice.core.solvers import NewtonSolver, MyNewtonSolver, NewtonKrylovSolver
+from bice.pde.finite_differences import (
+    DirichletBC,
+    NeumannBC,
+    NoBoundaryConditions,
+    PeriodicBC,
+    RobinBC,
+)
 
 
 class ThinFilmEquation(FiniteDifferencesEquation):
     r"""
-     Finite differences implementation of the 1-dimensional Thin-Film Equation
-     equation
-     dh/dt = d/dx (h^3 d/dx dF/dh )
-     with the variation of the free energy:
-     dF/dh = -d^2/dx^2 h - Pi(h)
-     and the disjoining pressure:
-     Pi(h) = 1/h^3 - 1/h^6
-     """
+    Finite differences implementation of the 1-dimensional Thin-Film Equation
+    equation
+    dh/dt = d/dx (h^3 d/dx dF/dh )
+    with the variation of the free energy:
+    dF/dh = -d^2/dx^2 h - Pi(h)
+    and the disjoining pressure:
+    Pi(h) = 1/h^3 - 1/h^6
+    """
 
     def __init__(self, N, L):
         super().__init__(shape=(2, N))
@@ -29,12 +36,12 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         self.U = 0
         # setup the mesh
         self.L = L
-        self.x = [np.linspace(-L/2, L/2, N, endpoint=False)]
+        self.x = [np.linspace(-L / 2, L / 2, N, endpoint=False)]
         # initial condition
         h0 = 6
-        a = 3/20. / (h0-1)
+        a = 3 / 20.0 / (h0 - 1)
         x = self.x[0]
-        self.u[0] = 2 + np.sin(4*np.pi*x/L)
+        self.u[0] = 2 + np.sin(4 * np.pi * x / L)
         # self.u[0] = np.maximum(-a*x**2 + h0, 1)
         # build the boundary conditions
         self.bc = PeriodicBC()
@@ -46,14 +53,14 @@ class ThinFilmEquation(FiniteDifferencesEquation):
     def rhs(self, u):
         h, dFdh = u
         h3 = h**3
-        djp = 1./h3**2 - 1./h3
+        djp = 1.0 / h3**2 - 1.0 / h3
         eq1 = self.nabla(h3 * self.nabla(dFdh))
         eq2 = -self.laplace(h) - djp - dFdh
         return np.array([eq1, eq2])
 
     def jacobian(self, u):
         h, dFdh = u
-        ddjpdh = 3./h**4 - 6./h**7
+        ddjpdh = 3.0 / h**4 - 6.0 / h**7
         eq1dh = self.nabla(sp.diags(3 * h**2 * self.nabla(dFdh)))
         eq1dF = self.nabla(sp.diags(h**3) * self.nabla())
         eq2dh = -self.laplace() - sp.diags(ddjpdh)
@@ -163,8 +170,7 @@ problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
 
 # Impose the constraints
-problem.volume_constraint.fixed_volume = np.trapz(
-    problem.tfe.u, problem.tfe.x[0])
+problem.volume_constraint.fixed_volume = np.trapz(problem.tfe.u, problem.tfe.x[0])
 problem.add_equation(problem.volume_constraint)
 problem.add_equation(problem.translation_constraint)
 
@@ -177,7 +183,7 @@ while problem.volume_constraint.fixed_volume < 1000:
     problem.continuation_step()
     n += 1
     print("step #:", n, " ds:", problem.continuation_stepper.ds)
-    #print('largest EVs: ', problem.eigen_solver.latest_eigenvalues[:3])
+    # print('largest EVs: ', problem.eigen_solver.latest_eigenvalues[:3])
     # plot
     if n % plotevery == 0:
         problem.plot(ax)

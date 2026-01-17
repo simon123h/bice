@@ -39,9 +39,10 @@ class PartialDifferentialEquation(Equation):
         return self.mass_matrix().dot(self.rhs(u))
 
     def du_dx(self, u: Optional[Array] = None, direction: int = 0) -> Array:
-        """"
+        """ "
         Calculate the spatial derivative du/dx in a given spatial direction.
         (abstract, needs to be specified for child classes)
         """
         raise NotImplementedError(
-            "No spatial derivative (du_dx) implemented for this equation!")
+            "No spatial derivative (du_dx) implemented for this equation!"
+        )

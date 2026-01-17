@@ -4,7 +4,7 @@ from bice.core.problem import Problem
 from bice.core.profiling import profile
 
 
-class LyapunovExponentCalculator():
+class LyapunovExponentCalculator:
     """
     Calculates the spectrum of Lyapunov exponents for a given problem.
     Uses the algorithm reported in:
@@ -13,11 +13,13 @@ class LyapunovExponentCalculator():
     Physica D: Nonlinear Phenomena, 16(3), 285-317.
     """
 
-    def __init__(self,
-                 problem: Problem,
-                 nexponents: int = 1,
-                 epsilon: float = 1e-6,
-                 nintegration_steps: int = 1) -> None:
+    def __init__(
+        self,
+        problem: Problem,
+        nexponents: int = 1,
+        epsilon: float = 1e-6,
+        nintegration_steps: int = 1,
+    ) -> None:
         #: reference to the problem
         self.problem = problem
         #: the number of exponents to be calculated
@@ -42,8 +44,9 @@ class LyapunovExponentCalculator():
 
     # generate a new set of orthonormal perturbation vectors
     def generate_perturbation_vectors(self) -> None:
-        self.perturbations = [np.random.rand(self.problem.ndofs)
-                              for i in range(self.nexponents)]
+        self.perturbations = [
+            np.random.rand(self.problem.ndofs) for i in range(self.nexponents)
+        ]
         self.orthonormalize()
 
     # orthonormalize the set of perturbation vectors using Gram-Schmidt-Orthonormalization
@@ -52,9 +55,11 @@ class LyapunovExponentCalculator():
         # construct orthogonal vectors using Gram-Schmidt-method
         for i in range(self.nexponents):
             for j in range(i):
-                self.perturbations[i] -= self.perturbations[j] * \
-                    np.sum(self.perturbations[i]*self.perturbations[j]) / \
-                    np.sum(self.perturbations[j]*self.perturbations[j])
+                self.perturbations[i] -= (
+                    self.perturbations[j]
+                    * np.sum(self.perturbations[i] * self.perturbations[j])
+                    / np.sum(self.perturbations[j] * self.perturbations[j])
+                )
         # normalize vectors and return each norm
         norms = np.array([np.linalg.norm(t) for t in self.perturbations])
         for i in range(self.nexponents):
@@ -70,13 +75,12 @@ class LyapunovExponentCalculator():
         # load reference trajectory from problem, in case it has changed
         reference = self.problem.u.copy()
         # generate perturbed trajectories from reference and perturbations
-        trajectories = [reference + ptb *
-                        self.epsilon for ptb in self.perturbations]
+        trajectories = [reference + ptb * self.epsilon for ptb in self.perturbations]
         trajectories.append(reference)  # type: ignore
         # integrate every trajectory, including reference
         time = float(self.problem.time)
         dt = self.problem.time_stepper.dt
-        for i in range(self.nexponents+1):
+        for i in range(self.nexponents + 1):
             self.problem.u = trajectories[i]
             self.problem.time = time
             self.problem.time_stepper.dt = dt

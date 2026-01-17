@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Union, List
+from typing import List, Optional, Union
 
 import numpy as np
 import scipy.sparse as sp
@@ -68,7 +68,8 @@ class Equation:
     def rhs(self, u: Array) -> Array:
         """Calculate the right-hand side of the equation 0 = rhs(u)"""
         raise NotImplementedError(
-            "No right-hand side (rhs) implemented for this equation!")
+            "No right-hand side (rhs) implemented for this equation!"
+        )
 
     @profile
     def jacobian(self, u: Array) -> Matrix:
@@ -92,7 +93,7 @@ class Equation:
                 f1 = self.rhs(u1.reshape(shape)).ravel()
                 u1[i] = k - eps
                 f2 = self.rhs(u1.reshape(shape)).ravel()
-                J[i] = (f1 - f2) / (2*eps)
+                J[i] = (f1 - f2) / (2 * eps)
                 u1[i] = k
         else:  # use forward differences
             # reference rhs for unperturbed u
@@ -128,7 +129,7 @@ class Equation:
         will call this and save the dict to the disk.
         May be overridden for saving more stuff for specific types of equations.
         """
-        return {'u': self.u}
+        return {"u": self.u}
 
     def load(self, data) -> None:
         """
@@ -136,7 +137,7 @@ class Equation:
         Equation.save(). Equation.load() is the inverse of Equation.save().
         May be overridden for loading more stuff for specific types of equations.
         """
-        self.u = data['u']
+        self.u = data["u"]
 
     def plot(self, ax) -> None:
         """plot the solution into a matplotlib axes object"""
@@ -219,8 +220,10 @@ class EquationGroup:
             return
         # check if eq already in other group
         if hasattr(eq, "group") and not isinstance(eq.group, DummyEquationGroup):
-            print("Error: Equation is already part of another group of equations!"
-                  "Remove equation from other group first!")
+            print(
+                "Error: Equation is already part of another group of equations!"
+                "Remove equation from other group first!"
+            )
             return
         # append to list of equations
         self.equations.append(eq)
@@ -257,7 +260,7 @@ class EquationGroup:
             #       of an array, which goes much much faster than extracting values
             #       from positions given by integer indices.
             # indices of the equation's unknowns in EquationGroup.u
-            self.idx[eq] = slice(i, i+eq.ndofs)
+            self.idx[eq] = slice(i, i + eq.ndofs)
             # increment counter by the equation's number of degrees of freedom
             i += eq.ndofs
         # if there is a parent group, update its mapping as well
@@ -365,7 +368,7 @@ class EquationGroup:
         # prints tree structure of nested equations
         for i, eq in enumerate(self.equations):
             eq_repr = eq.__repr__()
-            if i < len(self.equations)-1:
+            if i < len(self.equations) - 1:
                 res += "\n ├─" + eq_repr.replace("\n", "\n │ ")
             else:
                 res += "\n └─" + eq_repr.replace("\n", "\n   ")

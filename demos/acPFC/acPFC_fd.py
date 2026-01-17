@@ -5,14 +5,16 @@ This code does nothing with the equation, it only provides the implementation an
 is imported by other codes, so we don't have to write the SHE from scratch for every demo.
 """
 import sys
+
 import numpy as np
-from scipy.sparse import diags
 import scipy.sparse as sp
+from scipy.sparse import diags
+
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, time_steppers
-from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
+from bice import Problem, profile, time_steppers
 from bice.continuation import ConstraintEquation
-from bice import profile
+from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
+
 
 class activePFCEquation(FiniteDifferencesEquation):
     r"""
@@ -33,25 +35,38 @@ class activePFCEquation(FiniteDifferencesEquation):
         self.Dr = 0.5
 
         # spatial coordinate
-        self.x = [np.linspace(-L/2, L/2, N)]
+        self.x = [np.linspace(-L / 2, L / 2, N)]
         # initial condition
         u0 = np.cos(self.x[0]) * np.exp(-0.005 * self.x[0] ** 2)
         u0 = u0 - u0.mean()
-        self.u = np.array([u0 + self.phi01, u0 + self.phi02, 0*u0])
+        self.u = np.array([u0 + self.phi01, u0 + self.phi02, 0 * u0])
         # build finite difference matrices
-        self.bc = PeriodicBC() 
+        self.bc = PeriodicBC()
         self.build_FD_matrices(approx_order=2)
         laplace = self.laplace()
-        self.linear_op1 = 2*self.q1**2 * laplace + laplace.dot(laplace)
-        self.linear_op2 = 2*self.q2**2 * laplace + laplace.dot(laplace)
-
+        self.linear_op1 = 2 * self.q1**2 * laplace + laplace.dot(laplace)
+        self.linear_op2 = 2 * self.q2**2 * laplace + laplace.dot(laplace)
 
     # definition of the acPFC (right-hand side)
     def rhs(self, u):
         laplace = self.laplace()
-        f1 = laplace.dot(self.linear_op1.dot(u[0]) + (self.r + self.q1**4) * u[0] + u[0]**3 + self.c*u[1]) - self.v0*self.nabla.dot(u[2])
-        f2 = laplace.dot(self.linear_op2.dot(u[1]) + (self.r + self.q2**4) * u[1] + u[1]**3 + self.c*u[0])
-        f3 = self.C1*laplace.dot(u[2]) - self.Dr*self.C1*u[2] - self.v0*self.nabla.dot(u[0])
+        f1 = laplace.dot(
+            self.linear_op1.dot(u[0])
+            + (self.r + self.q1**4) * u[0]
+            + u[0] ** 3
+            + self.c * u[1]
+        ) - self.v0 * self.nabla.dot(u[2])
+        f2 = laplace.dot(
+            self.linear_op2.dot(u[1])
+            + (self.r + self.q2**4) * u[1]
+            + u[1] ** 3
+            + self.c * u[0]
+        )
+        f3 = (
+            self.C1 * laplace.dot(u[2])
+            - self.Dr * self.C1 * u[2]
+            - self.v0 * self.nabla.dot(u[0])
+        )
         return np.array([f1, f2, f3])
 
     # definition of the Jacobian
@@ -81,20 +96,22 @@ class activePFCEquation(FiniteDifferencesEquation):
         ax.plot(self.x[0], self.u[1], label=r"$\phi_2$")
         ax.plot(self.x[0], self.u[2], label=r"$\mathbf{P}$")
         ax.legend()
-    
+
     def gauss(self, mu, sigma=1.5):
-        return np.exp(-(self.x[0]-mu)**2/(2.*sigma**2))/np.sqrt(2.*np.pi*sigma**2)
+        return np.exp(-((self.x[0] - mu) ** 2) / (2.0 * sigma**2)) / np.sqrt(
+            2.0 * np.pi * sigma**2
+        )
 
     def add_gauss_to_sol(self, index):
         cond = True
         try:
-            gauss_pos = input(f'phi{index+1:1d}: position for gauss peak\n')
-            gauss_fac = input(f'phi{index+1:1d}: height of gauss peak\n')
+            gauss_pos = input(f"phi{index+1:1d}: position for gauss peak\n")
+            gauss_fac = input(f"phi{index+1:1d}: height of gauss peak\n")
             gauss_pos = float(gauss_pos)
             gauss_fac = float(gauss_fac)
             u = self.u[index]
             u -= u.mean()
-            u += self.gauss(gauss_pos)*gauss_fac
+            u += self.gauss(gauss_pos) * gauss_fac
             u -= self.u[index].mean()
             if index == 0:
                 u += self.phi01
@@ -121,10 +138,10 @@ class acPFC(Problem):
         # self.time_stepper = time_steppers.ImplicitEuler(dt=1e-3)
         self.time_stepper = time_steppers.BDF(self)
         # assign the continuation parameter
-        #self.continuation_parameter = (self.acpfc.phi01, "phi01")
+        # self.continuation_parameter = (self.acpfc.phi01, "phi01")
         # self.newton_solver = MyNewtonSolver()
         # self.newton_solver = NewtonSolver()
-        #self.newton_solver = NewtonKrylovSolver()
+        # self.newton_solver = NewtonKrylovSolver()
         # self.newton_solver.approximate_jacobian = True
         self.newton_solver.convergence_tolerance = 6e-6
         self.newton_solver.max_newton_iterations = 100

@@ -1,10 +1,12 @@
 #!/usr/bin/python3
-import shutil
 import os
-import numpy as np
+import shutil
+
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 from coating_problem import CoatingProblem
+
 from bice import Profiler
 from bice.continuation import TimePeriodicOrbitHandler
 
@@ -19,7 +21,7 @@ problem = CoatingProblem(N=100, L=2)
 
 Profiler.start()
 
-fig, ax = plt.subplots(2, 2, figsize=(16*0.6, 9*0.6))
+fig, ax = plt.subplots(2, 2, figsize=(16 * 0.6, 9 * 0.6))
 
 # start parameter continuation
 problem.continuation_stepper.ds = -1e-4

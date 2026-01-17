@@ -1,15 +1,22 @@
 #!/usr/bin/python3
-from volume_constraint import VolumeConstraint
-import shutil
 import os
+import shutil
+
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
 from scipy.sparse import diags
-import matplotlib.pyplot as plt
+from volume_constraint import VolumeConstraint
+
 from bice import Problem, time_steppers
-from bice.pde.finite_differences import FiniteDifferencesEquation, NeumannBC, DirichletBC, NoBoundaryConditions
-from bice.core.profiling import Profiler
 from bice.continuation import NaturalContinuation
+from bice.core.profiling import Profiler
+from bice.pde.finite_differences import (
+    DirichletBC,
+    FiniteDifferencesEquation,
+    NeumannBC,
+    NoBoundaryConditions,
+)
 
 
 class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
@@ -30,12 +37,12 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         self.alpha = 0  # substrate inclination
         self.problem = None
         # spatial coordinate
-        self.x = [np.linspace(0, L/2, N)]
+        self.x = [np.linspace(0, L / 2, N)]
         # initial condition
         hmax = 1
         s = self.x[0]
         h = np.maximum(hmax - s**2 / (4 * hmax) * self.theta**2, self.h_p)
-        z = 0*s + 0.1
+        z = 0 * s + 0.1
         self.u = np.array([h, z])
         # build finite difference matrices
         self.build_FD_matrices(approx_order=2)
@@ -67,8 +74,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         c = H_dry / (H_dry + z)
         # disjoining pressure
         h3 = h**3
-        djp = 5/3 * (self.theta * self.h_p)**2 * \
-            (self.h_p**3 / h3**2 - 1 / h3)
+        djp = 5 / 3 * (self.theta * self.h_p) ** 2 * (self.h_p**3 / h3**2 - 1 / h3)
         # adaptive brush-liquid surface tension
         gamma_bl = self.gamma_bl * 1
         # mobilities
@@ -79,7 +85,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         # include miscibility effects
         dfbrush += self.T * self.chi * c / (z + H_dry)
         # free energy variations
-        laplace_hz = self.laplace_h(h+z)
+        laplace_hz = self.laplace_h(h + z)
         dFdh = -laplace_hz - djp
         dFdz = -laplace_hz - gamma_bl * self.laplace_h(z) + dfbrush
         # absorption term
@@ -104,8 +110,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         c = H_dry / (H_dry + z)
         # disjoining pressure
         # TODO: add back adaptive wettability
-        djp = 5/3 * (self.theta * self.h_p)**2 * \
-            (self.h_p**3 / h**6 - 1 / h**3)
+        djp = 5 / 3 * (self.theta * self.h_p) ** 2 * (self.h_p**3 / h**6 - 1 / h**3)
         # adaptive brush-liquid surface tension
         gamma_bl = self.gamma_bl * 1
         # mobilities
@@ -116,8 +121,8 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         # include miscibility effects
         dfbrush += self.T * self.chi * c / (z + H_dry)
         # free energy variations
-        dFdh = -self.laplace_h(h+z) - djp
-        dFdz = -self.laplace_h(h+z) - gamma_bl * self.laplace_h(z) + dfbrush
+        dFdh = -self.laplace_h(h + z) - djp
+        dFdz = -self.laplace_h(h + z) - gamma_bl * self.laplace_h(z) + dfbrush
         # mobility derivatives
         Qhh = diags(h**3)
         dQhh_dh = diags(3 * h**2)
@@ -126,32 +131,41 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         # brush energy derivatives
         dc_dz = -c / (H_dry + z)
         dgamma_bl_dz = self.gamma_bl * dc_dz
-        ddfbrush_dz = self.T * (self.sigma**2 / H_dry +
-                                dc_dz + 1/(1-c) * dc_dz)
-        ddfbrush_dz += -2 * self.T * self.chi * H_dry / (z + H_dry)**3
+        ddfbrush_dz = self.T * (self.sigma**2 / H_dry + dc_dz + 1 / (1 - c) * dc_dz)
+        ddfbrush_dz += -2 * self.T * self.chi * H_dry / (z + H_dry) ** 3
         # disjoining pressure derivatives
-        djp_pf = 5/3 * (self.theta * self.h_p)**2
+        djp_pf = 5 / 3 * (self.theta * self.h_p) ** 2
         ddjp_dh = diags(djp_pf * (c * 3 / h**4 - self.h_p**3 * 6 / h**7))
         ddjp_dz = diags(-djp_pf * dc_dz / h**3)
         # free energy variation derivatives
         ddFdh_dh = -self.laplace_h() - ddjp_dh
         ddFdh_dz = -self.laplace_h() - ddjp_dz
         ddFdz_dh = -self.laplace_h()
-        ddFdz_dz = -self.laplace_h() - self.laplace_h(diags(gamma_bl +
-                                                            z*dgamma_bl_dz)) + diags(ddfbrush_dz)
+        ddFdz_dz = (
+            -self.laplace_h()
+            - self.laplace_h(diags(gamma_bl + z * dgamma_bl_dz))
+            + diags(ddfbrush_dz)
+        )
         # absorption term derivative
         dM_absorb_dh = self.M * (ddFdh_dh - ddFdz_dh)
         dM_absorb_dz = self.M * (ddFdh_dz - ddFdz_dz)
         # derivatives of dynamic equations
-        ddhdt_dh = self.nabla_F(dQhh_dh * diags(self.nabla0(dFdh)) +
-                                Qhh * self.nabla0(ddFdh_dh), q) - dM_absorb_dh
+        ddhdt_dh = (
+            self.nabla_F(
+                dQhh_dh * diags(self.nabla0(dFdh)) + Qhh * self.nabla0(ddFdh_dh), q
+            )
+            - dM_absorb_dh
+        )
         ddhdt_dz = self.nabla_F(Qhh * self.nabla0(ddFdh_dz), q) - dM_absorb_dz
         ddzdt_dh = self.nabla_F(Qzz * self.nabla0(ddFdz_dh), 0) + dM_absorb_dh
-        ddzdt_dz = self.nabla_F(dQzz_dz * diags(self.nabla0(dFdz)) +
-                                Qzz * self.nabla0(ddFdz_dz), 0) + dM_absorb_dz
+        ddzdt_dz = (
+            self.nabla_F(
+                dQzz_dz * diags(self.nabla0(dFdz)) + Qzz * self.nabla0(ddFdz_dz), 0
+            )
+            + dM_absorb_dz
+        )
         # combine and return
-        an_jac = sp.bmat([[ddhdt_dh, ddhdt_dz],
-                          [ddzdt_dh, ddzdt_dz]]).toarray()
+        an_jac = sp.bmat([[ddhdt_dh, ddhdt_dz], [ddzdt_dh, ddzdt_dz]]).toarray()
         fd_jac = super().jacobian(u).toarray()
         plt.clf()
         plt.title("Analytical Jacobian")
@@ -165,25 +179,24 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         plt.imshow(np.abs(diff), cmap="Reds")
         plt.show()
         exit()
-        return sp.bmat([[ddhdt_dh, ddhdt_dz],
-                        [ddzdt_dh, ddzdt_dz]])
+        return sp.bmat([[ddhdt_dh, ddhdt_dz], [ddzdt_dh, ddzdt_dz]])
 
     def du_dx(self, u, direction=0):
         return self.nabla0(u)
 
     def liquid_volume(self):
         h, z = self.u
-        return np.trapz(h+z, self.x[0])
+        return np.trapz(h + z, self.x[0])
 
     def plot(self, ax):
         ax.set_ylim((0, 1.5))
         ax.set_xlabel("x")
         ax.set_ylabel("solution h(x,t)")
-        x = self.x[0] - self.U*self.problem.time
+        x = self.x[0] - self.U * self.problem.time
         h, xi = self.u
         H_dry = self.sigma * self.Nlk
-        ax.plot(x, H_dry+h+xi, markersize=5, label="liquid")
-        ax.plot(x, H_dry+xi, markersize=5, label="substrate")
+        ax.plot(x, H_dry + h + xi, markersize=5, label="liquid")
+        ax.plot(x, H_dry + xi, markersize=5, label="substrate")
         ax.legend()
 
 

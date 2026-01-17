@@ -4,12 +4,14 @@ Continuation of localized states in the 1d Swift-Hohenberg Equation using Finite
 spatial discretization and Pseudo-Arclength Continuation and automated bifurcation diagram
 generation.
 """
-import matplotlib
-import shutil
 import os
+import shutil
+
+import matplotlib
 import matplotlib.pyplot as plt
-from she_fd import SwiftHohenbergProblem, TranslationConstraint
 import numpy as np
+from she_fd import SwiftHohenbergProblem, TranslationConstraint
+
 from bice import Profiler
 
 # figures won't steal window focus if the right backend is chosen
@@ -24,7 +26,7 @@ os.makedirs("out/img", exist_ok=True)
 problem = SwiftHohenbergProblem(N=256, L=240)
 
 # create figure
-fig, ax = plt.subplots(2, 2, figsize=(16*0.6, 9*0.6))
+fig, ax = plt.subplots(2, 2, figsize=(16 * 0.6, 9 * 0.6))
 plotID = 0
 
 # time-stepping
@@ -47,11 +49,9 @@ problem.add_equation(constraint)
 Profiler.start()
 
 # automatically generate bifurcation diagram
-problem.generate_bifurcation_diagram(parameter_lims=(-0.016, -0.012),
-                                     max_recursion=1,
-                                     max_steps=1e3,
-                                     ax=ax,
-                                     plotevery=60)
+problem.generate_bifurcation_diagram(
+    parameter_lims=(-0.016, -0.012), max_recursion=1, max_steps=1e3, ax=ax, plotevery=60
+)
 
 
 Profiler.print_summary()

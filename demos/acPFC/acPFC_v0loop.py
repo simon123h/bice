@@ -1,31 +1,34 @@
 #!/usr/bin/python3
-import shutil
 import os
+import shutil
 import sys
-import numpy as np
+
 import matplotlib
-matplotlib.use('svg')
+import numpy as np
+
+matplotlib.use("svg")
 import matplotlib.pyplot as plt
+
 sys.path.append("../..")  # noqa, needed for relative import of package
-from acPFC1d import acPFCProblem
 import sys
 
+from acPFC1d import acPFCProblem
 
-#filepath = '/local0/m_holl20/cPFC3_1d/semiactive_cPFC3_v0_0.00/'
-filepath = '/home/max/promotion/timesims/cPFC3_1d/semiactive_cPFC3_v0_0.00/'
+# filepath = '/local0/m_holl20/cPFC3_1d/semiactive_cPFC3_v0_0.00/'
+filepath = "/home/max/promotion/timesims/cPFC3_1d/semiactive_cPFC3_v0_0.00/"
 
-shutil.rmtree(filepath + 'out', ignore_errors=True)
-os.makedirs(filepath + 'out/img', exist_ok=True)
+shutil.rmtree(filepath + "out", ignore_errors=True)
+os.makedirs(filepath + "out/img", exist_ok=True)
 
 # create problem
-problem = acPFCProblem(N=512, L=32*np.pi)
+problem = acPFCProblem(N=512, L=32 * np.pi)
 
 # create figure
 
-fig = plt.figure(figsize=(16,9))
+fig = plt.figure(figsize=(16, 9))
 ax_sol = fig.add_subplot(111)
 plotID = 0
-#shooting gauss
+# shooting gauss
 for idx in [0, 1]:
     i = 0
     cond = True
@@ -33,27 +36,26 @@ for idx in [0, 1]:
     dudtnorm = 1
     n = 0
 
-
-    T = 5000.
+    T = 5000.0
 
     while cond:
         i += 1
-        print('loop ', i)
+        print("loop ", i)
         n = 0
-        problem.time = 0.
+        problem.time = 0.0
         problem.time_stepper.factory_reset()
 
         while problem.time < T:
             if n % plotevery == 0:
                 problem.plot(ax_sol)
-                fig.savefig(filepath + f'out/img/{plotID:07d}.svg')
+                fig.savefig(filepath + f"out/img/{plotID:07d}.svg")
                 plotID += 1
                 print(f"step #: {n}")
                 print(f"time:   {problem.time}")
                 print(f"dt:     {problem.time_stepper.dt}")
                 print(f"|dudt|: {dudtnorm}")
-                print('mean u0', np.sum(problem.acpfc.u[0])/512)
-                print('u0 shape', problem.acpfc.u.shape)
+                print("mean u0", np.sum(problem.acpfc.u[0]) / 512)
+                print("u0 shape", problem.acpfc.u.shape)
 
             n += 1
             # perform timestep
@@ -65,8 +67,8 @@ for idx in [0, 1]:
         cond = problem.acpfc.add_gauss_to_sol(idx)
 # iterate over activity
 
-T = 10000.
-for v0 in [0.]:#np.arange(0., 0.7, 0.05):
+T = 10000.0
+for v0 in [0.0]:  # np.arange(0., 0.7, 0.05):
     problem.time = 0
     problem.time_stepper.factory_reset()
     i = 0
@@ -74,24 +76,24 @@ for v0 in [0.]:#np.arange(0., 0.7, 0.05):
     print(v0)
     problem.acpfc.v0 = v0
     # set new path
-    filepath = f'/home/max/promotion/timesims/cPFC3_1d/semiactive_cPFC3_v0_{v0:1.2f}/'
-    shutil.rmtree(filepath + 'out', ignore_errors=True)
-    os.makedirs(filepath + 'out/img', exist_ok=True)
+    filepath = f"/home/max/promotion/timesims/cPFC3_1d/semiactive_cPFC3_v0_{v0:1.2f}/"
+    shutil.rmtree(filepath + "out", ignore_errors=True)
+    os.makedirs(filepath + "out/img", exist_ok=True)
     while problem.time < T:
-            if i % plotevery == 0:
-                problem.plot(ax_sol)
-                fig.savefig(filepath + f'out/img/{plotID:07d}.svg')
-                problem.save(filename=filepath + f'out/{plotID:07d}.npz')
+        if i % plotevery == 0:
+            problem.plot(ax_sol)
+            fig.savefig(filepath + f"out/img/{plotID:07d}.svg")
+            problem.save(filename=filepath + f"out/{plotID:07d}.npz")
 
-                plotID += 1
-                print(f"step #: {i}")
-                print(f"time:   {problem.time}")
-                print(f"dt:     {problem.time_stepper.dt}")
-                print(f"|dudt|: {dudtnorm}")
-            i += 1
-            # perform timestep
-            problem.time_step()
-            dudtnorm = np.linalg.norm(problem.rhs(problem.u))
-            if np.max(problem.u) > 1e12:
-                print("diverged")
-                break
+            plotID += 1
+            print(f"step #: {i}")
+            print(f"time:   {problem.time}")
+            print(f"dt:     {problem.time_stepper.dt}")
+            print(f"|dudt|: {dudtnorm}")
+        i += 1
+        # perform timestep
+        problem.time_step()
+        dudtnorm = np.linalg.norm(problem.rhs(problem.u))
+        if np.max(problem.u) > 1e12:
+            print("diverged")
+            break

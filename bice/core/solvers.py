@@ -30,7 +30,8 @@ class AbstractNewtonSolver:
     def solve(self, f, u0, jac):
         """solve the system f(u) = 0 with the initial guess u0 and the Jacobian jac(u)"""
         raise NotImplementedError(
-            "'AbstractNewtonSolver' is an abstract base class - do not use for actual solving!")
+            "'AbstractNewtonSolver' is an abstract base class - do not use for actual solving!"
+        )
 
     @property
     def niterations(self) -> Optional[int]:
@@ -52,8 +53,7 @@ class AbstractNewtonSolver:
         else:
             it = f" after {self.niterations} iterations"
         name = type(self).__name__
-        raise np.linalg.LinAlgError(
-            name + " did not converge" + it + "!" + res)
+        raise np.linalg.LinAlgError(name + " did not converge" + it + "!" + res)
 
 
 class MyNewtonSolver(AbstractNewtonSolver):
@@ -78,12 +78,17 @@ class MyNewtonSolver(AbstractNewtonSolver):
             # print some info on the step, if desired
             if self.verbosity > 1:
                 print(
-                    f"Newton step #{self._iteration_count}, max. residuals: {err:.2e}")
+                    f"Newton step #{self._iteration_count}, max. residuals: {err:.2e}"
+                )
             # if system converged to new solution, return solution
             if err < self.convergence_tolerance:
                 if self.verbosity > 0:
-                    print("MyNewtonSolver solver converged after",
-                          self._iteration_count, "iterations, error:", err)
+                    print(
+                        "MyNewtonSolver solver converged after",
+                        self._iteration_count,
+                        "iterations, error:",
+                        err,
+                    )
                 return u
         # if we didn't converge, throw an error
         self.throw_no_convergence_error(err)
@@ -105,12 +110,20 @@ class NewtonSolver(AbstractNewtonSolver):
     @profile
     def solve(self, f, u0, jac=None):
         # methods that do not use the Jacobian, but use an approximation
-        inexact_methods = ["krylov", "broyden1", "broyden2",
-                           "diagbroyden", "anderson", "linearmixing", "excitingmixing"]
+        inexact_methods = [
+            "krylov",
+            "broyden1",
+            "broyden2",
+            "diagbroyden",
+            "anderson",
+            "linearmixing",
+            "excitingmixing",
+        ]
         # check if Jacobian is required by the method
         if jac is None or self.method in inexact_methods:
             my_jac = None
         else:
+
             def jac_wrapper(u):
                 # wrapper for the Jacobian
                 # sparse matrices are not supported by scipy's root method :-/ convert to dense
@@ -119,19 +132,25 @@ class NewtonSolver(AbstractNewtonSolver):
                 if sp.issparse(j):
                     return j.toarray()
                 return j
+
             my_jac = jac_wrapper
         # solve!
-        opt_result = scipy.optimize.root(
-            f, u0, jac=my_jac, method=self.method)
+        opt_result = scipy.optimize.root(f, u0, jac=my_jac, method=self.method)
         # fetch number of iterations, residuals and status
         err = self.norm(opt_result.fun)
-        self._iteration_count = opt_result.nit if 'nit' in opt_result.keys() else opt_result.nfev
+        self._iteration_count = (
+            opt_result.nit if "nit" in opt_result.keys() else opt_result.nfev
+        )
         # if we didn't converge, throw an error
         if not opt_result.success:
             self.throw_no_convergence_error(err)
         if self.verbosity > 0:
-            print("NewtonSolver converged after",
-                  self._iteration_count, "iterations, error:", err)
+            print(
+                "NewtonSolver converged after",
+                self._iteration_count,
+                "iterations, error:",
+                err,
+            )
         # return the result vector
         return opt_result.x
 
@@ -154,9 +173,9 @@ class NewtonKrylovSolver(AbstractNewtonSolver):
     def solve(self, f, u0, jac=None):
         # some options
         options = {
-            'disp': self.verbosity > 1,  # print the results of each step?
-            'maxiter': self.max_iterations,
-            'fatol': self.convergence_tolerance
+            "disp": self.verbosity > 1,  # print the results of each step?
+            "maxiter": self.max_iterations,
+            "fatol": self.convergence_tolerance,
         }
         # the inverse of the Jacobian M = J^-1 at initial guess u
         # increases performance of the krylov method
@@ -164,12 +183,10 @@ class NewtonKrylovSolver(AbstractNewtonSolver):
             # compute incomplete LU decomposition of Jacobian
             J_ilu = sp.linalg.spilu(sp.csc_matrix(jac(u0)))
             M = sp.linalg.LinearOperator(shape=jac.shape, matvec=J_ilu.solve)
-            options.update({'jac_options': {'inner_M': M}})
+            options.update({"jac_options": {"inner_M": M}})
 
         # solve!
-        opt_result = scipy.optimize.root(f, u0,
-                                         method="krylov",
-                                         options=options)
+        opt_result = scipy.optimize.root(f, u0, method="krylov", options=options)
         # fetch number of iterations, residuals and status
         err = self.norm(opt_result.fun)
         self._iteration_count = opt_result.nit
@@ -177,8 +194,12 @@ class NewtonKrylovSolver(AbstractNewtonSolver):
         if not opt_result.success:
             self.throw_no_convergence_error(err)
         if self.verbosity > 0:
-            print("NewtonKrylovSolver converged after",
-                  self._iteration_count, "iterations, error:", err)
+            print(
+                "NewtonKrylovSolver converged after",
+                self._iteration_count,
+                "iterations, error:",
+                err,
+            )
         # return the result vector
         return opt_result.x
 
@@ -201,7 +222,9 @@ class EigenSolver:
         #: convergence tolerance of the eigensolver
         self.tol = 1e-8
 
-    def solve(self, A: Matrix, M: Optional[Matrix] = None, k: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
+    def solve(
+        self, A: Matrix, M: Optional[Matrix] = None, k: Optional[int] = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Solve the eigenproblem A*x = v*x for the eigenvalues v and the eigenvectors x.
 
@@ -229,7 +252,8 @@ class EigenSolver:
             # For more info, see the documentation:
             # https://docs.scipy.org/doc/scipy/reference/generated/sp.linalg.eigs.html
             eigenvalues, eigenvectors = sp.linalg.eigs(
-                A, k=k, M=M, sigma=self.shift, which='LM', tol=self.tol)
+                A, k=k, M=M, sigma=self.shift, which="LM", tol=self.tol
+            )
         # sort by largest eigenvalue (largest real part) and filter infinite eigenvalues
         idx = np.argsort(eigenvalues)[::-1]
         idx = idx[np.isfinite(eigenvalues[idx])]

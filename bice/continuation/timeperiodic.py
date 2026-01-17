@@ -21,11 +21,11 @@ class TimePeriodicOrbitHandler(Equation):
 
     # reference equation, initial guess for period length, initial number of points in time
     def __init__(self, reference_equation, T, Nt) -> None:
-        super().__init__(shape=(Nt*reference_equation.ndofs+1))
+        super().__init__(shape=(Nt * reference_equation.ndofs + 1))
         # which equation to treat?
         self.ref_eq = reference_equation
         # the list of considered timesteps (in normalized time t' = t / T)
-        self.dt = np.repeat(1./Nt, Nt)
+        self.dt = np.repeat(1.0 / Nt, Nt)
         # the vector of unknowns: unknowns of the reference equation for every timestep
         u1 = np.tile(self.ref_eq.u, Nt)
         # the period is also an unknown, append it to u
@@ -69,14 +69,14 @@ class TimePeriodicOrbitHandler(Equation):
         I = np.eye(Nt)
         dt = self.dt[0]
         ddt = np.zeros((Nt, Nt))
-        ddt += -3*np.roll(I, -4, axis=1)
-        ddt += 32*np.roll(I, -3, axis=1)
-        ddt += -168*np.roll(I, -2, axis=1)
-        ddt += 672*np.roll(I, -1, axis=1)
-        ddt -= 672*np.roll(I, 1, axis=1)
-        ddt -= -168*np.roll(I, 2, axis=1)
-        ddt -= 32*np.roll(I, 3, axis=1)
-        ddt -= -3*np.roll(I, 4, axis=1)
+        ddt += -3 * np.roll(I, -4, axis=1)
+        ddt += 32 * np.roll(I, -3, axis=1)
+        ddt += -168 * np.roll(I, -2, axis=1)
+        ddt += 672 * np.roll(I, -1, axis=1)
+        ddt -= 672 * np.roll(I, 1, axis=1)
+        ddt -= -168 * np.roll(I, 2, axis=1)
+        ddt -= 32 * np.roll(I, 3, axis=1)
+        ddt -= -3 * np.roll(I, 4, axis=1)
         # TODO: the minus should not be here!
         ddt /= -dt * 840
         # convert to sparse
@@ -106,7 +106,7 @@ class TimePeriodicOrbitHandler(Equation):
         for i in range(self.Nt):
             # 0 = rhs(u) - dudt for each u(t_i)
             # TODO: .ravel() will be required somewhere here
-            res[i*N:(i+1)*N] = self.ref_eq.rhs(u[i]) - M.dot(dudt[i])
+            res[i * N : (i + 1) * N] = self.ref_eq.rhs(u[i]) - M.dot(dudt[i])
             # phase condition: \int_0^1 dt <u, dudt_old> = 0
             # TODO: use a better approximation for dt in integral?
             res[-1] += np.dot(u[i], dudt_old[i]) * self.dt[i]
@@ -132,23 +132,27 @@ class TimePeriodicOrbitHandler(Equation):
         # Jacobian of reference equation for each time step
         # also, cache the Jacobians for later Floquet multiplier computation
         self._jacobian_cache = [
-            sp.csr_matrix(self.ref_eq.jacobian(u[i])) for i in range(self.Nt)]
+            sp.csr_matrix(self.ref_eq.jacobian(u[i])) for i in range(self.Nt)
+        ]
         # The different contributions to the jacobian: ((#1, #2), (#3, #4))
         # 1.: bulk equations du: d ( rhs(u) - M*dudt ) / du
         # jacobian of M.dot(dudt) w.r.t. u
-        d_bulk_du = sp.block_diag([self._jacobian_cache[i]
-                                   for i in range(self.Nt)]) - sp.kron(self.ddt, M) / T
+        d_bulk_du = (
+            sp.block_diag([self._jacobian_cache[i] for i in range(self.Nt)])
+            - sp.kron(self.ddt, M) / T
+        )
         # 2.: bulk equations dT: d ( rhs(u) - M*dudt ) / dT
-        d_bulk_dT = sp.csr_matrix(np.concatenate(
-            [M.dot(dudt[i]) / T for i in range(self.Nt)])).T
+        d_bulk_dT = sp.csr_matrix(
+            np.concatenate([M.dot(dudt[i]) / T for i in range(self.Nt)])
+        ).T
         # 3.: constraint equation du: d ( \int_0^1 dt <u, dudt_old> = 0 ) / du
-        d_cnst_du = sp.csr_matrix(np.concatenate(
-            [dudt_old[i] * self.dt[i] for i in range(self.Nt)]))
+        d_cnst_du = sp.csr_matrix(
+            np.concatenate([dudt_old[i] * self.dt[i] for i in range(self.Nt)])
+        )
         # 4.: cnst equation dT: d ( \int_0^1 dt <u, dudt_old> = 0 ) / du = 0
-        d_cnst_dT = 0*sp.csr_matrix((1, 1))
+        d_cnst_dT = 0 * sp.csr_matrix((1, 1))
         # combine the contributions to the full jacobian and return
-        final_jac = sp.bmat([[d_bulk_du, d_bulk_dT],
-                             [d_cnst_du, d_cnst_dT]])
+        final_jac = sp.bmat([[d_bulk_du, d_bulk_dT], [d_cnst_du, d_cnst_dT]])
         return sp.csr_matrix(final_jac)
 
     def monodromy_matrix(self, use_cache: bool = True) -> sp.csr_matrix:
@@ -247,7 +251,8 @@ class TimePeriodicOrbitHandler(Equation):
         # estimate for the relative error in the time derivative
         # TODO: maybe there is something better than this
         error_estimate = np.array(
-            [np.linalg.norm(dudt[i]) / np.linalg.norm(u[i]) for i in range(self.Nt)])
+            [np.linalg.norm(dudt[i]) / np.linalg.norm(u[i]) for i in range(self.Nt)]
+        )
         # define error tolerances
         min_error = 1e-5
         max_error = 1e-3
@@ -266,17 +271,18 @@ class TimePeriodicOrbitHandler(Equation):
                 i += 1
             # refinement
             if e > max_error and len(dt) < max_steps:
-                i2 = (i+1) % len(dt)
+                i2 = (i + 1) % len(dt)
                 u = np.insert(u, i, 0.5 * (u[i] + u[i2]), axis=0)
                 dt = np.insert(dt, i, 0.5 * (dt[i] + dt[i2]))
                 error_estimate = np.insert(
-                    error_estimate, i, 0.5 * (min_error + max_error))
+                    error_estimate, i, 0.5 * (min_error + max_error)
+                )
                 i += 1
             i += 1
         # build new u
         u = np.append(u.ravel(), [T])
         # update shape of equation
-        self.reshape(len(dt)*N + 1)
+        self.reshape(len(dt) * N + 1)
         # assign new variables and timesteps
         self.u = u
         self.dt = dt
@@ -293,12 +299,12 @@ class TimePeriodicOrbitHandler(Equation):
     def save(self) -> dict:
         """Save the state of the equation, including the dt-values"""
         data = super().save()
-        data.update({'dt': self.dt})
+        data.update({"dt": self.dt})
         return data
 
     def load(self, data) -> None:
         """Load the state of the equation, including the dt-values"""
-        self.dt = data['dt']
+        self.dt = data["dt"]
         # rebuild FD time-derivative matrix
         self.ddt = self.build_ddt_matrix()
         # invalidate the cached Jacobians
@@ -311,8 +317,7 @@ class TimePeriodicOrbitHandler(Equation):
         orbit = self.u_orbit().T
         num_plots = min(40, self.Nt)
         cmap = plt.cm.viridis
-        ax.set_prop_cycle(plt.cycler(
-            'color', cmap(np.linspace(0, 1, num_plots))))
-        for i in range(0, self.Nt, self.Nt//num_plots):
+        ax.set_prop_cycle(plt.cycler("color", cmap(np.linspace(0, 1, num_plots))))
+        for i in range(0, self.Nt, self.Nt // num_plots):
             self.ref_eq.u = orbit.T[i]
             self.ref_eq.plot(ax)

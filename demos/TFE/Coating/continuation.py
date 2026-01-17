@@ -1,10 +1,12 @@
 #!/usr/bin/python3
-import shutil
 import os
-import numpy as np
+import shutil
+
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 from coating_problem import CoatingProblem
+
 from bice import Profiler
 
 matplotlib.use("Tkagg")
@@ -55,7 +57,7 @@ else:
     problem.load("initial_state.npz")
 
 plt.close(fig)
-fig, ax = plt.subplots(2, 2, figsize=(16*0.6, 9*0.6))
+fig, ax = plt.subplots(2, 2, figsize=(16 * 0.6, 9 * 0.6))
 
 # start parameter continuation
 problem.continuation_stepper.ds = -1e-4
@@ -72,10 +74,7 @@ U = problem.tfe.U
 # generate bifurcation diagram
 # problem.bifurcation_diagram.xlim = (h_p*U, 0.05)
 problem.generate_bifurcation_diagram(
-    ax=ax,
-    parameter_lims=(h_p * U, U),
-    max_recursion=0,
-    plotevery=50
+    ax=ax, parameter_lims=(h_p * U, U), max_recursion=0, plotevery=50
 )
 
 print((h_p * U, U))
@@ -86,8 +85,11 @@ fig.savefig("out/bifurcation_diagram.png")
 Profiler.print_summary()
 
 # get Hopf bifurcations
-hopfs = [bif for bif in problem.bifurcation_diagram.branches[0].bifurcations()
-         if bif.bifurcation_type() == "HP"]
+hopfs = [
+    bif
+    for bif in problem.bifurcation_diagram.branches[0].bifurcations()
+    if bif.bifurcation_type() == "HP"
+]
 print("#HPs:", len(hopfs))
 
 # store them to disk

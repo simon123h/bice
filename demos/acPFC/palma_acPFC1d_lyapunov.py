@@ -1,27 +1,29 @@
 #!/usr/bin/python3
-import shutil
 import os
-import numpy as np
+import shutil
+
 import matplotlib
-matplotlib.use('svg')
-import matplotlib.pyplot as plt
-from acPFC1d import acPFCProblem
-from bice import time_steppers
-from bice.measure import LyapunovExponentCalculator
-from bice import profile, Profiler
+import numpy as np
+
+matplotlib.use("svg")
 import sys
 
+import matplotlib.pyplot as plt
+from acPFC1d import acPFCProblem
+
+from bice import Profiler, profile, time_steppers
+from bice.measure import LyapunovExponentCalculator
 
 # create output folder
 
 phi01 = float(sys.argv[1])
 
-filepath = "acPFC_lyapunov_phi01{:+01.4f}/".format(phi01).replace('.', '')
+filepath = "acPFC_lyapunov_phi01{:+01.4f}/".format(phi01).replace(".", "")
 shutil.rmtree(filepath + "out", ignore_errors=True)
 os.makedirs(filepath + "out/img", exist_ok=True)
 
 # create problem
-problem = acPFCProblem(N=256, L=16*np.pi)
+problem = acPFCProblem(N=256, L=16 * np.pi)
 problem.acpfc.phi01 = phi01
 
 # create figure
@@ -35,7 +37,7 @@ n = 0
 plotevery = 10
 dudtnorm = 1
 
-T = 10000.
+T = 10000.0
 while problem.time < T:
     # plot
     if n % plotevery == 0:
@@ -56,12 +58,14 @@ while problem.time < T:
         print("diverged")
         break
 # save the state, so we can reload it later
-#problem.save("initial_state.npz")
+# problem.save("initial_state.npz")
 
 
 # calculate Lyapunov exponents
 problem.time_stepper = time_steppers.BDF2(dt=0.01)
-lyapunov = LyapunovExponentCalculator(problem, nexponents=1, epsilon=1e-6, nintegration_steps=1)
+lyapunov = LyapunovExponentCalculator(
+    problem, nexponents=1, epsilon=1e-6, nintegration_steps=1
+)
 
 last10 = []
 largest = []
@@ -85,11 +89,11 @@ while True:
 
     ax_largest.clear()
     ax_sol.clear()
-    ccount = 0.
+    ccount = 0.0
     problem.plot(ax_sol)
     ax_largest.plot(largest)
-    ax_largest.set_xlabel('iterations')
-    ax_largest.set_ylabel('largest lyapunov exponent')
+    ax_largest.set_xlabel("iterations")
+    ax_largest.set_ylabel("largest lyapunov exponent")
     fig.savefig(filepath + f"out/img/{plotID:07d}.svg")
     plotID += 1
     print("Lyapunov exponent(s):", lyapunov.exponents)

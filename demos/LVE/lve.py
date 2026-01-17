@@ -1,13 +1,17 @@
 #!/usr/bin/python3
 import time
+
 import matplotlib
 
 from bice.core.solvers import MyNewtonSolver  # noqa
+
 matplotlib.use("GTK3Agg")  # noqa
-from bice.continuation import TimePeriodicOrbitHandler, NaturalContinuation
-from bice import Problem, Equation, time_steppers
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
+from bice import Equation, Problem, time_steppers
+from bice.continuation import NaturalContinuation, TimePeriodicOrbitHandler
+
 
 # The Lotka-Volterra equations (predator prey model)
 class LotkaVolterraEquations(Equation):
@@ -19,14 +23,11 @@ class LotkaVolterraEquations(Equation):
         self.c = 1
         self.d = 1
         # initial condition
-        self.u = np.array([1., 0.7])
+        self.u = np.array([1.0, 0.7])
 
     def rhs(self, u):
         x, y = u
-        return np.array([
-            (self.a - self.b * y) * x,
-            (self.d * x - self.c) * y
-        ])
+        return np.array([(self.a - self.b * y) * x, (self.d * x - self.c) * y])
 
 
 # The Lotka-Volterra equations (predator prey model)
@@ -110,7 +111,7 @@ while n < 20:
     floquet_mul = orbitHandler.floquet_multipliers()
     print("Floquet multipliers:", floquet_mul)
     tol = 1e-5
-    if np.any([abs(mul) > 1+tol for mul in floquet_mul]):
+    if np.any([abs(mul) > 1 + tol for mul in floquet_mul]):
         print("(unstable)")
     else:
         print("(stable)")

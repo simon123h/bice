@@ -1,10 +1,11 @@
 #!/usr/bin/python3
-import numpy as np
-from bice import Problem, time_steppers
-from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
-from bice.continuation import TranslationConstraint
-from bice import profile
 import unittest
+
+import numpy as np
+
+from bice import Problem, profile, time_steppers
+from bice.continuation import TranslationConstraint
+from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
 
 
 class SwiftHohenbergEquation(FiniteDifferencesEquation):
@@ -22,10 +23,9 @@ class SwiftHohenbergEquation(FiniteDifferencesEquation):
         self.v = 0.41
         self.g = 1
         # spatial coordinate
-        self.x = [np.linspace(-L/2, L/2, N)]
+        self.x = [np.linspace(-L / 2, L / 2, N)]
         # initial condition
-        self.u = np.cos(2 * np.pi * self.x[0] / 10) * \
-            np.exp(-0.005 * self.x[0] ** 2)
+        self.u = np.cos(2 * np.pi * self.x[0] / 10) * np.exp(-0.005 * self.x[0] ** 2)
         # build finite difference matrices
         self.bc = PeriodicBC()
         self.build_FD_matrices(approx_order=2)
@@ -35,7 +35,12 @@ class SwiftHohenbergEquation(FiniteDifferencesEquation):
     # definition of the SHE (right-hand side)
     @profile
     def rhs(self, u):
-        return self.linear_op.dot(u) + (self.r - self.kc**4) * u + self.v * u**2 - self.g * u**3
+        return (
+            self.linear_op.dot(u)
+            + (self.r - self.kc**4) * u
+            + self.v * u**2
+            - self.g * u**3
+        )
 
 
 class TestSwiftHohenbergEquation(unittest.TestCase):
@@ -64,8 +69,7 @@ class TestSwiftHohenbergEquation(unittest.TestCase):
             self.problem.time_step()
             n += 1
             if n > 1e4:
-                raise Exception(
-                    f"Time stepping did not converge after {n:d} steps!")
+                raise Exception(f"Time stepping did not converge after {n:d} steps!")
         print(f"Time stepping finished after {n} steps.")
 
         # add translation constraint
@@ -83,5 +87,5 @@ class TestSwiftHohenbergEquation(unittest.TestCase):
 
 
 # run the test if called directly
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

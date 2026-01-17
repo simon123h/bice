@@ -1,4 +1,3 @@
-
 import numpy as np
 import scipy.sparse as sp
 
@@ -28,32 +27,43 @@ class DeflationOperator:
 
     def operator(self, u: Array):
         """obtain the value of the deflation operator for given u"""
-        return np.prod([np.dot(u_i - u, u_i - u)**-self.p
-                        for u_i in self.solutions]) + self.shift
+        return (
+            np.prod([np.dot(u_i - u, u_i - u) ** -self.p for u_i in self.solutions])
+            + self.shift
+        )
 
     def D_operator(self, u: Array):
         """Jacobian of deflation operator for given u"""
         op = self.operator(u)
-        return self.p * op * 2 * \
-            np.sum([(uk - u) / np.dot(uk - u, uk - u)
-                    for uk in self.solutions], axis=0)
+        return (
+            self.p
+            * op
+            * 2
+            * np.sum(
+                [(uk - u) / np.dot(uk - u, uk - u) for uk in self.solutions], axis=0
+            )
+        )
 
     def deflated_rhs(self, rhs):
         """deflate the rhs of some equation"""
+
         def new_rhs(u):
             # multiply rhs with deflation operator
             return self.operator(u) * rhs(u)
+
         # return the function object
         return new_rhs
 
     def deflated_jacobian(self, rhs, jacobian):
         """generate Jacobian of deflated rhs of some equation or problem"""
+
         def new_jac(u):
             # obtain operator and operator derivative
             op = self.operator(u)
             D_op = self.D_operator(u)
             # calculate derivative d/du
             return sp.diags(D_op * rhs(u)) + op * jacobian(u)
+
         # return the function object
         return new_jac
 

@@ -37,10 +37,10 @@ class PseudospectralEquation(PartialDifferentialEquation):
             Nx = self.x[0].size
             # the fourier space
             if real_fft:
-                self.k = [np.fft.rfftfreq(Nx, Lx / (2. * Nx * np.pi))]
+                self.k = [np.fft.rfftfreq(Nx, Lx / (2.0 * Nx * np.pi))]
             else:
-                self.k = [np.fft.fftfreq(Nx, Lx / (2. * Nx * np.pi))]
-            self.ksquare = self.k[0]**2
+                self.k = [np.fft.fftfreq(Nx, Lx / (2.0 * Nx * np.pi))]
+            self.ksquare = self.k[0] ** 2
         elif len(self.x) == 2:
             Lx = self.x[0][-1] - self.x[0][0]
             Nx = self.x[0].size
@@ -48,10 +48,10 @@ class PseudospectralEquation(PartialDifferentialEquation):
             Ny = self.x[1].size
             # the fourier space
             if real_fft:
-                kx = np.fft.rfftfreq(Nx, Lx / (2. * Nx * np.pi))
+                kx = np.fft.rfftfreq(Nx, Lx / (2.0 * Nx * np.pi))
             else:
-                kx = np.fft.fftfreq(Nx, Lx / (2. * Nx * np.pi))
-            ky = np.fft.fftfreq(Ny, Ly / (2. * Ny * np.pi))
+                kx = np.fft.fftfreq(Nx, Lx / (2.0 * Nx * np.pi))
+            ky = np.fft.fftfreq(Ny, Ly / (2.0 * Ny * np.pi))
             kx, ky = np.meshgrid(kx, ky)
             self.k = [kx, ky]
             self.ksquare = kx**2 + ky**2
@@ -64,11 +64,11 @@ class PseudospectralEquation(PartialDifferentialEquation):
             Nz = self.x[2].size
             # the fourier space
             if real_fft:
-                kx = np.fft.rfftfreq(Nx, Lx / (2. * Nx * np.pi))
+                kx = np.fft.rfftfreq(Nx, Lx / (2.0 * Nx * np.pi))
             else:
-                kx = np.fft.fftfreq(Nx, Lx / (2. * Nx * np.pi))
-            ky = np.fft.fftfreq(Ny, Ly / (2. * Ny * np.pi))
-            kz = np.fft.fftfreq(Nz, Lz / (2. * Nz * np.pi))
+                kx = np.fft.fftfreq(Nx, Lx / (2.0 * Nx * np.pi))
+            ky = np.fft.fftfreq(Ny, Ly / (2.0 * Ny * np.pi))
+            kz = np.fft.fftfreq(Nz, Lz / (2.0 * Nz * np.pi))
             kx, ky, kz = np.meshgrid(kx, ky, kz)
             self.k = [kx, ky, kz]
             self.ksquare = kx**2 + ky**2 + kz**2

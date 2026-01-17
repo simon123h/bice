@@ -13,9 +13,10 @@ The resulting bifurcation diagram, matches figure 1.1 (left) of Farrell, Birkiss
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from skfem import asm, InteriorBasis, MeshLine, ElementLineP1
+from skfem import ElementLineP1, InteriorBasis, MeshLine, asm
 from skfem.models.poisson import laplace, mass
-from bice import Problem, Equation
+
+from bice import Equation, Problem
 
 # figures won't steal window focus if the right backend is chosen
 matplotlib.use("Tkagg")
@@ -26,8 +27,7 @@ class Bratu1dEquation(Equation):
     def __init__(self, n: int):
         super().__init__()
         # construct FEM basis
-        self.basis = InteriorBasis(MeshLine(np.linspace(0, 1, n)),
-                                   ElementLineP1())
+        self.basis = InteriorBasis(MeshLine(np.linspace(0, 1, n)), ElementLineP1())
         # construct FEM operators
         self.lap = asm(laplace, self.basis)
         self.mass = asm(mass, self.basis)
@@ -75,10 +75,9 @@ problem.continuation_stepper.ds = 1
 
 # compute bifurcation diagram
 fig, ax = plt.subplots(2, 1)
-problem.generate_bifurcation_diagram(norm_lims=(0, 6),
-                                     max_recursion=0,
-                                     ax=ax,
-                                     plotevery=10)
+problem.generate_bifurcation_diagram(
+    norm_lims=(0, 6), max_recursion=0, ax=ax, plotevery=10
+)
 
 
 fig.savefig("my_bifdiag.png")

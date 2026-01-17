@@ -1,9 +1,11 @@
 #!/usr/bin/python3
-import shutil
 import os
-import numpy as np
+import shutil
+
 import matplotlib.pyplot as plt
+import numpy as np
 from ne1d import NikolaevskiyProblem
+
 from bice.continuation import TranslationConstraint, VolumeConstraint
 
 # create output folder

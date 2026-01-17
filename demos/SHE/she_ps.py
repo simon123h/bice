@@ -1,13 +1,14 @@
 #!/usr/bin/python3
-import shutil
 import os
+import shutil
+
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.sparse import diags
-import matplotlib.pyplot as plt
-from bice import Problem, time_steppers
-from bice.pde import FiniteDifferencesEquation, PseudospectralEquation
+
+from bice import Problem, Profiler, profile, time_steppers
 from bice.continuation import TranslationConstraint
-from bice import profile, Profiler
+from bice.pde import FiniteDifferencesEquation, PseudospectralEquation
 
 
 class SwiftHohenbergEquation(PseudospectralEquation):
@@ -25,21 +26,24 @@ class SwiftHohenbergEquation(PseudospectralEquation):
         self.v = 0.41
         self.g = 1
         # space and fourier space
-        self.x = [np.linspace(-L/2, L/2, N)]
+        self.x = [np.linspace(-L / 2, L / 2, N)]
         self.build_kvectors(real_fft=True)
         # initial condition
-        self.u = np.cos(
-            2 * np.pi * self.x[0] / 10) * np.exp(-0.005 * self.x[0]**2)
+        self.u = np.cos(2 * np.pi * self.x[0] / 10) * np.exp(-0.005 * self.x[0] ** 2)
 
     # definition of the SHE (right-hand side)
     @profile
     def rhs(self, u):
         u_k = np.fft.rfft(u)
-        return np.fft.irfft((self.r - (self.kc**2 - self.k[0]**2)**2) * u_k) + self.v * u**2 - self.g * u**3
+        return (
+            np.fft.irfft((self.r - (self.kc**2 - self.k[0] ** 2) ** 2) * u_k)
+            + self.v * u**2
+            - self.g * u**3
+        )
 
     # definition of spatial derivative for translation constraint
     def du_dx(self, u, direction=0):
-        du_dx = 1j*self.k[direction]*np.fft.rfft(u)
+        du_dx = 1j * self.k[direction] * np.fft.rfft(u)
         return np.fft.irfft(du_dx)
 
 
@@ -58,11 +62,11 @@ class SwiftHohenbergProblem(Problem):
 
     # set higher modes to null, for numerical stability
     @profile
-    def dealias(self, fraction=1./2.):
+    def dealias(self, fraction=1.0 / 2.0):
         u_k = np.fft.rfft(self.she.u)
         N = len(u_k)
-        k = int(N*fraction)
-        u_k[k+1:-k] = 0
+        k = int(N * fraction)
+        u_k[k + 1 : -k] = 0
         self.she.u = np.fft.irfft(u_k)
 
 

@@ -1,16 +1,21 @@
 #!/usr/bin/python3
 import numpy as np
 from scipy.sparse import diags
-from bice import Problem, time_steppers
+
+from bice import Problem, profile, time_steppers
 from bice.pde import FiniteDifferencesEquation
-from bice.pde.finite_differences import NeumannBC, DirichletBC, RobinBC, NoBoundaryConditions
-from bice import profile
+from bice.pde.finite_differences import (
+    DirichletBC,
+    NeumannBC,
+    NoBoundaryConditions,
+    RobinBC,
+)
 
 
 class CoatingEquation(FiniteDifferencesEquation):
     r"""
-     Finite differences implementation of the 1-dimensional coating problem
-     """
+    Finite differences implementation of the 1-dimensional coating problem
+    """
 
     def __init__(self, N, L):
         super().__init__(shape=(N,))
@@ -19,7 +24,7 @@ class CoatingEquation(FiniteDifferencesEquation):
         self.q = 0.06  # influx
         self.h_p = 0.04
         self.theta = np.sqrt(0.6)
-        print("h_LL =", self.q/self.U)
+        print("h_LL =", self.q / self.U)
         # setup the mesh
         self.L = L
         self.x = [np.linspace(0, L, N)]
@@ -55,13 +60,13 @@ class CoatingEquation(FiniteDifferencesEquation):
     def rhs(self, h):
         h3 = h**3
         # disjoining pressure
-        djp = 5/3*(self.theta*self.h_p)**2 * (self.h_p**3/h3**2 - 1./h3)
+        djp = 5 / 3 * (self.theta * self.h_p) ** 2 * (self.h_p**3 / h3**2 - 1.0 / h3)
         # free energy variation
         dFdh = -self.laplace_h(h) - djp
         # bulk flux
         flux = h3 * self.nabla0.dot(dFdh)
         # boundary flux
-        j_in = self.U-self.q
+        j_in = self.U - self.q
         # dynamics equation, scale boundary condition with j_in
         dhdt = self.nabla_F(flux, j_in)
         # advection term
@@ -71,15 +76,20 @@ class CoatingEquation(FiniteDifferencesEquation):
     def jacobian(self, h):
         # disjoining pressure
         h3 = h**3
-        djp = 5/3*(self.theta*self.h_p)**2 * (self.h_p**3/h3**2 - 1./h3)
-        ddjpdh = 5/3*(self.theta*self.h_p)**2 * \
-            diags(3./h**4 - 6.*self.h_p**3/h**7)
+        djp = 5 / 3 * (self.theta * self.h_p) ** 2 * (self.h_p**3 / h3**2 - 1.0 / h3)
+        ddjpdh = (
+            5
+            / 3
+            * (self.theta * self.h_p) ** 2
+            * diags(3.0 / h**4 - 6.0 * self.h_p**3 / h**7)
+        )
         # free energy variation
         dFdh = -self.laplace_h(h) - djp
         ddFdhdh = -self.laplace_h() - ddjpdh
         # d(Qh^3*nabla*dFdh)/dh
-        flux = diags(3*h**2 * self.nabla0.dot(dFdh)) + \
-            diags(h3) * self.nabla0.dot(ddFdhdh)
+        flux = diags(3 * h**2 * self.nabla0.dot(dFdh)) + diags(h3) * self.nabla0.dot(
+            ddFdhdh
+        )
         # dynamics equation, boundary condition is a constant --> scale with zero
         jac = self.nabla_F(flux, 0)
         jac -= self.U * self.nabla_h()
@@ -95,11 +105,11 @@ class CoatingEquation(FiniteDifferencesEquation):
         x = self.x[0]
         h = self.u
         # add left ghost point (Dirichlet BC)
-        x = np.concatenate(([x[0]-x[1]], x))
+        x = np.concatenate(([x[0] - x[1]], x))
         h = np.concatenate(([1], h))
         # x -= self.U*problem.time
         ax.set_xlim(np.min(x), np.max(x))
-        ax.set_ylim(0, 1.1*np.max(h))
+        ax.set_ylim(0, 1.1 * np.max(h))
         ax.plot(x, h)
 
 

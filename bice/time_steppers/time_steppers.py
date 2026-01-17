@@ -1,4 +1,3 @@
-
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -22,9 +21,10 @@ class TimeStepper:
     #         "Method 'get_dudt' not implemented for this time-stepper!")
 
     # perform a timestep on a problem
-    def step(self, problem: 'Problem') -> None:
+    def step(self, problem: "Problem") -> None:
         raise NotImplementedError(
-            "'TimeStepper' is an abstract base class - do not use for actual time-stepping!")
+            "'TimeStepper' is an abstract base class - do not use for actual time-stepping!"
+        )
 
 
 class Euler(TimeStepper):
@@ -33,7 +33,7 @@ class Euler(TimeStepper):
     """
 
     # perform timestep
-    def step(self, problem: 'Problem') -> None:
+    def step(self, problem: "Problem") -> None:
         problem.u += self.dt * problem.rhs(problem.u)
         problem.time += self.dt
 
@@ -43,7 +43,7 @@ class ImplicitEuler(TimeStepper):
     Implicit Euler scheme
     """
 
-    def step(self, problem: 'Problem') -> None:
+    def step(self, problem: "Problem") -> None:
         # advance in time
         problem.time += self.dt
         # obtain the mass matrix
@@ -56,6 +56,7 @@ class ImplicitEuler(TimeStepper):
         def J(u):
             # Jacobian of the system
             return problem.jacobian(u) - M / self.dt
+
         # solve it with a Newton solver
         # TODO: detect if Newton solver failed and reject step
         problem.u = problem.newton_solver.solve(f, problem.u, J)

@@ -43,9 +43,9 @@ class VolumeConstraint(ConstraintEquation):
     multiplier that can be interpreted as an influx into the system.
     """
 
-    def __init__(self,
-                 reference_equation: Equation,
-                 variable: Optional[int] = None) -> None:
+    def __init__(
+        self, reference_equation: Equation, variable: Optional[int] = None
+    ) -> None:
         super().__init__(shape=(1,))
         #: on which equation/unknowns should the constraint be imposed?
         self.ref_eq = reference_equation
@@ -99,10 +99,12 @@ class TranslationConstraint(ConstraintEquation):
     frame (advection term).
     """
 
-    def __init__(self,
-                 reference_equation: 'PartialDifferentialEquation',
-                 variable: Optional[int] = None,
-                 direction: int = 0) -> None:
+    def __init__(
+        self,
+        reference_equation: "PartialDifferentialEquation",
+        variable: Optional[int] = None,
+        direction: int = 0,
+    ) -> None:
         # call parent constructor
         super().__init__(shape=(1,))
         #: on which equation/unknowns should the constraint be imposed?
@@ -134,8 +136,7 @@ class TranslationConstraint(ConstraintEquation):
         velocity = u[self_idx]
         # add constraint to residuals of reference equation (velocity is the lagrange multiplier)
         try:  # if method du_dx is implemented, use this
-            eq_dudx = eq.du_dx(
-                eq_u.reshape(eq_shape), self.direction).ravel()
+            eq_dudx = eq.du_dx(eq_u.reshape(eq_shape), self.direction).ravel()
         except AttributeError:  # if not, get it from the gradient
             assert eq.x is not None
             eq_dudx = np.gradient(eq_u, eq.x[self.direction])

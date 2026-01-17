@@ -1,11 +1,12 @@
 #!/usr/bin/python3
-import shutil
 import os
-import numpy as np
+import shutil
+
 import matplotlib.pyplot as plt
-from bice.core.profiling import Profiler
+import numpy as np
 from adaptive_problem import AdaptiveSubstrateProblem
 
+from bice.core.profiling import Profiler
 
 # create output folder
 shutil.rmtree("out", ignore_errors=True)

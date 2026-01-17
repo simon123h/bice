@@ -3,11 +3,13 @@
 Continuation of localized states in the 1d Swift-Hohenberg Equation using Finite Differences as
 spatial discretization and Pseudo-Arclength Continuation.
 """
-import shutil
 import os
+import shutil
+
 import matplotlib.pyplot as plt
-from she_fd import SwiftHohenbergProblem, TranslationConstraint
 import numpy as np
+from she_fd import SwiftHohenbergProblem, TranslationConstraint
+
 from bice import Profiler
 
 # create output folder

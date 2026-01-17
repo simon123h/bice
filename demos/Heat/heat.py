@@ -1,15 +1,22 @@
 #!/usr/bin/python3
-import shutil
 import os
-import numpy as np
-from scipy.sparse import diags
-import scipy.sparse as sp
+import shutil
+
 import matplotlib.pyplot as plt
-from bice import Problem, time_steppers
-from bice.pde import FiniteDifferencesEquation
-from bice.pde.finite_differences import DirichletBC, NeumannBC, RobinBC, PeriodicBC, NoBoundaryConditions
+import numpy as np
+import scipy.sparse as sp
+from scipy.sparse import diags
+
+from bice import Problem, Profiler, profile, time_steppers
 from bice.continuation import ConstraintEquation
-from bice import profile, Profiler
+from bice.pde import FiniteDifferencesEquation
+from bice.pde.finite_differences import (
+    DirichletBC,
+    NeumannBC,
+    NoBoundaryConditions,
+    PeriodicBC,
+    RobinBC,
+)
 
 
 class HeatEquation(FiniteDifferencesEquation):
@@ -25,13 +32,12 @@ class HeatEquation(FiniteDifferencesEquation):
         self.k = 1
         # create non-uniform grid
         np.random.seed(4)
-        x = np.cumsum(np.random.random(N)*0.1+0.5)
+        x = np.cumsum(np.random.random(N) * 0.1 + 0.5)
         x = x / x[-1] * L
-        self.x = [x-np.mean(x)]
+        self.x = [x - np.mean(x)]
         # self.x = [np.linspace(-L/2, L/2, N)] # uniform grid
         # initial condition
-        self.u = np.cos(2 * np.pi * self.x[0] / 10) * \
-            np.exp(-0.005 * self.x[0] ** 2)
+        self.u = np.cos(2 * np.pi * self.x[0] / 10) * np.exp(-0.005 * self.x[0] ** 2)
         # create boundary conditions
         # self.bc = DirichletBC(vals=(0.1, -0.1))
         # self.bc = NeumannBC(vals=(0.01, 0.01))

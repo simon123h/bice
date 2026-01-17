@@ -1,12 +1,13 @@
 #!/usr/bin/python3
-import shutil
 import os
-import numpy as np
+import shutil
+
 import matplotlib.pyplot as plt
-from bice import Problem, time_steppers
-from bice.pde import PseudospectralEquation
+import numpy as np
+
+from bice import Problem, Profiler, profile, time_steppers
 from bice.continuation import TranslationConstraint, VolumeConstraint
-from bice import profile, Profiler
+from bice.pde import PseudospectralEquation
 
 
 class CahnHilliardEquation(PseudospectralEquation):
@@ -20,13 +21,13 @@ class CahnHilliardEquation(PseudospectralEquation):
         super().__init__(shape=(N, N))
         # parameters
         self.a = -0.5
-        self.kappa = 1.
+        self.kappa = 1.0
         # list of spatial coordinate. list is important,
         # to deal with several dimensions with different discretization/lengths
-        self.x = [np.linspace(-L/2, L/2, N), np.linspace(-L/2, L/2, N)]
+        self.x = [np.linspace(-L / 2, L / 2, N), np.linspace(-L / 2, L / 2, N)]
         self.build_kvectors(real_fft=True)
         # initial condition
-        self.u = (np.random.random((N, N))-0.5)*0.02
+        self.u = (np.random.random((N, N)) - 0.5) * 0.02
         # mx, my = np.meshgrid(*self.x)
         # self.u = np.cos(np.sqrt(mx**2 + my**2)/(L/4)) - 0.1
 
@@ -35,13 +36,14 @@ class CahnHilliardEquation(PseudospectralEquation):
     def rhs(self, u):
         u_k = np.fft.rfft2(u)
         u3_k = np.fft.rfft2(u**3)
-        result_k = -self.ksquare * \
-            (self.kappa * self.ksquare * u_k + self.a * u_k + u3_k)
+        result_k = -self.ksquare * (
+            self.kappa * self.ksquare * u_k + self.a * u_k + u3_k
+        )
         return np.fft.irfft2(result_k)
 
     @profile
     def du_dx(self, u, direction=0):
-        du_dx = 1j*self.k[direction]*np.fft.rfft2(u)
+        du_dx = 1j * self.k[direction] * np.fft.rfft2(u)
         return np.fft.irfft2(du_dx)
 
 
@@ -83,7 +85,7 @@ if not os.path.exists("initial_state2D.npz"):
         # plot
         if n % plotevery == 0:
             plt.cla()
-            plt.pcolormesh(mx, my, problem.che.u, edgecolors='face')
+            plt.pcolormesh(mx, my, problem.che.u, edgecolors="face")
             plt.colorbar()
             plt.savefig(f"out/img/{plotID:05d}.png")
             plt.close()

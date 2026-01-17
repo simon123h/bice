@@ -1,8 +1,10 @@
 #!/usr/bin/python3
-import shutil
 import os
-import numpy as np
+import shutil
+
 import matplotlib.pyplot as plt
+import numpy as np
+
 from bice import Problem, time_steppers
 from bice.pde import PseudospectralEquation
 
@@ -16,7 +18,7 @@ class NikolaevskiyEquation(PseudospectralEquation):
 
     def __init__(self, N):
         # make sure N is even
-        N = int(np.floor(N/2)*2)
+        N = int(np.floor(N / 2) * 2)
         super().__init__(shape=N)
         # parameters
         self.r = 0.5  # drive
@@ -25,12 +27,12 @@ class NikolaevskiyEquation(PseudospectralEquation):
         self.x = [np.linspace(0, 1, N)]
         self.build_kvectors(real_fft=True)
         # initial condition
-        self.u = 2*(np.random.rand(N)-0.5) * 1e-5
+        self.u = 2 * (np.random.rand(N) - 0.5) * 1e-5
 
     # characteristic length scale
     @property
     def L0(self):
-        return 2*np.pi / np.sqrt(1+np.sqrt(self.r))
+        return 2 * np.pi / np.sqrt(1 + np.sqrt(self.r))
 
     # definition of the Nikolaevskiy equation (right-hand side)
     def rhs(self, u):
@@ -42,15 +44,15 @@ class NikolaevskiyEquation(PseudospectralEquation):
         # fourier transform
         u_k = np.fft.rfft(u)
         # calculate linear part (in fourier space)
-        lin = ksq * (self.r - (1-ksq)**2) * u_k
+        lin = ksq * (self.r - (1 - ksq) ** 2) * u_k
         # calculate nonlinear part (in real space)
-        nonlin = np.fft.irfft(1j * k * u_k)**2
+        nonlin = np.fft.irfft(1j * k * u_k) ** 2
         # sum up and return
         return np.fft.irfft(lin) - 0.5 * nonlin
 
     # calculate the spatial derivative
     def du_dx(self, u, direction=0):
-        du_dx = 1j*self.k[direction]*np.fft.rfft(u)
+        du_dx = 1j * self.k[direction] * np.fft.rfft(u)
         return np.fft.irfft(du_dx)
 
     # plot the solution
@@ -77,11 +79,11 @@ class NikolaevskiyProblem(Problem):
         self.continuation_parameter = (self.ne, "m")
 
     # set higher modes to null, for numerical stability
-    def dealias(self, fraction=1./2.):
+    def dealias(self, fraction=1.0 / 2.0):
         u_k = np.fft.rfft(self.ne.u)
         N = len(u_k)
-        k = int(N*fraction)
-        u_k[k+1:] = 0
+        k = int(N * fraction)
+        u_k[k + 1 :] = 0
         u_k[0] = 0
         self.ne.u = np.fft.irfft(u_k)
 

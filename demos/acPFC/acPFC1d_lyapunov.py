@@ -1,13 +1,13 @@
 #!/usr/bin/python3
-import shutil
 import os
-import numpy as np
-import matplotlib.pyplot as plt
-from acPFC1d import acPFCProblem
-from bice import time_steppers
-from bice.measure import LyapunovExponentCalculator
-from bice import profile, Profiler
+import shutil
 
+import matplotlib.pyplot as plt
+import numpy as np
+from acPFC1d import acPFCProblem
+
+from bice import Profiler, profile, time_steppers
+from bice.measure import LyapunovExponentCalculator
 
 # create output folder
 
@@ -16,7 +16,7 @@ shutil.rmtree(filepath + "out", ignore_errors=True)
 os.makedirs(filepath + "out/img", exist_ok=True)
 
 # create problem
-problem = acPFCProblem(N=256, L=16*np.pi)
+problem = acPFCProblem(N=256, L=16 * np.pi)
 problem.acpfc.phi01 = -0.62
 
 # create figure
@@ -30,7 +30,7 @@ n = 0
 plotevery = 10
 dudtnorm = 1
 
-T = 1000.
+T = 1000.0
 if not os.path.exists("initial_state.npz"):
     while problem.time < T:
         # plot
@@ -61,7 +61,8 @@ else:
 # calculate Lyapunov exponents
 problem.time_stepper = time_steppers.BDF2(dt=0.1)
 lyapunov = LyapunovExponentCalculator(
-    problem, nexponents=1, epsilon=1e-6, nintegration_steps=1)
+    problem, nexponents=1, epsilon=1e-6, nintegration_steps=1
+)
 
 last10 = []
 largest = []
@@ -85,11 +86,11 @@ while True:
 
     ax_largest.clear()
     ax_sol.clear()
-    ccount = 0.
+    ccount = 0.0
     problem.plot(ax_sol)
     ax_largest.plot(largest)
-    ax_largest.set_xlabel('iterations')
-    ax_largest.set_ylabel('largest lyapunov exponent')
+    ax_largest.set_xlabel("iterations")
+    ax_largest.set_ylabel("largest lyapunov exponent")
     fig.savefig(filepath + f"out/img/{plotID:07d}.svg")
     plotID += 1
     print("Lyapunov exponent(s):", lyapunov.exponents)

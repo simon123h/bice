@@ -1,7 +1,8 @@
 import numpy as np
 import scipy.sparse as sp
-from bice.continuation import ConstraintEquation
+
 from bice import profile
+from bice.continuation import ConstraintEquation
 
 
 class VolumeConstraint(ConstraintEquation):
@@ -31,18 +32,18 @@ class VolumeConstraint(ConstraintEquation):
         eq_idx = self.group.idx[self.ref_eq]
         # split it into the parts that are referenced by the first two variables
         var_ndofs = np.prod(self.ref_eq.shape[1:])
-        eq_idx1 = slice(eq_idx.start + 0*var_ndofs,
-                        eq_idx.start + 1*var_ndofs)
-        eq_idx2 = slice(eq_idx.start + 1*var_ndofs,
-                        eq_idx.start + 2*var_ndofs)
+        eq_idx1 = slice(eq_idx.start + 0 * var_ndofs, eq_idx.start + 1 * var_ndofs)
+        eq_idx2 = slice(eq_idx.start + 1 * var_ndofs, eq_idx.start + 2 * var_ndofs)
         # employ the constraint equations
         # calculate the difference in volumes between current
         # and previous unknowns of the reference equation
         x = self.ref_eq.x[0]
-        res[self_idx] = np.array([
-            np.trapz(u[eq_idx1] - self.group.u[eq_idx1], x),
-            np.trapz(u[eq_idx2] - self.group.u[eq_idx2], x)
-        ])
+        res[self_idx] = np.array(
+            [
+                np.trapz(u[eq_idx1] - self.group.u[eq_idx1], x),
+                np.trapz(u[eq_idx2] - self.group.u[eq_idx2], x),
+            ]
+        )
         # Add the constraint to the reference equation: unknown influx is the Langrange multiplier
         res[eq_idx1] = u[self_idx][0]
         res[eq_idx2] = u[self_idx][1]
@@ -56,10 +57,8 @@ class VolumeConstraint(ConstraintEquation):
         self_idx = self.group.idx[self]
         # split it into the parts that are referenced by the first two variables
         var_ndofs = np.prod(self.ref_eq.shape[1:])
-        eq_idx1 = slice(eq_idx.start + 0*var_ndofs,
-                        eq_idx.start + 1*var_ndofs)
-        eq_idx2 = slice(eq_idx.start + 1*var_ndofs,
-                        eq_idx.start + 2*var_ndofs)
+        eq_idx1 = slice(eq_idx.start + 0 * var_ndofs, eq_idx.start + 1 * var_ndofs)
+        eq_idx2 = slice(eq_idx.start + 1 * var_ndofs, eq_idx.start + 2 * var_ndofs)
         # obtain the unknowns
         eq_u = u[eq_idx]
         N = eq.ndofs

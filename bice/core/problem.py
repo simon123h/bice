@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple, Union, List
+from typing import Any, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,7 +14,7 @@ from .solvers import EigenSolver, NewtonKrylovSolver
 from .types import Array, Matrix
 
 
-class Problem():
+class Problem:
     """
     All algebraic problems inherit from the 'Problem' class.
     It is an aggregate of (one or many) governing algebraic equations,
@@ -143,7 +143,8 @@ class Problem():
         The method will only calculate as many eigenvalues as requested with self.settings.neigs
         """
         return self.eigen_solver.solve(
-            self.jacobian(self.u), self.mass_matrix(), k=self.settings.neigs)
+            self.jacobian(self.u), self.mass_matrix(), k=self.settings.neigs
+        )
 
     @profile
     def time_step(self) -> None:
@@ -166,9 +167,11 @@ class Problem():
         if self.bifurcation_diagram.parameter_name is None:
             self.bifurcation_diagram.parameter_name = self.continuation_parameter[1]
         elif self.bifurcation_diagram.parameter_name != self.continuation_parameter[1]:
-            print("Warning: continuation parameter changed from"
-                  "{self.bifurcation_diagram.parameter_name:s} to {self.continuation_parameter[1]:s}!"
-                  "Will generate a new bifurcation diagram!")
+            print(
+                "Warning: continuation parameter changed from"
+                "{self.bifurcation_diagram.parameter_name:s} to {self.continuation_parameter[1]:s}!"
+                "Will generate a new bifurcation diagram!"
+            )
             self.bifurcation_diagram = BifurcationDiagram()
         # get the current branch in the bifurcation diagram
         branch = self.bifurcation_diagram.active_branch
@@ -182,9 +185,15 @@ class Problem():
             # count number of positive eigenvalues
             tol = self.settings.eigval_zero_tolerance
             sol.nunstable_eigenvalues = len(
-                [ev for ev in eigenvalues if np.real(ev) > tol])
+                [ev for ev in eigenvalues if np.real(ev) > tol]
+            )
             sol.nunstable_imaginary_eigenvalues = len(
-                [ev for ev in eigenvalues if np.real(ev) > tol and abs(np.imag(ev)) > tol])
+                [
+                    ev
+                    for ev in eigenvalues
+                    if np.real(ev) > tol and abs(np.imag(ev)) > tol
+                ]
+            )
         # optionally locate bifurcations
         if self.settings.always_locate_bifurcations and sol.is_bifurcation():
             u_old = self.u.copy()
@@ -200,7 +209,9 @@ class Problem():
                 # adapt the number of unstable eigenvalues from the point that
                 # overshot the bifurcation
                 new_sol.nunstable_eigenvalues = sol.nunstable_eigenvalues
-                new_sol.nunstable_imaginary_eigenvalues = sol.nunstable_imaginary_eigenvalues
+                new_sol.nunstable_imaginary_eigenvalues = (
+                    sol.nunstable_imaginary_eigenvalues
+                )
                 # TODO: add the original solution point back to the branch?
             # reset the state to the original solution, assures continuation in right direction
             self.u = u_old
@@ -222,7 +233,9 @@ class Problem():
         obj, attr_name = self.continuation_parameter
         setattr(obj, attr_name, float(val))
 
-    def locate_bifurcation(self, ev_index: Optional[int] = None, tolerance: float = 1e-5) -> bool:
+    def locate_bifurcation(
+        self, ev_index: Optional[int] = None, tolerance: float = 1e-5
+    ) -> bool:
         """
         locate the closest bifurcation using bisection method
         (finds point where the real part of the eigenvalue closest to zero vanishes)
@@ -255,8 +268,7 @@ class Problem():
         # bisection method loop
         while np.abs(ev.real) > tolerance and intvl[1] - intvl[0] > 1e-4:
             if self.settings.verbose:
-                self.log("Bisection: [{:.6f} {:.6f}], Re: {:e}".format(
-                    *intvl, ev.real))
+                self.log("Bisection: [{:.6f} {:.6f}], Re: {:e}".format(*intvl, ev.real))
             # new middle point
             pos_old = pos
             pos = (intvl[0] + intvl[1]) / 2
@@ -297,15 +309,22 @@ class Problem():
             eigenvector = eigenvector.real
         # create the bifurcation constraint and add it to the problem
         from bice.continuation import BifurcationConstraint
+
         bifurcation_constraint = BifurcationConstraint(
-            eigenvector, self.continuation_parameter)
+            eigenvector, self.continuation_parameter
+        )
         self.add_equation(bifurcation_constraint)
         # perform a newton solve
         self.newton_solve()
         # remove the constraint again
         self.remove_equation(bifurcation_constraint)
 
-    def switch_branch(self, ev_index: Optional[int] = None, amplitude: float = 1e-3, locate: bool = True) -> bool:
+    def switch_branch(
+        self,
+        ev_index: Optional[int] = None,
+        amplitude: float = 1e-3,
+        locate: bool = True,
+    ) -> bool:
         """attempt to switch branches in a bifurcation"""
         # try to converge onto a bifurcation nearby
         if locate:
@@ -314,7 +333,8 @@ class Problem():
             converged = True
         if not converged:
             print(
-                "Failed to converge onto a bifurcation point! Branch switching aborted.")
+                "Failed to converge onto a bifurcation point! Branch switching aborted."
+            )
             return False
         # recover eigenvalues and -vectors from the eigensolver
         eigenvalues = self.eigen_solver.latest_eigenvalues
@@ -325,8 +345,7 @@ class Problem():
         # (the one with the smallest abolute real part)
         if ev_index is None:
             ev_index = np.argsort(np.abs(eigenvalues.real))[0]
-        self.log(
-            f"Attempting to switch branch with eigenvector #{ev_index}")
+        self.log(f"Attempting to switch branch with eigenvector #{ev_index}")
         # get the eigenvector that corresponds to the bifurcation
         eigenvector = eigenvectors[ev_index]
         if not np.iscomplexobj(self.u):
@@ -365,12 +384,15 @@ class Problem():
         data = {}
         # the number of equations
         equations = self.list_equations()
-        data['Problem.nequations'] = len(equations)
+        data["Problem.nequations"] = len(equations)
         # the problem's time
-        data['Problem.time'] = self.time
+        data["Problem.time"] = self.time
         # store the value of the continuation parameter
-        if self.continuation_parameter is not None and self.get_continuation_parameter() is not None:
-            data['Problem.p'] = self.get_continuation_parameter()
+        if (
+            self.continuation_parameter is not None
+            and self.get_continuation_parameter() is not None
+        ):
+            data["Problem.p"] = self.get_continuation_parameter()
         # The problem's unknowns won't need to be stored, since unknowns are
         # individually saved by the respective equations.
         # Fill the dict with data from each equation:
@@ -379,7 +401,7 @@ class Problem():
             eq_data = eq.save()
             # prepend name of the equation, to make the keys unique and merge with problem's dict
             eq_name = type(eq).__name__ + "."
-            data.update({eq_name+k: v for k, v in eq_data.items()})
+            data.update({eq_name + k: v for k, v in eq_data.items()})
         # save everything to the file
         if filename is not None:
             np.savez(filename, **data)
@@ -404,16 +426,19 @@ class Problem():
         # clear the history
         self.history.clear()
         # load the time
-        self.time = float(data['Problem.time'])
+        self.time = float(data["Problem.time"])
         # load the value of the continuation parameter
         if self.continuation_parameter is not None and "Problem.p" in data:
-            self.set_continuation_parameter(data['Problem.p'])
+            self.set_continuation_parameter(data["Problem.p"])
         # let the equations restore their data
         for eq in self.list_equations():
             # strip the name of the equation
             eq_name = type(eq).__name__ + "."
-            eq_data = {k.replace(eq_name, ''): v for k,
-                       v in data.items() if k.startswith(eq_name)}
+            eq_data = {
+                k.replace(eq_name, ""): v
+                for k, v in data.items()
+                if k.startswith(eq_name)
+            }
             # pass it to the equation, unless the dict is empty
             if eq_data:
                 eq.load(eq_data)
@@ -432,7 +457,9 @@ class Problem():
             print(*args, **kwargs)
 
     @profile
-    def plot(self, sol_ax=None, bifdiag_ax=None, eigvec_ax=None, eigval_ax=None) -> None:
+    def plot(
+        self, sol_ax=None, bifdiag_ax=None, eigvec_ax=None, eigval_ax=None
+    ) -> None:
         """
         Plot everything to the given axes.
         Axes may be given explicitly of as a list of axes, that is then expanded.
@@ -459,8 +486,13 @@ class Problem():
             # clear the axes
             bifdiag_ax.clear()
             # plot current point
-            bifdiag_ax.plot(self.get_continuation_parameter(), self.norm(),
-                            "x", label="current point", color="black")
+            bifdiag_ax.plot(
+                self.get_continuation_parameter(),
+                self.norm(),
+                "x",
+                label="current point",
+                color="black",
+            )
             # plot the rest of the bifurcation diagram
             self.bifurcation_diagram.plot(bifdiag_ax)
         if eigval_ax is not None:
@@ -470,15 +502,21 @@ class Problem():
             if self.eigen_solver.latest_eigenvalues is not None:
                 ev_re = np.real(self.eigen_solver.latest_eigenvalues)
                 ev_re_n = np.ma.masked_where(
-                    ev_re > self.settings.eigval_zero_tolerance, ev_re)
+                    ev_re > self.settings.eigval_zero_tolerance, ev_re
+                )
                 ev_re_p = np.ma.masked_where(
-                    ev_re <= self.settings.eigval_zero_tolerance, ev_re)
+                    ev_re <= self.settings.eigval_zero_tolerance, ev_re
+                )
                 ev_is_imag = np.ma.masked_where(
-                    np.abs(np.imag(self.eigen_solver.latest_eigenvalues)) <= self.settings.eigval_zero_tolerance, ev_re)
+                    np.abs(np.imag(self.eigen_solver.latest_eigenvalues))
+                    <= self.settings.eigval_zero_tolerance,
+                    ev_re,
+                )
                 eigval_ax.plot(ev_re_n, "o", color="C0", label="Re < 0")
                 eigval_ax.plot(ev_re_p, "o", color="C1", label="Re > 0")
-                eigval_ax.plot(ev_is_imag, "x", color="black",
-                               label="complex", alpha=0.6)
+                eigval_ax.plot(
+                    ev_is_imag, "x", color="black", label="complex", alpha=0.6
+                )
                 eigval_ax.axhline(0, color="gray")
                 eigval_ax.legend()
                 eigval_ax.set_ylabel("eigenvalues")
@@ -506,22 +544,23 @@ class Problem():
                     # reassign the correct unknowns to the problem
                     self.u = u_old
 
-    def generate_bifurcation_diagram(self,
-                                     # limits for the continuation parameter
-                                     parameter_lims=(-1e9, 1e9),
-                                     # limits for the norm
-                                     norm_lims=(-1e9, 1e9),
-                                     # maximum recursion for sub-branch continuation
-                                     max_recursion=4,
-                                     # maximum number of steps per branch
-                                     max_steps=1e9,
-                                     # stop when solution reaches starting point again
-                                     detect_circular_branches=True,
-                                     # axes object to live plot the diagram
-                                     ax=None,
-                                     # plotting frequency
-                                     plotevery=30
-                                     ) -> None:
+    def generate_bifurcation_diagram(
+        self,
+        # limits for the continuation parameter
+        parameter_lims=(-1e9, 1e9),
+        # limits for the norm
+        norm_lims=(-1e9, 1e9),
+        # maximum recursion for sub-branch continuation
+        max_recursion=4,
+        # maximum number of steps per branch
+        max_steps=1e9,
+        # stop when solution reaches starting point again
+        detect_circular_branches=True,
+        # axes object to live plot the diagram
+        ax=None,
+        # plotting frequency
+        plotevery=30,
+    ) -> None:
         """
         Automatically generate a full bifurcation diagram within the given bounds.
         Branch switching will be performed automatically up to the given maximum recursion level.
@@ -554,19 +593,25 @@ class Problem():
                 break
             # if we are close to the intial solution, the branch is likely a circle, then abort
             distance = np.linalg.norm(self.u - u0) / np.linalg.norm(self.u)
-            if n > 20 and distance < self.continuation_stepper.ds and detect_circular_branches:
-                print("Branch has likely reached it's starting point again. Exiting this branch.\n"
-                      "Set 'detect_circular_branches=False' to prevent this.")
+            if (
+                n > 20
+                and distance < self.continuation_stepper.ds
+                and detect_circular_branches
+            ):
+                print(
+                    "Branch has likely reached it's starting point again. Exiting this branch.\n"
+                    "Set 'detect_circular_branches=False' to prevent this."
+                )
                 break
             # print status
             sol = self.bifurcation_diagram.current_solution()
             print(
-                f"Branch #{branch.id}, Step #{n}, ds={self.continuation_stepper.ds:.2e}, #+EVs: {sol.nunstable_eigenvalues}")
+                f"Branch #{branch.id}, Step #{n}, ds={self.continuation_stepper.ds:.2e}, #+EVs: {sol.nunstable_eigenvalues}"
+            )
             if sol.is_bifurcation():
-                print(
-                    f"Bifurcation found! #Null-EVs: {sol.neigenvalues_crossed}")
+                print(f"Bifurcation found! #Null-EVs: {sol.neigenvalues_crossed}")
             # plot every few steps
-            if ax is not None and plotevery is not None and (n-1) % plotevery == 0:
+            if ax is not None and plotevery is not None and (n - 1) % plotevery == 0:
                 self.plot(ax)
                 plt.show(block=False)
                 plt.pause(0.0001)  # type: ignore
@@ -588,15 +633,17 @@ class Problem():
             if not converged:
                 continue
             # recursively generate a bifurcation diagram from the new branch
-            self.generate_bifurcation_diagram(ax=ax,
-                                              parameter_lims=parameter_lims,
-                                              norm_lims=norm_lims,
-                                              max_recursion=max_recursion-1,
-                                              max_steps=max_steps,
-                                              plotevery=plotevery)
+            self.generate_bifurcation_diagram(
+                ax=ax,
+                parameter_lims=parameter_lims,
+                norm_lims=norm_lims,
+                max_recursion=max_recursion - 1,
+                max_steps=max_steps,
+                plotevery=plotevery,
+            )
 
 
-class ProblemHistory():
+class ProblemHistory:
     """
     This class manages the history of the unknowns and the time /
     continuation parameter of a given problem.
@@ -628,13 +675,14 @@ class ProblemHistory():
             self.clear()
             self.type = history_type
         # check the minimum length of the history in each equation
-        eq_hist_length = min([len(eq.u_history)
-                              for eq in self.problem.list_equations()])
+        eq_hist_length = min(
+            [len(eq.u_history) for eq in self.problem.list_equations()]
+        )
         # make sure that the equation's history length matches the parameter history's length
         self.__t = self.__t[:eq_hist_length]
         # update the history of unknowns in every equation
         for eq in self.problem.list_equations():
-            eq.u_history = [eq.u.copy()] + eq.u_history[:self.max_length-1]
+            eq.u_history = [eq.u.copy()] + eq.u_history[: self.max_length - 1]
         # add the value of the time / continuation parameter and step size to the history
         if self.type == "continuation":  # for continuation
             val = self.problem.get_continuation_parameter()
@@ -642,15 +690,16 @@ class ProblemHistory():
         else:  # for time stepping
             val = self.problem.time
             dval = self.problem.time_stepper.dt
-        self.__t = [val] + self.__t[:self.max_length-1]
-        self.__dt = [dval] + self.__dt[:self.max_length-1]
+        self.__t = [val] + self.__t[: self.max_length - 1]
+        self.__dt = [dval] + self.__dt[: self.max_length - 1]
 
     def u(self, t: int = 0) -> Array:
         """get the unknowns at some point t in history"""
         # check length of history
         if t >= self.length:
             raise IndexError(
-                f"Unknowns u[t=-{t}] requested, but history length is {self.length}")
+                f"Unknowns u[t=-{t}] requested, but history length is {self.length}"
+            )
         # backup the unknowns
         u_old = self.problem.u
         # set the equation's unknowns from history
@@ -670,7 +719,8 @@ class ProblemHistory():
         # check length of history
         if t >= self.length:
             raise IndexError(
-                f"Unknowns u[t=-{t}] requested, but history length is {self.length}")
+                f"Unknowns u[t=-{t}] requested, but history length is {self.length}"
+            )
         # return the value
         return self.__t[t]
 
@@ -686,7 +736,8 @@ class ProblemHistory():
         # check length of history
         if t >= self.length:
             raise IndexError(
-                f"Unknowns u[t=-{t}] requested, but history length is {self.length}")
+                f"Unknowns u[t=-{t}] requested, but history length is {self.length}"
+            )
         # return the value
         return self.__dt[t]
 
@@ -706,7 +757,7 @@ class ProblemHistory():
         self.__t = []
 
 
-class ProblemSettings():
+class ProblemSettings:
     """
     A wrapper class that holds all the settings of a problem.
     """

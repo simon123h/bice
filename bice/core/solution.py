@@ -1,6 +1,7 @@
 """
 This file describes a data structure for Solutions, Branches and BifurcationDiagrams of a Problem.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Tuple
@@ -20,7 +21,7 @@ class Solution:
     # static variable counting the total number of Solutions
     _solution_count = 0
 
-    def __init__(self, problem: Optional['Problem'] = None) -> None:
+    def __init__(self, problem: Optional["Problem"] = None) -> None:
         # generate solution ID
         Solution._solution_count += 1
         #: unique identifier of the solution
@@ -68,14 +69,20 @@ class Solution:
         # else, compare with the nearest previous neighbor that has info on eigenvalues
         # get branch points with eigenvalue info
         bps = [
-            s for s in self.branch.solutions if s.nunstable_imaginary_eigenvalues is not None]
+            s
+            for s in self.branch.solutions
+            if s.nunstable_imaginary_eigenvalues is not None
+        ]
         # find index of previous solution
         index = bps.index(self) - 1
         if index < 0:
             # if there is no previous solution with info on eigenvalues, we have no result
             return None
         # return the difference in unstable eigenvalues to the previous solution
-        return self.nunstable_imaginary_eigenvalues - bps[index].nunstable_imaginary_eigenvalues
+        return (
+            self.nunstable_imaginary_eigenvalues
+            - bps[index].nunstable_imaginary_eigenvalues
+        )
 
     def is_stable(self) -> Optional[bool]:
         """Is the solution stable?"""
@@ -111,7 +118,7 @@ class Solution:
         # self._bifurcation_type = "BP"
         # use +/- signs corresponding to their null-eigenvalues as type for regular bifurcations
         n = nev_crossed
-        self._bifurcation_type = "+"*n if n > 0 else "-"*(-n)
+        self._bifurcation_type = "+" * n if n > 0 else "-" * (-n)
         # check for Hopf bifurcations by number of imaginary eigenvalues that crossed zero
         nev_imag_crossed = self.nimaginary_eigenvalues_crossed
         # if it is not unknown or zero or one, this must be a Hopf point
@@ -205,9 +212,11 @@ class Branch:
         data["norm"] = [s.norm for s in self.solutions]
         data["p"] = [s.p for s in self.solutions]
         data["nunstable_eigenvalues"] = [
-            s.nunstable_eigenvalues for s in self.solutions]
+            s.nunstable_eigenvalues for s in self.solutions
+        ]
         data["nunstable_imaginary_eigenvalues"] = [
-            s.nunstable_imaginary_eigenvalues for s in self.solutions]
+            s.nunstable_imaginary_eigenvalues for s in self.solutions
+        ]
         # save everything to the file
         np.savez(filename, **data)
 
@@ -273,7 +282,7 @@ class BifurcationDiagram:
             # annotate bifurcations with their types
             for bif in branch.bifurcations():
                 s = bif.bifurcation_type()
-                ax.annotate(" "+s, (bif.p, bif.norm))
+                ax.annotate(" " + s, (bif.p, bif.norm))
         ax.plot(np.nan, np.nan, "*", color="C2", label="bifurcations")
         ax.set_xlabel(self.parameter_name)
         ax.set_ylabel(self.norm_name)
@@ -292,5 +301,7 @@ class BifurcationDiagram:
             sol.norm = data["norm"][i]
             sol.p = data["p"][i]
             sol.nunstable_eigenvalues = data["nunstable_eigenvalues"][i]
-            sol.nunstable_imaginary_eigenvalues = data["nunstable_imaginary_eigenvalues"][i]
+            sol.nunstable_imaginary_eigenvalues = data[
+                "nunstable_imaginary_eigenvalues"
+            ][i]
             branch.add_solution_point(sol)

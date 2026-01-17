@@ -1,9 +1,11 @@
 #!/usr/bin/python3
-import shutil
 import os
-import numpy as np
+import shutil
+
 import matplotlib.pyplot as plt
+import numpy as np
 from ne1d import NikolaevskiyProblem
+
 from bice import time_steppers
 from bice.measure import LyapunovExponentCalculator
 
@@ -56,7 +58,8 @@ else:
 # calculate Lyapunov exponents
 problem.time_stepper = time_steppers.BDF2(dt=0.1)
 lyapunov = LyapunovExponentCalculator(
-    problem, nexponents=10, epsilon=1e-6, nintegration_steps=1)
+    problem, nexponents=10, epsilon=1e-6, nintegration_steps=1
+)
 
 while True:
     lyapunov.step()

@@ -5,12 +5,12 @@ This code does nothing with the equation, it only provides the implementation an
 is imported by other codes, so we don't have to write the SHE from scratch for every demo.
 """
 import numpy as np
-from scipy.sparse import diags
 import scipy.sparse as sp
-from bice import Problem, time_steppers
-from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
+from scipy.sparse import diags
+
+from bice import Problem, profile, time_steppers
 from bice.continuation import ConstraintEquation
-from bice import profile
+from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
 
 
 class SwiftHohenbergEquation(FiniteDifferencesEquation):
@@ -28,10 +28,9 @@ class SwiftHohenbergEquation(FiniteDifferencesEquation):
         self.v = 0.41
         self.g = 1
         # spatial coordinate
-        self.x = [np.linspace(-L/2, L/2, N)]
+        self.x = [np.linspace(-L / 2, L / 2, N)]
         # initial condition
-        self.u = np.cos(2 * np.pi * self.x[0] / 10) * \
-            np.exp(-0.005 * self.x[0] ** 2)
+        self.u = np.cos(2 * np.pi * self.x[0] / 10) * np.exp(-0.005 * self.x[0] ** 2)
         # build finite difference matrices
         self.bc = PeriodicBC()
         self.build_FD_matrices(approx_order=2)
@@ -40,12 +39,19 @@ class SwiftHohenbergEquation(FiniteDifferencesEquation):
 
     # definition of the SHE (right-hand side)
     def rhs(self, u):
-        return self.linear_op.dot(u) + (self.r - self.kc**4) * u + self.v * u**2 - self.g * u**3
+        return (
+            self.linear_op.dot(u)
+            + (self.r - self.kc**4) * u
+            + self.v * u**2
+            - self.g * u**3
+        )
 
     # definition of the Jacobian
     @profile
     def jacobian(self, u):
-        return self.linear_op + diags(self.r - self.kc**4 + self.v * 2 * u - self.g * 3 * u**2)
+        return self.linear_op + diags(
+            self.r - self.kc**4 + self.v * 2 * u - self.g * 3 * u**2
+        )
 
 
 class SwiftHohenbergProblem(Problem):
@@ -85,7 +91,7 @@ class TranslationConstraint(ConstraintEquation):
         # add constraint to residuals of reference equation (velocity is the lagrange multiplier)
         res[eq_idx] = velocity * eq.nabla(eq_u)
         # add the constraint equation
-        res[self_idx] = np.dot(eq.x[0], eq_u-eq_u_old)
+        res[self_idx] = np.dot(eq.x[0], eq_u - eq_u_old)
         # res[self_idx] = np.dot(eq_dudx, (eq_u - eq_u_old))
         return res
 

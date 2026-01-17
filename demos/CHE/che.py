@@ -1,11 +1,13 @@
 #!/usr/bin/python3
-import numpy as np
-import matplotlib.pyplot as plt
-import shutil
 import os
+import shutil
+
+import matplotlib.pyplot as plt
+import numpy as np
+
 from bice import Problem, time_steppers
-from bice.pde import PseudospectralEquation
 from bice.continuation import TranslationConstraint, VolumeConstraint
+from bice.pde import PseudospectralEquation
 
 
 class CahnHilliardEquation(PseudospectralEquation):
@@ -20,25 +22,26 @@ class CahnHilliardEquation(PseudospectralEquation):
         super().__init__(shape=N)
         # parameters
         self.a = -0.5
-        self.kappa = 1.
+        self.kappa = 1.0
         # space and fourier space
-        self.x = [np.linspace(-L/2, L/2, N)]
+        self.x = [np.linspace(-L / 2, L / 2, N)]
         self.build_kvectors(real_fft=True)
         # initial condition
         # self.u = (np.random.random(N)-0.5)*0.02
-        self.u = np.cos(self.x[0]/(L/4)) - 0.1
+        self.u = np.cos(self.x[0] / (L / 4)) - 0.1
         # calculate linear part beforehand
 
     # definition of the CHE (right-hand side)
     def rhs(self, u):
         u_k = np.fft.rfft(u)
         u3_k = np.fft.rfft(u**3)
-        result_k = -self.ksquare * \
-            (self.kappa*self.ksquare*u_k + self.a*u_k + u3_k)
+        result_k = -self.ksquare * (
+            self.kappa * self.ksquare * u_k + self.a * u_k + u3_k
+        )
         return np.fft.irfft(result_k)
 
     def du_dx(self, u, direction=0):
-        du_dx = 1j*self.k[direction]*np.fft.rfft(u)
+        du_dx = 1j * self.k[direction] * np.fft.rfft(u)
         return np.fft.irfft(du_dx)
 
 
@@ -57,11 +60,11 @@ class CahnHilliardProblem(Problem):
         self.continuation_parameter = (self.che, "a")
 
     # set higher modes to null, for numerical stability
-    def dealias(self, fraction=1./2.):
+    def dealias(self, fraction=1.0 / 2.0):
         u_k = np.fft.rfft(self.che.u)
         N = len(u_k)
         k = int(N * fraction)
-        u_k[k + 1:-k] = 0
+        u_k[k + 1 : -k] = 0
         self.che.u = np.fft.irfft(u_k)
 
 
@@ -117,13 +120,12 @@ translation_constraint = TranslationConstraint(problem.che)
 problem.add_equation(translation_constraint)
 problem.volume_constraint = VolumeConstraint(problem.che)
 problem.add_equation(problem.volume_constraint)
-problem.volume_constraint.fixed_volume = np.trapz(
-    problem.che.u, problem.che.x[0])
-problem.continuation_parameter = (problem.volume_constraint, 'fixed_volume')
+problem.volume_constraint.fixed_volume = np.trapz(problem.che.u, problem.che.x[0])
+problem.continuation_parameter = (problem.volume_constraint, "fixed_volume")
 
 n = 0
 plotevery = 1
-while problem.che.a < 1.:
+while problem.che.a < 1.0:
     # plot
     if n % plotevery == 0:
         problem.plot(ax)

@@ -1,13 +1,14 @@
 #!/usr/bin/python3
-import shutil
 import os
+import shutil
+
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.sparse import diags
-import matplotlib.pyplot as plt
-from bice import Problem, time_steppers
-from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC, NeumannBC
+
+from bice import Problem, Profiler, profile, time_steppers
 from bice.continuation import TranslationConstraint, VolumeConstraint
-from bice import profile, Profiler
+from bice.pde.finite_differences import FiniteDifferencesEquation, NeumannBC, PeriodicBC
 
 
 class CahnHilliardEquation(FiniteDifferencesEquation):
@@ -21,16 +22,16 @@ class CahnHilliardEquation(FiniteDifferencesEquation):
         super().__init__()
         # parameters
         self.a = -0.5
-        self.kappa = 1.
+        self.kappa = 1.0
         # list of spatial coordinate. list is important,
         # to deal with several dimensions with different discretization/lengths
-        self.x = [np.linspace(-L/2, L/2, N), np.linspace(-L/2, L/2, N)]
+        self.x = [np.linspace(-L / 2, L / 2, N), np.linspace(-L / 2, L / 2, N)]
         # build finite difference matrices
         self.bc = PeriodicBC()
         # self.bc = NeumannBC()
         self.build_FD_matrices()
         # initial condition
-        self.u = (np.random.random(N**2)-0.5)*0.02
+        self.u = (np.random.random(N**2) - 0.5) * 0.02
         # mx, my = np.meshgrid(*self.x)
         # self.u = np.cos(np.sqrt(mx**2 + my**2)/(L/4)) - 0.1
         self.u = self.u.ravel()
@@ -39,13 +40,13 @@ class CahnHilliardEquation(FiniteDifferencesEquation):
     @profile
     def rhs(self, u):
         Delta = self.laplace
-        return Delta.dot(u**3 + self.a*u - self.kappa * Delta.dot(u))
+        return Delta.dot(u**3 + self.a * u - self.kappa * Delta.dot(u))
 
     # definition of the Jacobian
     @profile
     def jacobian(self, u):
         Delta = self.laplace
-        return Delta.dot(3*diags(u**2) - self.kappa * Delta) + self.a * Delta
+        return Delta.dot(3 * diags(u**2) - self.kappa * Delta) + self.a * Delta
 
 
 class CahnHilliardProblem(Problem):
@@ -83,8 +84,7 @@ if not os.path.exists("initial_state2D.npz"):
         # plot
         if n % plotevery == 0:
             plt.cla()
-            plt.pcolormesh(mx, my, problem.che.u.reshape(
-                mx.shape), edgecolors='face')
+            plt.pcolormesh(mx, my, problem.che.u.reshape(mx.shape), edgecolors="face")
             plt.colorbar()
             plt.savefig(f"out/img/{plotID:05d}.png")
             plt.close()

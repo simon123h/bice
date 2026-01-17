@@ -32,7 +32,7 @@ class BifurcationConstraint(Equation):
     def rhs(self, u: Array) -> Array:
         # if the constraint is disabled, no residuals will be calculated
         if self.__disabled:
-            return 0*u
+            return 0 * u
         # reference to the indices of the own unknowns
         self_idx = self.group.idx[self]
         # get the value of the current and the previous null-eigenvector phi
@@ -42,10 +42,12 @@ class BifurcationConstraint(Equation):
         Gu = self.original_jacobian(u)
         # check for mismatch in dimension
         if Gu.shape != (phi.size, phi.size):
-            raise Exception("It seems that the dimension of the problem does not "
-                            "match the dimension of the null-eigenvector phi in "
-                            "the BifurcationConstraint. Did your problem change "
-                            "since you imposed the constraint?")
+            raise Exception(
+                "It seems that the dimension of the problem does not "
+                "match the dimension of the null-eigenvector phi in "
+                "the BifurcationConstraint. Did your problem change "
+                "since you imposed the constraint?"
+            )
         # calculate the residuals
         res = np.zeros((u.size))
         res1 = np.matmul(Gu, phi)
@@ -94,11 +96,11 @@ class BifurcationConstraint(Equation):
             # NOTE: okay, here we'd also need N times evaluation of the Jacobian, that's also slow
             Gu1 = self.original_jacobian(u1)
             # NOTE: the following line is not general, wrt. self_idx
-            J[:, i] = np.matmul(Gu1-Gu, phi) / eps
+            J[:, i] = np.matmul(Gu1 - Gu, phi) / eps
             # .... I'm giving up at this point!
 
         # lower right sub-block: d(res1)/d(phi) = Gu
-        res1_slice = slice(self_idx.start, self_idx.stop-1)
+        res1_slice = slice(self_idx.start, self_idx.stop - 1)
         J[res1_slice, res1_slice] = Gu
 
         # last column: d(rhs)/d(param), calculate with FD
@@ -111,11 +113,12 @@ class BifurcationConstraint(Equation):
         # reset the value of the free parameter
         u[self_idx][-1] = param_val
         # add FD parameter derivative to Jacobian
-        J[:, self_idx.stop-1] = (f1 - f0) / eps
+        J[:, self_idx.stop - 1] = (f1 - f0) / eps
 
         # last row: d(res2)/du = ([0]*N, phi_old, 0)
-        J[self_idx.stop-1] = np.concatenate(
-            (np.zeros(phi_old.size), phi_old, np.array([0])))
+        J[self_idx.stop - 1] = np.concatenate(
+            (np.zeros(phi_old.size), phi_old, np.array([0]))
+        )
 
         return J
 

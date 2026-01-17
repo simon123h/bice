@@ -58,19 +58,22 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # construct FD matrices from 1d FD matrices for each spatial dimension
         # TODO: support higher than 2 dimensions
         if self.spatial_dimension > 2:
-            raise NotImplementedError("Finite difference operators for spatial dimensions"
-                                      "higher than 1d are not yet supported.")
+            raise NotImplementedError(
+                "Finite difference operators for spatial dimensions"
+                "higher than 1d are not yet supported."
+            )
         # 2d case:
         ops1d = []
         for x in self.x:
             # generate 1d operators
-            op1d = self.build_FD_matrices_1d(
-                x=x, approx_order=approx_order)[:3]
+            op1d = self.build_FD_matrices_1d(x=x, approx_order=approx_order)[:3]
             # check if we have inhomogeneous boundary conditions:
             for op in op1d:
                 if not op.is_linear():
-                    raise NotImplementedError("Inhomogeneous boundary conditions are unfortunately"
-                                              "not supported spatial dimensions higher than 1d.")
+                    raise NotImplementedError(
+                        "Inhomogeneous boundary conditions are unfortunately"
+                        "not supported spatial dimensions higher than 1d."
+                    )
             # drop inhomogeneous part of affine operators (is zero for homogeneous BCs)
             ops1d.append([op.Q for op in op1d])
         # 2D FD matrices from 1D matrices using Kronecker product
@@ -87,7 +90,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         return self.ddx
 
     @profile
-    def build_FD_matrices_1d(self, approx_order=2, x=None) -> list['AffineOperator']:
+    def build_FD_matrices_1d(self, approx_order=2, x=None) -> list["AffineOperator"]:
         """Build 1d finite difference differentiation matrices using Fornberg (1988) algorithm"""
         # accuracy / approximation order of the FD scheme (size of stencil = 2*ao + 1)
         ao = 2 * (approx_order // 2)  # has to be an even number
@@ -97,12 +100,16 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # check if boundary conditions are set, otherwise set default
         if self.bc is None:
             self.bc = PeriodicBC()
-            print("WARNING: No boundary conditions set for:", self, "\n"
-                  "Defaulting to periodic boundaries. To change this "
-                  "(and to supress this warning), use, e.g.:\n"
-                  "  self.bc = DirichletBC()\n"
-                  "or any other boundary conditions type from pde.finite_differences, "
-                  "before building the FD matrices in the Equation object.")
+            print(
+                "WARNING: No boundary conditions set for:",
+                self,
+                "\n"
+                "Defaulting to periodic boundaries. To change this "
+                "(and to supress this warning), use, e.g.:\n"
+                "  self.bc = DirichletBC()\n"
+                "or any other boundary conditions type from pde.finite_differences, "
+                "before building the FD matrices in the Equation object.",
+            )
         # build boundary condition operators given the grid points and approximation order
         self.bc.update(x, approx_order=ao)
         # boundary conditions implement an affine operator (Q*u + G) with a matrix Q and
@@ -117,20 +124,19 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # NOTE: ddx matrices are of shape N x (N+Ngp), because they work on boundary padded vectors
         self.ddx = []
         # higher order operators
-        for order in range(0, max_order+1):
+        for order in range(0, max_order + 1):
             if order == 0:
                 # trivial 0th order d^0 / dx^0 = 1
-                op = sp.eye(N, N+Ngp, k=Ngp//2)
+                op = sp.eye(N, N + Ngp, k=Ngp // 2)
             else:
                 # obtain differentiation matrix from findiff package
-                op = findiff.FinDiff(
-                    0, x_pad, order, acc=ao).matrix(x_pad.shape)
+                op = findiff.FinDiff(0, x_pad, order, acc=ao).matrix(x_pad.shape)
                 # slice rows corresponding to ghost nodes
-                op = op[Ngp//2:N+Ngp//2, :]
+                op = op[Ngp // 2 : N + Ngp // 2, :]
             # include the boundary conditions into the differentiation operator by pre-multiplying
             # it with the (affine) boundary operator (matrix Q and constant G)
             opQ = op.dot(self.bc.Q)
-            opG = op.dot(np.zeros(N+Ngp)+self.bc.G)
+            opG = op.dot(np.zeros(N + Ngp) + self.bc.G)
             # store as new affine operator Op(u) = ddx*(Q*u + G) = opQ*u + opG
             self.ddx.append(AffineOperator(opQ, opG))
 
@@ -170,23 +176,22 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
                 continue
             # unrefinement
             err = error_estimate[i]
-            dx = x_old[i+1]-x_old[i-1]
+            dx = x_old[i + 1] - x_old[i - 1]
             if err < self.min_refinement_error and dx < self.max_dx:
-                x_new.append(x_old[i+1])
+                x_new.append(x_old[i + 1])
                 i += 2
                 continue
             # refinement
-            dx = (x - x_old[i-1])/2
+            dx = (x - x_old[i - 1]) / 2
             if err > self.max_refinement_error and dx > self.min_dx:
-                x_new.append((x + x_old[i-1])/2)
+                x_new.append((x + x_old[i - 1]) / 2)
             x_new.append(x)
             i += 1
         x_new = np.array(x_new)
         # interpolate unknowns to new grid points
         nvars = self.shape[0] if len(self.shape) > 1 else 1
         if nvars > 1:
-            u_new = np.array([np.interp(x_new, x_old, self.u[n])
-                              for n in range(nvars)])
+            u_new = np.array([np.interp(x_new, x_old, self.u[n]) for n in range(nvars)])
         else:
             u_new = np.interp(x_new, x_old, self.u)
         # update shape, u and x
@@ -196,8 +201,9 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # interpolate history to new grid points
         for t, u in enumerate(self.u_history):
             if nvars > 1:
-                self.u_history[t] = np.array([np.interp(x_new, x_old, u[n])
-                                              for n in range(nvars)])
+                self.u_history[t] = np.array(
+                    [np.interp(x_new, x_old, u[n]) for n in range(nvars)]
+                )
             else:
                 self.u_history[t] = np.interp(x_new, x_old, u)
         # re-build the finite difference matrices
@@ -212,14 +218,14 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         err = 0
         assert self.x is not None
         dx = np.diff(self.x[0])
-        dx = [max(dx[i], dx[i+1]) for i in range(len(dx)-1)]
+        dx = [max(dx[i], dx[i + 1]) for i in range(len(dx) - 1)]
         dx = np.concatenate(([0], dx, [0]))
         nvars = self.shape[0] if len(self.shape) > 1 else 1
         for n in range(nvars):
             u = self.u[n] if len(self.shape) > 1 else self.u
             assert self.laplace is not None
             curv = self.laplace(u)
-            err += np.abs(curv*dx)
+            err += np.abs(curv * dx)
         return err
 
     def du_dx(self, u: Array, direction: int = 0) -> Array:
@@ -236,7 +242,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         Override this method, if your equation needs to store more stuff.
         """
         data = super().save()
-        data.update({'x': self.x})
+        data.update({"x": self.x})
         return data
 
     def load(self, data) -> None:
@@ -244,7 +250,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         Load the state of the equation, including the x-values.
         Override this method, if your equation needs to recover more stuff.
         """
-        self.x = data['x']
+        self.x = data["x"]
         super().load(data)
 
 
@@ -278,9 +284,9 @@ class AffineOperator:
         # check if u is not a vector (but a matrix or tensor)
         # make sure that a sparse matrix is returned
         if u.ndim > 1:
-            return self.Q.dot(u) + sp.coo_matrix(g*np.resize(self.G, u.shape))
+            return self.Q.dot(u) + sp.coo_matrix(g * np.resize(self.G, u.shape))
         # else, u is a vector, simply perform the Q*u + G
-        return self.Q.dot(u) + g*self.G
+        return self.Q.dot(u) + g * self.G
 
     def dot(self, u):
         """Overloaded dot method, so we can do operator.dot(u) as with numpy/scipy matrices"""
@@ -336,7 +342,7 @@ class FDBoundaryConditions:
         # default case: identity matrix (equals homogeneous Dirichlet conditions)
         N = len(x)
         ao = approx_order
-        self.Q = sp.eye(N+2, N, k=-ao)
+        self.Q = sp.eye(N + 2, N, k=-ao)
         self.G = 0
 
     def pad(self, u):
@@ -348,7 +354,7 @@ class FDBoundaryConditions:
         """Pad vector of node values with the x-values of the ghost nodes"""
         dxl = x[1] - x[0]
         dxr = x[-1] - x[-2]
-        return np.concatenate(([x[0]-dxl], x, [x[-1]+dxr]))
+        return np.concatenate(([x[0] - dxl], x, [x[-1] + dxr]))
 
 
 class PeriodicBC(FDBoundaryConditions):
@@ -368,7 +374,7 @@ class PeriodicBC(FDBoundaryConditions):
         # generate matrix that maps u_i --> u_{i%N} for 1d periodic ghost points
         self.order = approx_order
         N = len(x)
-        top = sp.eye(self.order, N, k=N-self.order)
+        top = sp.eye(self.order, N, k=N - self.order)
         bot = sp.eye(self.order, N, k=0)
         self.Q = sp.vstack((top, sp.eye(N), bot))
         # constant part is zero
@@ -383,8 +389,8 @@ class PeriodicBC(FDBoundaryConditions):
         # build the full list of dx's for the periodic domain
         dx = np.concatenate((dx_lr, np.diff(x), dx_lr))
         # construct the left and right ghost nodes (number of ghost points = self.order)
-        x_l = [x[0]-sum(dx[-n-1:]) for n in range(self.order)][::-1]
-        x_r = [x[-1]+sum(dx[:n+1]) for n in range(self.order)]
+        x_l = [x[0] - sum(dx[-n - 1 :]) for n in range(self.order)][::-1]
+        x_r = [x[-1] + sum(dx[: n + 1]) for n in range(self.order)]
         # concatenate for full padded x vector
         return np.concatenate((x_l, x, x_r))
 
@@ -417,18 +423,18 @@ class RobinBC(FDBoundaryConditions):
         # pad x with the ghost point values
         x = self.pad_x(x)
         # obtain FD stencils from Fornberg (1988) algorithm
-        sl = fornberg.fd_weights(x=x[:ao+1], x0=x[0], n=1)
-        sr = fornberg.fd_weights(x=x[-ao-1:], x0=x[-1], n=1)
+        sl = fornberg.fd_weights(x=x[: ao + 1], x0=x[0], n=1)
+        sr = fornberg.fd_weights(x=x[-ao - 1 :], x0=x[-1], n=1)
         # linear part (Q)
         top = np.zeros((1, N))
-        top[-1, :ao] = -sl[1:] / (al/bl + sl[0]) if bl != 0 else 0*sl[1:]
+        top[-1, :ao] = -sl[1:] / (al / bl + sl[0]) if bl != 0 else 0 * sl[1:]
         bot = np.zeros((1, N))
-        bot[0, -ao:] = -sr[:-1] / (ar/br + sr[-1]) if br != 0 else 0*sr[1:]
+        bot[0, -ao:] = -sr[:-1] / (ar / br + sr[-1]) if br != 0 else 0 * sr[1:]
         self.Q = sp.vstack((top, sp.eye(N), bot))
         # constant part (G)
-        self.G = np.zeros(N+2)
-        self.G[0] = cl/(al+bl*sl[0]) if cl != 0 else 0
-        self.G[-1] = cr/(ar+br*sr[-1]) if cr != 0 else 0
+        self.G = np.zeros(N + 2)
+        self.G[0] = cl / (al + bl * sl[0]) if cl != 0 else 0
+        self.G[-1] = cr / (ar + br * sr[-1]) if cr != 0 else 0
         # return the matrices
         return self.Q, self.G
 

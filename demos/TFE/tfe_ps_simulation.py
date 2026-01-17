@@ -1,11 +1,13 @@
 #!/usr/bin/python3
-import shutil
 import os
-import numpy as np
+import shutil
+
 import matplotlib.pyplot as plt
+import numpy as np
+
 from bice import Problem, time_steppers
+from bice.continuation import TranslationConstraint, VolumeConstraint
 from bice.pde import PseudospectralEquation
-from bice.continuation import VolumeConstraint, TranslationConstraint
 
 
 class ThinFilmEquation(PseudospectralEquation):
@@ -21,12 +23,12 @@ class ThinFilmEquation(PseudospectralEquation):
         super().__init__(shape=N)
         # parameters: none
         # space and fourier space
-        self.x = [np.linspace(-L/2, L/2, N, endpoint=False)]
+        self.x = [np.linspace(-L / 2, L / 2, N, endpoint=False)]
         x = self.x[0]
         self.build_kvectors(real_fft=True)
         # initial condition
         # self.u = np.ones(N) * 3
-        self.u = 2 * np.cos(x*2*np.pi/L) + 1
+        self.u = 2 * np.cos(x * 2 * np.pi / L) + 1
         # self.u = np.maximum(10 * np.cos(x / 5), 1)
 
     # definition of the equation, using pseudospectral method
@@ -34,31 +36,30 @@ class ThinFilmEquation(PseudospectralEquation):
         h_k = np.fft.rfft(h)
         k = self.k[0]
         djp_k = self.dealias(np.fft.rfft(self.djp(h)))
-        dhhh_dx = np.fft.irfft(self.dealias(
-            self.dealias(np.fft.rfft(h**3)) * 1j * k))
-        term1 = np.fft.irfft(self.dealias(1j * k * (-k**2 * h_k + djp_k)))
+        dhhh_dx = np.fft.irfft(self.dealias(self.dealias(np.fft.rfft(h**3)) * 1j * k))
+        term1 = np.fft.irfft(self.dealias(1j * k * (-(k**2) * h_k + djp_k)))
         term2 = np.fft.irfft(self.dealias(k**2 * (k**2 * h_k - djp_k)))
         return -dhhh_dx * term1 - h**3 * term2
 
     # disjoining pressure
     def djp(self, h):
-        return 1./h**6 - 1./h**3
+        return 1.0 / h**6 - 1.0 / h**3
 
     # set higher modes to null, for numerical stability
-    def dealias(self, u, real_space=False, ratio=1./2.):
+    def dealias(self, u, real_space=False, ratio=1.0 / 2.0):
         if real_space:
             u_k = np.fft.rfft(u)
         else:
             u_k = u
         k = self.k[0]
-        k_F = (1-ratio) * k[-1]
-        u_k *= np.exp(-36*(4. * k / 5. / k_F)**36)
+        k_F = (1 - ratio) * k[-1]
+        u_k *= np.exp(-36 * (4.0 * k / 5.0 / k_F) ** 36)
         if real_space:
             return np.fft.irfft(u_k)
         return u_k
 
     def du_dx(self, u, direction=0):
-        du_dx = 1j*self.k*np.fft.rfft(u)
+        du_dx = 1j * self.k * np.fft.rfft(u)
         return np.fft.irfft(du_dx)
 
 
@@ -84,7 +85,7 @@ class ThinFilm(Problem):
         self.continuation_parameter = (self.volume_constraint, "fixed_volume")
 
     # set higher modes to null, for numerical stability
-    def dealias(self, fraction=1./2.):
+    def dealias(self, fraction=1.0 / 2.0):
         self.tfe.u = self.tfe.dealias(self.tfe.u, True)
 
     def norm(self):
@@ -139,8 +140,7 @@ problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
 
 # Impose the constraints
-problem.volume_constraint.fixed_volume = np.trapz(
-    problem.tfe.u, problem.tfe.x[0])
+problem.volume_constraint.fixed_volume = np.trapz(problem.tfe.u, problem.tfe.x[0])
 problem.add_equation(problem.volume_constraint)
 problem.add_equation(problem.translation_constraint)
 
