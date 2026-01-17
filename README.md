@@ -6,8 +6,8 @@ TODO: find new name!
 
 ## Example
 
-Example of a bifurcation diagram with snaking in the Swift-Hohenberg equation obtained with _bice_, see the [corresponding SHE demo](demos/notebooks/she.ipynb).
-<img src="demos/SHE/sample.svg" alt="Sample bifurcation diagram with snaking" width="900"/>
+Example of a bifurcation diagram with snaking in the Swift-Hohenberg equation obtained with _bice_, see the [corresponding SHE demo](src/bice/demos/notebooks/she.ipynb).
+<img src="src/bice/demos/SHE/sample.svg" alt="Sample bifurcation diagram with snaking" width="900"/>
 
 ## Installation
 
@@ -36,13 +36,13 @@ All will be installed automatically when installing `bice`.
 
 We have first tutorials!
 
-- [Heat equation tutorial](demos/notebooks/heat_eq.ipynb): a simple tutorial on how to use bice to implement a first partial differential equation and perform a time simulation of it.
-- [Swift-Hohenberg equation tutorial](demos/notebooks/she.ipynb): a simple tutorial on how to use bice's path continuation capabilities.
-- [Predator-prey model tutorial](demos/notebooks/lve.ipynb): an introduction into the continuation of periodic orbits.
+- [Heat equation tutorial](src/bice/demos/notebooks/heat_eq.ipynb): a simple tutorial on how to use bice to implement a first partial differential equation and perform a time simulation of it.
+- [Swift-Hohenberg equation tutorial](src/bice/demos/notebooks/she.ipynb): a simple tutorial on how to use bice's path continuation capabilities.
+- [Predator-prey model tutorial](src/bice/demos/notebooks/lve.ipynb): an introduction into the continuation of periodic orbits.
 
 More will follow soon.
 
-Meanwhile you can check out the less documented [demos](demos/).
+Meanwhile you can check out the less documented [demos](src/bice/demos/).
 
 ## Documentation
 

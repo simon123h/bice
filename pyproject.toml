@@ -40,7 +40,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
 include = ["bice*"]
 
 [tool.isort]

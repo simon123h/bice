@@ -29,7 +29,7 @@ lint:
     - black --check .
     - isort --check .
     - flake8 .
-    - mypy bice
+    - mypy src/bice
   allow_failure: true
 
 test:

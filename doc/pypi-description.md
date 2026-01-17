@@ -27,13 +27,13 @@ All will be installed automatically when installing `bice`.
 
 We have first tutorials!
 
-- [Heat equation tutorial](https://gitlab.com/simon123h/bice/-/blob/master/demos/notebooks/heat_eq.ipynb): a simple tutorial on how to use bice to implement a first partial differential equation and perform a time simulation of it.
-- [Swift-Hohenberg equation tutorial](https://gitlab.com/simon123h/bice/-/blob/master/demos/notebooks/she.ipynb): a simple tutorial on how to use bice's path continuation capabilities.
-- [Predator-prey model tutorial](https://gitlab.com/simon123h/bice/-/blob/master/demos/notebooks/lve.ipynb): an introduction into the continuation of periodic orbits.
+- [Heat equation tutorial](https://gitlab.com/simon123h/bice/-/blob/master/src/bice/demos/notebooks/heat_eq.ipynb): a simple tutorial on how to use bice to implement a first partial differential equation and perform a time simulation of it.
+- [Swift-Hohenberg equation tutorial](https://gitlab.com/simon123h/bice/-/blob/master/src/bice/demos/notebooks/she.ipynb): a simple tutorial on how to use bice's path continuation capabilities.
+- [Predator-prey model tutorial](https://gitlab.com/simon123h/bice/-/blob/master/src/bice/demos/notebooks/lve.ipynb): an introduction into the continuation of periodic orbits.
 
 More will follow soon.
 
-Meanwhile you can check out the less documented [demos](demos/).
+Meanwhile you can check out the less documented [demos](src/bice/demos/).
 
 ## Documentation
 
