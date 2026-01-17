@@ -28,6 +28,38 @@ dependencies = [
 [project.urls]
 "Homepage" = "https://gitlab.com/simon123h/bice"
 
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "black",
+    "isort",
+    "flake8",
+    "mypy",
+    "types-setuptools"
+]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["bice*"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
