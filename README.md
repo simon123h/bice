@@ -24,7 +24,7 @@ git clone https://gitlab.com/simon123h/bice
 pip3 install -e bice/
 ```
 
-in any directory of your choice. The installation is performed using `setup.py`.
+in any directory of your choice.
 
 ### Requirements
 

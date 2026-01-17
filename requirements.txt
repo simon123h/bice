@@ -1,5 +1,1 @@
-numpy
-scipy
-matplotlib
-findiff
-numdifftools
+-e .
