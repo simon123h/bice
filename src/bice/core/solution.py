@@ -1,6 +1,4 @@
-"""
-This file describes a data structure for Solutions, Branches and BifurcationDiagrams of a Problem.
-"""
+"""Data structures for Solutions, Branches and BifurcationDiagrams."""
 
 from __future__ import annotations
 
@@ -14,21 +12,31 @@ if TYPE_CHECKING:
 
 class Solution:
     """
-    Stores the solution of a problem, including the relevant parameters,
-    and some information on the solution.
+    Stores the solution of a problem.
+
+    Includes the relevant parameters and some information on the solution.
     """
 
     # static variable counting the total number of Solutions
     _solution_count = 0
 
     def __init__(self, problem: Optional["Problem"] = None) -> None:
+        """
+        Initialize the Solution.
+
+        Parameters
+        ----------
+        problem
+            The problem instance to store the state from.
+        """
         # generate solution ID
         Solution._solution_count += 1
         #: unique identifier of the solution
         self.id = Solution._solution_count
         # TODO: storing each solution's data may eat up some memory
         #       do we need to save every solution? maybe save bifurcations only
-        #: The current problem state as a dictionary of data (equation's unknowns and parameters)
+        #: The current problem state as a dictionary of data (equation's unknowns and
+        #: parameters)
         self.data = problem.save() if problem is not None else {}
         #: value of the continuation parameter
         self.p = problem.get_continuation_parameter() if problem is not None else 0
@@ -45,11 +53,19 @@ class Solution:
 
     @property
     def neigenvalues_crossed(self) -> Optional[int]:
-        """How many eigenvalues have crossed the imaginary axis with this solution?"""
+        """
+        Return how many eigenvalues have crossed the imaginary axis.
+
+        Returns
+        -------
+        int or None
+            The number of eigenvalues crossed, or None if unknown.
+        """
         # if we do not know the number of unstable eigenvalues, we have no result
         if self.branch is None or self.nunstable_eigenvalues is None:
             return None
-        # else, compare with the nearest previous neighbor that has info on eigenvalues
+        # else, compare with the nearest previous neighbor that has info on
+        # eigenvalues
         # get branch points with eigenvalue info
         bps = [s for s in self.branch.solutions if s.nunstable_eigenvalues is not None]
         # find index of previous solution
@@ -62,11 +78,19 @@ class Solution:
 
     @property
     def nimaginary_eigenvalues_crossed(self) -> Optional[int]:
-        """How many eigenvalues have crossed the imaginary axis with this solution?"""
+        """
+        Return how many eigenvalues have crossed the imaginary axis.
+
+        Returns
+        -------
+        int or None
+            The number of eigenvalues crossed, or None if unknown.
+        """
         # if we do not know the number of unstable eigenvalues, we have no result
         if self.branch is None or self.nunstable_imaginary_eigenvalues is None:
             return None
-        # else, compare with the nearest previous neighbor that has info on eigenvalues
+        # else, compare with the nearest previous neighbor that has info on
+        # eigenvalues
         # get branch points with eigenvalue info
         bps = [
             s
@@ -85,7 +109,14 @@ class Solution:
         )
 
     def is_stable(self) -> Optional[bool]:
-        """Is the solution stable?"""
+        """
+        Check if the solution is stable.
+
+        Returns
+        -------
+        bool or None
+            True if stable, False if unstable, None if unknown.
+        """
         # if we don't know the number of eigenvalues, return None
         if self.nunstable_eigenvalues is None:
             return None
@@ -96,7 +127,14 @@ class Solution:
         return True
 
     def is_bifurcation(self) -> bool:
-        """Is the solution point a bifurcation?"""
+        """
+        Check if the solution point is a bifurcation.
+
+        Returns
+        -------
+        bool
+            True if it is a bifurcation point.
+        """
         # get bifurcation type (possibly from cache)
         bif_type = self.bifurcation_type()
         # if it is not a regular point, return True
@@ -104,7 +142,19 @@ class Solution:
 
     # TODO: rename to "type" ? bifurcation.bifurcation_type() looks weird...
     def bifurcation_type(self, update: bool = False) -> str:
-        """What type of bifurcation is the solution?"""
+        """
+        Return the type of bifurcation.
+
+        Parameters
+        ----------
+        update
+            Force update of the cached type.
+
+        Returns
+        -------
+        str
+            The bifurcation type string (e.g., "BP", "HP", "+", "-").
+        """
         # check if bifurcation type is cached
         if self._bifurcation_type is not None and not update:
             return self._bifurcation_type
@@ -116,10 +166,12 @@ class Solution:
             return self._bifurcation_type
         # otherwise it is some kind of bifurcation point (BP)
         # self._bifurcation_type = "BP"
-        # use +/- signs corresponding to their null-eigenvalues as type for regular bifurcations
+        # use +/- signs corresponding to their null-eigenvalues as type for
+        # regular bifurcations
         n = nev_crossed
         self._bifurcation_type = "+" * n if n > 0 else "-" * (-n)
-        # check for Hopf bifurcations by number of imaginary eigenvalues that crossed zero
+        # check for Hopf bifurcations by number of imaginary eigenvalues that
+        # crossed zero
         nev_imag_crossed = self.nimaginary_eigenvalues_crossed
         # if it is not unknown or zero or one, this must be a Hopf point
         if nev_imag_crossed not in [None, 0, 1]:
@@ -128,7 +180,19 @@ class Solution:
         return self._bifurcation_type
 
     def get_neighboring_solution(self, distance: int) -> Optional[Solution]:
-        """Get access to the previous solution in the branch"""
+        """
+        Get access to the neighboring solution in the branch.
+
+        Parameters
+        ----------
+        distance
+            The index distance (can be negative).
+
+        Returns
+        -------
+        Solution or None
+            The neighboring solution or None if not found/out of bounds.
+        """
         # if we don't know the branch, there is no neighboring solutions
         if self.branch is None:
             return None
@@ -142,14 +206,14 @@ class Solution:
 
 class Branch:
     """
-    A branch is obtained from a parameter continuation and stores a list of solution objects,
-    the corresponding value of the continuation parameter(s) and the norm.
+    Stores a list of solution objects from a parameter continuation.
     """
 
     # static variable counting the number of Branch instances
     _branch_count = 0
 
     def __init__(self) -> None:
+        """Initialize the Branch."""
         # generate branch ID
         Branch._branch_count += 1
         #: unique identifier of the branch
@@ -158,39 +222,80 @@ class Branch:
         self.solutions = []
 
     def is_empty(self) -> bool:
-        """Is the current branch empty?"""
+        """Check if the current branch is empty."""
         return len(self.solutions) == 0
 
     def add_solution_point(self, solution: Solution) -> None:
-        """Add a solution to the branch"""
+        """
+        Add a solution to the branch.
+
+        Parameters
+        ----------
+        solution
+            The solution object to add.
+        """
         # assign this branch as the solution's branch
         solution.branch = self
         # add solution to list
         self.solutions.append(solution)
 
     def remove_solution_point(self, solution: Solution) -> None:
-        """Remove a solution from the branch"""
+        """
+        Remove a solution from the branch.
+
+        Parameters
+        ----------
+        solution
+            The solution object to remove.
+        """
         self.solutions.remove(solution)
 
     def parameter_vals(self) -> np.ndarray:
-        """List of continuation parameter values along the branch"""
+        """
+        List of continuation parameter values along the branch.
+
+        Returns
+        -------
+        np.ndarray
+            Array of parameter values.
+        """
         return np.array([s.p for s in self.solutions])
 
     def norm_vals(self) -> np.ndarray:
-        """list of solution norm values along the branch"""
+        """
+        List of solution norm values along the branch.
+
+        Returns
+        -------
+        np.ndarray
+            Array of norm values.
+        """
         return np.array([s.norm for s in self.solutions])
 
     def bifurcations(self) -> list:
-        """List all bifurcation points on the branch"""
+        """
+        List all bifurcation points on the branch.
+
+        Returns
+        -------
+        list
+            List of solutions that are bifurcation points.
+        """
         return [s for s in self.solutions if s.is_bifurcation()]
 
     def data(self, only=None) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Returns the list of parameters and norms of the branch
-        optional argument only (str) may restrict the data to:
-        - only="stable": stable parts only
-        - only="unstable": unstable parts only
-        - only="bifurcations": bifurcations only
+        Return the list of parameters and norms of the branch.
+
+        Parameters
+        ----------
+        only
+            Optional filter: "stable", "unstable", or "bifurcations".
+
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray]
+            Tuple of (parameter values, norm values).
         """
         condition = False
         if only == "stable":
@@ -205,7 +310,14 @@ class Branch:
         return (pvals, nvals)
 
     def save(self, filename: str) -> None:
-        """Store the branch to the disk in a format that allows for restoring it later"""
+        """
+        Store the branch to the disk.
+
+        Parameters
+        ----------
+        filename
+            The filename to save to.
+        """
         # dict of data to store
         data = {}
         data["solution_data"] = [s.data for s in self.solutions]
@@ -223,11 +335,13 @@ class Branch:
 
 class BifurcationDiagram:
     """
-    Basically just a list of branches and methods to act upon.
-    Also: a fancy plotting method.
+    Manages a collection of branches.
+
+    Includes methods for plotting.
     """
 
     def __init__(self) -> None:
+        """Initialize the BifurcationDiagram."""
         #: list of branches
         self.branches: list[Branch] = []
         #: storage for the currently active branch
@@ -242,7 +356,19 @@ class BifurcationDiagram:
         self.ylim = None
 
     def new_branch(self, active: bool = True) -> Branch:
-        """Create a new branch"""
+        """
+        Create a new branch.
+
+        Parameters
+        ----------
+        active
+            Whether to set the new branch as active.
+
+        Returns
+        -------
+        Branch
+            The newly created branch.
+        """
         branch = Branch()
         self.branches.append(branch)
         if active:
@@ -250,22 +376,55 @@ class BifurcationDiagram:
         return branch
 
     def current_solution(self) -> Solution:
-        """Return the latest solution in the diagram"""
+        """
+        Return the latest solution in the diagram.
+
+        Returns
+        -------
+        Solution
+            The latest solution of the active branch.
+        """
         return self.active_branch.solutions[-1]
 
     def get_branch_by_ID(self, branch_id: int) -> Optional[Branch]:
-        """Return a branch by its ID"""
+        """
+        Return a branch by its ID.
+
+        Parameters
+        ----------
+        branch_id
+            The ID of the branch.
+
+        Returns
+        -------
+        Branch or None
+            The branch object or None if not found.
+        """
         for branch in self.branches:
             if branch.id == branch_id:
                 return branch
         return None
 
     def remove_branch_by_ID(self, branch_id: int) -> None:
-        """Remove a branch from the BifurcationDiagram by its ID"""
+        """
+        Remove a branch from the BifurcationDiagram by its ID.
+
+        Parameters
+        ----------
+        branch_id
+            The ID of the branch to remove.
+        """
         self.branches = [b for b in self.branches if b.id != branch_id]
 
     def plot(self, ax) -> None:
-        """Plot the bifurcation diagram"""
+        """
+        Plot the bifurcation diagram.
+
+        Parameters
+        ----------
+        ax
+            The matplotlib axes to plot onto.
+        """
         if self.xlim is not None:
             ax.set_xlim(self.xlim)
         if self.ylim is not None:
@@ -289,7 +448,16 @@ class BifurcationDiagram:
         ax.legend()
 
     def load_branch(self, filename: str) -> None:
-        """Load a branch from a file into the diagram, that was stored with Branch.save(filename)"""
+        """
+        Load a branch from a file into the diagram.
+
+        The file should have been stored with Branch.save(filename).
+
+        Parameters
+        ----------
+        filename
+            The filename to load from.
+        """
         # create a new branch
         branch = self.new_branch(active=False)
         # load data dictionary from the file

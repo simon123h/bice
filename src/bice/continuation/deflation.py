@@ -1,23 +1,27 @@
+"""Deflation operator for detecting disconnected branches."""
+
 import numpy as np
 import scipy.sparse as sp
 
 from bice.core.types import Array
 
-"""
-A deflation operator M for deflated continuation.
-Adds singularities to the equation at given solutions u_i
-0 = F(u) --> 0 = M(u) * F(u)
-with
-M(u) = product_i <u_i - u, u_i - u>^-p + shift
-The parameters are:
-  p: some exponent to the norm <u, v>
-  shift: some constant added shift parameter for numerical stability
-"""
-
 
 class DeflationOperator:
+    """
+    A deflation operator M for deflated continuation.
+
+    Adds singularities to the equation at given solutions u_i:
+    0 = F(u) --> 0 = M(u) * F(u)
+    with
+    M(u) = product_i <u_i - u, u_i - u>^-p + shift
+
+    The parameters are:
+      p: some exponent to the norm <u, v>
+      shift: some constant added shift parameter for numerical stability
+    """
 
     def __init__(self) -> None:
+        """Initialize the DeflationOperator."""
         #: the order of the norm that will be used for the deflation operator
         self.p = 2
         #: small constant in the deflation operator, for numerical stability
@@ -26,14 +30,38 @@ class DeflationOperator:
         self.solutions = []
 
     def operator(self, u: Array):
-        """obtain the value of the deflation operator for given u"""
+        """
+        Obtain the value of the deflation operator for given u.
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns.
+
+        Returns
+        -------
+        float
+            The value of the operator.
+        """
         return (
             np.prod([np.dot(u_i - u, u_i - u) ** -self.p for u_i in self.solutions])
             + self.shift
         )
 
     def D_operator(self, u: Array):
-        """Jacobian of deflation operator for given u"""
+        """
+        Calculate the Jacobian of deflation operator for given u.
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns.
+
+        Returns
+        -------
+        Array
+            The gradient of the operator.
+        """
         op = self.operator(u)
         return (
             self.p
@@ -45,7 +73,21 @@ class DeflationOperator:
         )
 
     def deflated_rhs(self, rhs):
-        """deflate the rhs of some equation"""
+        """
+        Deflate the rhs of some equation.
+
+        Returns a new function that represents M(u) * rhs(u).
+
+        Parameters
+        ----------
+        rhs
+            The original right-hand side function.
+
+        Returns
+        -------
+        callable
+            The deflated rhs function.
+        """
 
         def new_rhs(u):
             # multiply rhs with deflation operator
@@ -55,7 +97,21 @@ class DeflationOperator:
         return new_rhs
 
     def deflated_jacobian(self, rhs, jacobian):
-        """generate Jacobian of deflated rhs of some equation or problem"""
+        """
+        Generate Jacobian of deflated rhs of some equation or problem.
+
+        Parameters
+        ----------
+        rhs
+            The original right-hand side function.
+        jacobian
+            The original Jacobian function.
+
+        Returns
+        -------
+        callable
+            The deflated Jacobian function.
+        """
 
         def new_jac(u):
             # obtain operator and operator derivative
@@ -68,13 +124,27 @@ class DeflationOperator:
         return new_jac
 
     def add_solution(self, u: Array) -> None:
-        """add a solution to the list of solutions used for deflation"""
+        """
+        Add a solution to the list of solutions used for deflation.
+
+        Parameters
+        ----------
+        u
+            The solution to deflate.
+        """
         self.solutions.append(u)
 
     def remove_solution(self, u: Array) -> None:
-        """remove a solution from the list of solutions used for deflation"""
+        """
+        Remove a solution from the list of solutions used for deflation.
+
+        Parameters
+        ----------
+        u
+            The solution to remove.
+        """
         self.solutions.remove(u)
 
     def clear_solutions(self) -> None:
-        """clear the list of solutions used for deflation"""
+        """Clear the list of solutions used for deflation."""
         self.solutions = []

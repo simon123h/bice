@@ -1,3 +1,5 @@
+"""Solver implementations (Newton, Eigenvalues)."""
+
 from typing import Optional, Tuple
 
 import numpy as np
@@ -12,38 +14,90 @@ from .types import Matrix
 class AbstractNewtonSolver:
     """
     Abstract base class for all Newton solvers.
-    Newton solver find the root a (possibly high-dimensional, nonlinear) function f(u) = 0 using
-    a stepping procedure. An initial guess u0 for the solution needs to be supplied. Also giving the
-    Jacobian J = df/du will speed up the computation and is even required for some solvers.
+
+    Newton solver find the root a (possibly high-dimensional, nonlinear)
+    function f(u) = 0 using a stepping procedure. An initial guess u0 for
+    the solution needs to be supplied. Also giving the Jacobian J = df/du
+    will speed up the computation and is even required for some solvers.
     """
 
     def __init__(self) -> None:
+        """Initialize the AbstractNewtonSolver."""
         #: maximum number of steps during solve
         self.max_iterations = 100
         #: absolute convergence tolerance for norm or residuals
         self.convergence_tolerance = 6e-6
-        #: how verbose should the solving be? 0 = quiet, larger numbers = print more details
+        #: how verbose should the solving be? 0 = quiet, larger numbers = print more
+        #: details
         self.verbosity = 0
         # internal storage for the number of iterations taken during last solve
         self._iteration_count = None
 
     def solve(self, f, u0, jac):
-        """solve the system f(u) = 0 with the initial guess u0 and the Jacobian jac(u)"""
+        """
+        Solve the system f(u) = 0 with the initial guess u0 and the Jacobian jac(u).
+
+        Parameters
+        ----------
+        f
+            The function to find the root of.
+        u0
+            The initial guess.
+        jac
+            The Jacobian of the function.
+
+        Raises
+        ------
+        NotImplementedError
+            This is an abstract base class.
+        """
         raise NotImplementedError(
-            "'AbstractNewtonSolver' is an abstract base class - do not use for actual solving!"
+            "'AbstractNewtonSolver' is an abstract base class - do not use for actual "
+            "solving!"
         )
 
     @property
     def niterations(self) -> Optional[int]:
-        """access to the number of iterations taken in the last Newton solve"""
+        """
+        Return the number of iterations taken in the last Newton solve.
+
+        Returns
+        -------
+        int or None
+            The number of iterations.
+        """
         return self._iteration_count
 
     def norm(self, residuals) -> float:
-        """the norm used for checking the residuals for convergence"""
+        """
+        Return the norm used for checking the residuals for convergence.
+
+        Parameters
+        ----------
+        residuals
+            The residuals vector.
+
+        Returns
+        -------
+        float
+            The norm of the residuals.
+        """
         return np.max(residuals)
 
     def throw_no_convergence_error(self, res=None):
-        """throw an error when the solver failed to converge"""
+        """
+        Throw an error when the solver failed to converge.
+
+        Parameters
+        ----------
+        res
+            The residual value at the time of failure.
+
+        Raises
+        ------
+        np.linalg.LinAlgError
+            Always raised to indicate non-convergence.
+        """
         if res is None:
             res = ""
         else:
@@ -57,10 +111,26 @@ class AbstractNewtonSolver:
 
 
 class MyNewtonSolver(AbstractNewtonSolver):
-    """Reference implementation of a simple 'text book' Newton solver"""
+    """Reference implementation of a simple 'text book' Newton solver."""
 
     @profile
     def solve(self, f, u0, jac):
+        """
+        Solve the system using a custom Newton iteration.
+
+        Parameters
+        ----------
+        f
+            The function to find the root of.
+        u0
+            The initial guess.
+        jac
+            The Jacobian of the function.
+
+        Returns
+        -------
+        The solution vector.
+        """
         self._iteration_count = 0
         u = u0
         err = 0
@@ -97,18 +167,38 @@ class MyNewtonSolver(AbstractNewtonSolver):
 class NewtonSolver(AbstractNewtonSolver):
     """
     A Newton solver that uses scipy.optimize.root for solving.
+
     The method (algorithm) to be used can be adjusted with the attribute 'method'.
-    NOTE: does not work with sparse Jacobians, but converts it to a dense matrix instead!
+    NOTE: does not work with sparse Jacobians, but converts it to a dense matrix
+    instead!
     """
 
     def __init__(self) -> None:
+        """Initialize the NewtonSolver."""
         super().__init__()
         #: choose from the different methods of scipy.optimize.root
-        #: NOTE: method = "krylov" might be faster, but then we can use NewtonKrylovSolver directly
+        #: NOTE: method = "krylov" might be faster, but then we can use
+        #: NewtonKrylovSolver directly
         self.method = "hybr"
 
     @profile
     def solve(self, f, u0, jac=None):
+        """
+        Solve using scipy.optimize.root.
+
+        Parameters
+        ----------
+        f
+            The function.
+        u0
+            Initial guess.
+        jac
+            The Jacobian (optional).
+
+        Returns
+        -------
+        The solution vector.
+        """
         # methods that do not use the Jacobian, but use an approximation
         inexact_methods = [
             "krylov",
@@ -126,7 +216,8 @@ class NewtonSolver(AbstractNewtonSolver):
 
             def jac_wrapper(u):
                 # wrapper for the Jacobian
-                # sparse matrices are not supported by scipy's root method :-/ convert to dense
+                # sparse matrices are not supported by scipy's root method :-/
+                # convert to dense
                 assert jac is not None
                 j = jac(u)
                 if sp.issparse(j):
@@ -157,13 +248,14 @@ class NewtonSolver(AbstractNewtonSolver):
 
 class NewtonKrylovSolver(AbstractNewtonSolver):
     """
-    A Newton solver using the highly efficient Krylov subspace method for Jacobian approximation.
-    If provided, the known Jacobian is inverted: M = J^-1 and then M*J*a = M*b is solved instead
-    of J*a = b, because M*J is likely closer to the identity, cf.:
-    https://docs.scipy.org/doc/scipy/reference/tutorial/optimize.html
+    Newton solver using the Krylov subspace method for Jacobian approximation.
+
+    If provided, the known Jacobian is inverted: M = J^-1 and then M*J*a = M*b
+    is solved instead of J*a = b, because M*J is likely closer to the identity.
     """
 
     def __init__(self):
+        """Initialize the NewtonKrylovSolver."""
         super().__init__()
         #: Let the Krylov method approximate the Jacobian or use the one provided by
         #: the equation (FD or analytical)?
@@ -171,6 +263,22 @@ class NewtonKrylovSolver(AbstractNewtonSolver):
 
     @profile
     def solve(self, f, u0, jac=None):
+        """
+        Solve using Krylov subspace method.
+
+        Parameters
+        ----------
+        f
+            The function.
+        u0
+            Initial guess.
+        jac
+            The Jacobian (optional).
+
+        Returns
+        -------
+        The solution vector.
+        """
         # some options
         options = {
             "disp": self.verbosity > 1,  # print the results of each step?
@@ -206,11 +314,13 @@ class NewtonKrylovSolver(AbstractNewtonSolver):
 
 class EigenSolver:
     """
-    A wrapper to the powerful iterative Eigensolver ARPACK,
-    that finds eigenvalues and eigenvectors of an eigenproblem.
+    A wrapper to the powerful iterative Eigensolver ARPACK.
+
+    Finds eigenvalues and eigenvectors of an eigenproblem.
     """
 
     def __init__(self) -> None:
+        """Initialize the EigenSolver."""
         #: The shift used for the shift-invert method in the iterative eigensolver.
         #: If shift != None, the eigensolver will find the eigenvalues near the
         #: value of the shift first
@@ -228,14 +338,30 @@ class EigenSolver:
         """
         Solve the eigenproblem A*x = v*x for the eigenvalues v and the eigenvectors x.
 
-        If an unsigned integer `k` is given, the iterative eigensolver ARPACK will calculate
-        the k first eigenvalues sorted by the largest real part. Otherwise a direct eigensolver
-        will be used to calculate all eigenvalues.
+        If an unsigned integer `k` is given, the iterative eigensolver ARPACK will
+        calculate the k first eigenvalues sorted by the largest real part. Otherwise
+        a direct eigensolver will be used to calculate all eigenvalues.
 
-        If a mass matrix `M` is given, the generalized eigenvalue A*x = v*M*x will be solved.
+        If a mass matrix `M` is given, the generalized eigenvalue A*x = v*M*x will
+        be solved.
+
+        Parameters
+        ----------
+        A
+            The system matrix.
+        M
+            The mass matrix (optional).
+        k
+            Number of eigenvalues to compute (optional).
+
+        Returns
+        -------
+        Tuple[np.ndarray, np.ndarray]
+            A tuple containing (eigenvalues, eigenvectors).
         """
         if k is None:
-            # if no number of values was specified, use a direct eigensolver for computing all eigenvalues
+            # if no number of values was specified, use a direct eigensolver for
+            # computing all eigenvalues
             A = A.toarray() if isinstance(A, sp.spmatrix) else A
             M = M.toarray() if isinstance(M, sp.spmatrix) else M
             eigenvalues, eigenvectors = scipy.linalg.eig(A, M)
@@ -245,10 +371,12 @@ class EigenSolver:
             # A: matrix of which we compute the eigenvalues
             # k: number of eigenvalues to compute in iterative method
             # M: mass matrix for generized eigenproblem A*x=w*M*x
-            # which: order of eigenvalues to compute ('LM' = largest magnitude is default and the fastest)
+            # which: order of eigenvalues to compute ('LM' = largest magnitude is
+            # default and the fastest)
             # sigma: Find eigenvalues near sigma using shift-invert mode.
             # v0: Starting vector for iteration. Default: random.
-            #     This may not be deterministic, since it is random! For this reason, pde2path uses a [1,...,1]-vector
+            #     This may not be deterministic, since it is random! For this reason,
+            #     pde2path uses a [1,...,1]-vector
             # For more info, see the documentation:
             # https://docs.scipy.org/doc/scipy/reference/generated/sp.linalg.eigs.html
             eigenvalues, eigenvectors = sp.linalg.eigs(

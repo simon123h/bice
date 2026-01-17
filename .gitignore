@@ -13,3 +13,5 @@ venv/
 *.egg-info/
 build/
 dist/
+
+*flake8.txt

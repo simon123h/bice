@@ -1,3 +1,5 @@
+"""Parameter continuation stepping strategies."""
+
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -13,16 +15,37 @@ if TYPE_CHECKING:
 class ContinuationStepper:
     """
     Abstract base class for all parameter continuation-steppers.
+
     Specifies attributes and methods that all continuation-steppers should have.
     """
 
     # constructor
     def __init__(self, ds: float = 1e-3) -> None:
+        """
+        Initialize the ContinuationStepper.
+
+        Parameters
+        ----------
+        ds
+            The initial continuation step size.
+        """
         #: continuation step size
         self.ds = ds
 
     def step(self, problem: "Problem") -> None:
-        """Perform a continuation step on a problem"""
+        """
+        Perform a continuation step on a problem.
+
+        Parameters
+        ----------
+        problem
+            The problem to step.
+
+        Raises
+        ------
+        NotImplementedError
+            This is an abstract base class.
+        """
         raise NotImplementedError(
             "'ContinuationStepper' is an abstract base class - "
             "do not use for actual parameter continuation!"
@@ -30,21 +53,29 @@ class ContinuationStepper:
 
     def factory_reset(self) -> None:
         """
-        Reset the continuation-stepper parameters & storage to default, e.g.,
-        when starting off a new solution point, switching branches or
-        switching the principal continuation parameter
+        Reset the continuation-stepper parameters & storage to default.
+
+        Useful when starting off a new solution point, switching branches or
+        switching the principal continuation parameter.
         """
         # TODO: is this method even needed?
         pass
 
 
 class NaturalContinuation(ContinuationStepper):
-    """
-    Natural parameter continuation stepper
-    """
+    """Natural parameter continuation stepper."""
 
     def step(self, problem: "Problem") -> None:
-        """Perform a continuation step on a problem"""
+        """
+        Perform a natural continuation step on a problem.
+
+        Updates the parameter by `ds` and solves with Newton's method.
+
+        Parameters
+        ----------
+        problem
+            The problem to step.
+        """
         # update the parameter value
         p = problem.get_continuation_parameter()
         problem.set_continuation_parameter(p + self.ds)
@@ -53,11 +84,17 @@ class NaturalContinuation(ContinuationStepper):
 
 
 class PseudoArclengthContinuation(ContinuationStepper):
-    """
-    Pseudo-arclength parameter continuation stepper
-    """
+    """Pseudo-arclength parameter continuation stepper."""
 
     def __init__(self, ds: float = 1e-3) -> None:
+        """
+        Initialize the PseudoArclengthContinuation.
+
+        Parameters
+        ----------
+        ds
+            The initial step size.
+        """
         super().__init__(ds)
         #: convergence tolerance for the newton solver in the continuation step
         self.convergence_tolerance = 1e-8
@@ -86,7 +123,17 @@ class PseudoArclengthContinuation(ContinuationStepper):
 
     @profile
     def step(self, problem: "Problem") -> None:
-        """Perform a continuation step on a problem"""
+        """
+        Perform a pseudo-arclength continuation step on a problem.
+
+        Calculates the tangent predictor and corrects with a Newton-Raphson iteration
+        on the extended system.
+
+        Parameters
+        ----------
+        problem
+            The problem to step.
+        """
         p = problem.get_continuation_parameter()
         u = problem.u
         N = u.size
@@ -94,7 +141,8 @@ class PseudoArclengthContinuation(ContinuationStepper):
         u_old, p_old = u.copy(), p
         # check if we know at least the two previous continuation points
         if problem.history.length > 1 and problem.history.type == "continuation":
-            # if yes, we can approximate the tangent in phase-space from the history points
+            # if yes, we can approximate the tangent in phase-space from the history
+            # points
             # TODO: use higher order polynomial predictor?
             tangent = np.append(
                 u - problem.history.u(-1),
@@ -103,12 +151,14 @@ class PseudoArclengthContinuation(ContinuationStepper):
             # normalize tangent and adjust sign with respect to continuation direction
             tangent /= np.linalg.norm(tangent) * np.sign(problem.history.step_size(-1))
         else:
-            # else, we need to calculate the tangent from extended Jacobian in (u, parameter)-space
+            # else, we need to calculate the tangent from extended Jacobian in
+            # (u, parameter)-space
             jac = problem.jacobian(u)
-            # TODO: detect if jacobian is sparse and decide whether to use np / sp methods
+            # TODO: detect if jacobian is sparse and decide whether to use np / sp
+            # methods
             if not sp.issparse(jac):
                 jac = sp.coo_matrix(jac)
-            # last column of extended jacobian: d(rhs)/d(parameter), calculate it with FD
+            # last column of extended jacobian: d(rhs)/d(parameter), calculate with FD
             problem.set_continuation_parameter(p - self.fd_epsilon)
             rhs_1 = problem.rhs(u)
             problem.set_continuation_parameter(p + self.fd_epsilon)
@@ -155,13 +205,15 @@ class PseudoArclengthContinuation(ContinuationStepper):
                 - self.ds
             )
             rhs_ext = np.append(problem.rhs(u), arclength_condition)
-            # solving (jac_ext) * du_ext = rhs_ext for du_ext will now give the new solution
+            # solving (jac_ext) * du_ext = rhs_ext for du_ext will now give the new
+            # solution
             du_ext = self._linear_solve(
                 jac_ext, rhs_ext, problem.settings.use_sparse_matrices
             )
             u -= du_ext[:N]
             p -= du_ext[N]
-            # TODO: use max(rhs_ext(u)) < tol as convergence check, as in other solvers?
+            # TODO: use max(rhs_ext(u)) < tol as convergence check, as in other
+            # solvers?
             # update counter and check for convergence
             count += 1
             converged = np.linalg.norm(du_ext) < self.convergence_tolerance
@@ -203,7 +255,23 @@ class PseudoArclengthContinuation(ContinuationStepper):
                 ) * np.sign(self.ds)
 
     def _linear_solve(self, A, b: Array, use_sparse_matrices: bool = False):
-        """Solve the linear system A*x = b for x and return x"""
+        """
+        Solve the linear system A*x = b for x and return x.
+
+        Parameters
+        ----------
+        A
+            The system matrix.
+        b
+            The right-hand side vector.
+        use_sparse_matrices
+            Whether to enforce sparse matrix solving.
+
+        Returns
+        -------
+        Array
+            The solution vector.
+        """
         # if desired, convert A to sparse matrix
         if use_sparse_matrices and not sp.issparse(A):
             A = sp.csr_matrix(A)

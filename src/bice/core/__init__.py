@@ -1,6 +1,4 @@
-"""
-The 'core' package contains all of bice's basic functionality.
-"""
+"""The 'core' package contains all of bice's basic functionality."""
 
 from .equation import Equation, EquationGroup
 from .problem import Problem

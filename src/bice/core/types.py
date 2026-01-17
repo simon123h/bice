@@ -1,3 +1,5 @@
+"""Common type aliases used throughout the package."""
+
 from typing import Tuple, Union
 
 import numpy as np

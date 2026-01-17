@@ -1,3 +1,5 @@
+"""Predefined constraint equations for continuation."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
@@ -15,26 +17,53 @@ if TYPE_CHECKING:
 class ConstraintEquation(Equation):
     """
     Abstract base class for constraint type equations.
+
     For simple implementation of PDE constraints and less redundant code.
     """
 
     def __init__(self, shape: Shape = (1,)) -> None:
+        """
+        Initialize the ConstraintEquation.
+
+        Parameters
+        ----------
+        shape
+            The shape of the constraint unknowns (Lagrange multipliers).
+        """
         # default shape: (1,)
         super().__init__(shape=shape)
         # constraints typically couple to some other equation
         self.is_coupled = True
 
     def mass_matrix(self) -> float:
+        """
+        Return the mass matrix contribution.
+
+        Returns
+        -------
+        float
+            Always 0 as constraints usually couple to no time-derivatives.
+        """
         # constraint usually couples to no time-derivatives
         return 0
 
     def plot(self, ax) -> None:
+        """
+        Plot the constraint state (no-op).
+
+        Parameters
+        ----------
+        ax
+            The matplotlib axes.
+        """
         # nothing to plot
         pass
 
 
 class VolumeConstraint(ConstraintEquation):
     """
+    Assures the conservation of the integral of the unknowns.
+
     A volume constraint (or mass constraint) assures the conservation of
     the integral of the unknowns of some given equation when solving the system.
     We may even prescribe the target volume (or mass) with a parameter,
@@ -46,17 +75,41 @@ class VolumeConstraint(ConstraintEquation):
     def __init__(
         self, reference_equation: Equation, variable: Optional[int] = None
     ) -> None:
+        """
+        Initialize the VolumeConstraint.
+
+        Parameters
+        ----------
+        reference_equation
+            The equation to constrain.
+        variable
+            The index of the variable to constrain (if the equation has multiple).
+        """
         super().__init__(shape=(1,))
         #: on which equation/unknowns should the constraint be imposed?
         self.ref_eq = reference_equation
         #: on which variable (index) of the equation should the constraint be imposed?
         self.variable = variable
-        #: this equation brings a single extra degree of freedom (influx Lagrange multiplier)
+        #: this equation brings a single extra degree of freedom (influx Lagrange
+        #: multiplier)
         self.u = np.zeros(1)
         #: This parameter allows for prescribing a fixed volume (unless it is None)
         self.fixed_volume: Optional[float] = None
 
     def rhs(self, u: Array) -> Array:
+        """
+        Calculate the residuals of the volume constraint.
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns.
+
+        Returns
+        -------
+        Array
+            The residuals vector.
+        """
         # generate empty vector of residual contributions
         res = np.zeros((u.size))
         # reference to the indices of the unknowns that we work on
@@ -80,11 +133,25 @@ class VolumeConstraint(ConstraintEquation):
             if hasattr(self.ref_eq, "x") and getattr(self.ref_eq, "x") is not None:
                 x = getattr(self.ref_eq, "x")
             res[self_idx] = np.trapz(u[eq_idx], x) - self.fixed_volume
-        # Add the constraint to the reference equation: unknown influx is the Langrange multiplier
+        # Add the constraint to the reference equation: unknown influx is the
+        # Langrange multiplier
         res[eq_idx] = u[self_idx]
         return res
 
     def jacobian(self, u: Array) -> sp.csr_matrix:
+        """
+        Calculate the Jacobian of the volume constraint.
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns.
+
+        Returns
+        -------
+        sp.csr_matrix
+            The Jacobian matrix.
+        """
         # TODO: implement analytical / semi-analytical Jacobian
         # convert FD Jacobian to sparse matrix
         return sp.csr_matrix(super().jacobian(u))
@@ -92,6 +159,8 @@ class VolumeConstraint(ConstraintEquation):
 
 class TranslationConstraint(ConstraintEquation):
     """
+    Assures that the center of mass does not move.
+
     A translation constraint assures that the center of mass of some
     reference equation's unknowns does not move when solving the system.
     The additional constraint equations (one per spatial dimension) come
@@ -105,6 +174,18 @@ class TranslationConstraint(ConstraintEquation):
         variable: Optional[int] = None,
         direction: int = 0,
     ) -> None:
+        """
+        Initialize the TranslationConstraint.
+
+        Parameters
+        ----------
+        reference_equation
+            The equation to constrain.
+        variable
+            The variable index to constrain.
+        direction
+            The spatial direction (index) to apply the constraint to.
+        """
         # call parent constructor
         super().__init__(shape=(1,))
         #: on which equation/unknowns should the constraint be imposed?
@@ -117,6 +198,19 @@ class TranslationConstraint(ConstraintEquation):
         self.u = np.zeros(1)
 
     def rhs(self, u: Array) -> Array:
+        """
+        Calculate the residuals of the translation constraint.
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns.
+
+        Returns
+        -------
+        Array
+            The residuals vector.
+        """
         # set up the vector of the residual contributions
         res = np.zeros((u.size))
         # reference to the equation, shape and indices of the unknowns that we work on
@@ -134,7 +228,8 @@ class TranslationConstraint(ConstraintEquation):
         eq_u = u[eq_idx]
         eq_u_old = self.group.u[eq_idx]
         velocity = u[self_idx]
-        # add constraint to residuals of reference equation (velocity is the lagrange multiplier)
+        # add constraint to residuals of reference equation (velocity is the
+        # lagrange multiplier)
         try:  # if method du_dx is implemented, use this
             eq_dudx = eq.du_dx(eq_u.reshape(eq_shape), self.direction).ravel()
         except AttributeError:  # if not, get it from the gradient
@@ -148,6 +243,19 @@ class TranslationConstraint(ConstraintEquation):
         return res
 
     def jacobian(self, u: Array) -> sp.csr_matrix:
+        """
+        Calculate the Jacobian of the translation constraint.
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns.
+
+        Returns
+        -------
+        sp.csr_matrix
+            The Jacobian matrix.
+        """
         # contributions:
         # - d constraint eq. / du
         # - d bulk eq. / d u

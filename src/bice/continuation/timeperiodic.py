@@ -1,3 +1,5 @@
+"""Time-periodic orbit handling."""
+
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.linalg
@@ -12,6 +14,8 @@ from bice.core.types import Array
 
 class TimePeriodicOrbitHandler(Equation):
     """
+    Handles equations with implicit time-stepping on a periodic time-mesh.
+
     The TimePeriodicOrbitHandler is an Equation that has an implicit
     time-stepping on a periodic time-mesh of (unknown) period length T.
     In a Problem, it can be used for solving periodic orbits, e.g. in a
@@ -19,8 +23,21 @@ class TimePeriodicOrbitHandler(Equation):
     be part of the problem.
     """
 
-    # reference equation, initial guess for period length, initial number of points in time
+    # reference equation, initial guess for period length, initial number of points in
+    # time
     def __init__(self, reference_equation, T, Nt) -> None:
+        """
+        Initialize the TimePeriodicOrbitHandler.
+
+        Parameters
+        ----------
+        reference_equation
+            The equation to solve the orbit for.
+        T
+            Initial guess for the period.
+        Nt
+            Initial number of time steps.
+        """
         super().__init__(shape=(Nt * reference_equation.ndofs + 1))
         # which equation to treat?
         self.ref_eq = reference_equation
@@ -29,54 +46,100 @@ class TimePeriodicOrbitHandler(Equation):
         # the vector of unknowns: unknowns of the reference equation for every timestep
         u1 = np.tile(self.ref_eq.u, Nt)
         # the period is also an unknown, append it to u
-        # TODO: a good guess for T is 2pi / Im(lambda), with the unstable eigenvalue lambda
+        # TODO: a good guess for T is 2pi / Im(lambda), with the unstable eigenvalue
+        #       lambda
         self.u = np.append(u1, T)
-        # the finite differences matrix to compute the temporal derivative du/dt from given u[t]
+        # the finite differences matrix to compute the temporal derivative du/dt from
+        # given u[t]
         self.ddt = self.build_ddt_matrix()
-        # cache for storing the Jacobians J[u, t_i] = d(ref_eq.rhs)/du for each point in time t_i
+        # cache for storing the Jacobians J[u, t_i] = d(ref_eq.rhs)/du for each point
+        # in time t_i
         self._jacobian_cache = []
 
     @property
     def T(self) -> float:
-        """Access the period length"""
+        """
+        Access the period length.
+
+        Returns
+        -------
+        float
+            The period length.
+        """
         return self.u[-1]
 
     @T.setter
     def T(self, v: float) -> None:
+        """
+        Set the period length.
+
+        Parameters
+        ----------
+        v
+            The new period length.
+        """
         self.u[-1] = v
 
     @property
     def t(self) -> Array:
-        """Return the temporal domain vector"""
+        """
+        Return the temporal domain vector.
+
+        Returns
+        -------
+        Array
+            The accumulated time steps.
+        """
         return np.cumsum(self.dt)
 
     @property
     def Nt(self) -> int:
-        """Number of points in time"""
+        """
+        Return the number of points in time.
+
+        Returns
+        -------
+        int
+            Number of time steps.
+        """
         return len(self.dt)
 
     def u_orbit(self) -> Array:
-        """The unknowns in separate arrays for each point in time"""
+        """
+        Return the unknowns in separate arrays for each point in time.
+
+        Returns
+        -------
+        Array
+            The reshaped unknowns array of shape (Nt, ...).
+        """
         # split the period and reshape to (Nt, *ref_eq.shape)
         return self.u[:-1].reshape((self.Nt, *self.ref_eq.shape))
 
     def build_ddt_matrix(self) -> sp.csr_matrix:
-        """Build the time-derivative operator ddt, using periodic finite differences"""
+        """
+        Build the time-derivative operator ddt, using periodic finite differences.
+
+        Returns
+        -------
+        sp.csr_matrix
+            The finite difference matrix.
+        """
         # time-derivative operator
         # TODO: build using FinDiff or numdifftoos.fornberg
         #       then we can also support non-uniform time-grids
         Nt = self.Nt
-        I = np.eye(Nt)
+        identity = np.eye(Nt)
         dt = self.dt[0]
         ddt = np.zeros((Nt, Nt))
-        ddt += -3 * np.roll(I, -4, axis=1)
-        ddt += 32 * np.roll(I, -3, axis=1)
-        ddt += -168 * np.roll(I, -2, axis=1)
-        ddt += 672 * np.roll(I, -1, axis=1)
-        ddt -= 672 * np.roll(I, 1, axis=1)
-        ddt -= -168 * np.roll(I, 2, axis=1)
-        ddt -= 32 * np.roll(I, 3, axis=1)
-        ddt -= -3 * np.roll(I, 4, axis=1)
+        ddt += -3 * np.roll(identity, -4, axis=1)
+        ddt += 32 * np.roll(identity, -3, axis=1)
+        ddt += -168 * np.roll(identity, -2, axis=1)
+        ddt += 672 * np.roll(identity, -1, axis=1)
+        ddt -= 672 * np.roll(identity, 1, axis=1)
+        ddt -= -168 * np.roll(identity, 2, axis=1)
+        ddt -= 32 * np.roll(identity, 3, axis=1)
+        ddt -= -3 * np.roll(identity, 4, axis=1)
         # TODO: the minus should not be here!
         ddt /= -dt * 840
         # convert to sparse
@@ -84,7 +147,19 @@ class TimePeriodicOrbitHandler(Equation):
 
     @profile
     def rhs(self, u: Array) -> Array:
-        """Calculate the rhs of the full system of equations"""
+        """
+        Calculate the rhs of the full system of equations.
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns (including period T).
+
+        Returns
+        -------
+        Array
+            The residuals.
+        """
         # number of unknowns of a single equation
         N = self.ref_eq.ndofs
         # split the unknowns into:
@@ -115,7 +190,19 @@ class TimePeriodicOrbitHandler(Equation):
 
     @profile
     def jacobian(self, u: Array) -> sp.csr_matrix:
-        """Calculate the Jacobian of rhs(u)"""
+        """
+        Calculate the Jacobian of rhs(u).
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns.
+
+        Returns
+        -------
+        sp.csr_matrix
+            The Jacobian matrix.
+        """
         # split the unknowns into:
         # ... period length
         T = u[-1]
@@ -157,18 +244,24 @@ class TimePeriodicOrbitHandler(Equation):
 
     def monodromy_matrix(self, use_cache: bool = True) -> sp.csr_matrix:
         """
-        Calculate the monodromy matrix A that is used to calculate the stability of the orbit
-        using the Floquet multipliers (eigenvalues of A).
+        Calculate the monodromy matrix A.
 
-        The matrix is computed as the product of the reference equations's Jacobians for
-        each point in time, i.e.:
+        Used to calculate the stability of the orbit using the Floquet multipliers
+        (eigenvalues of A).
+
+        The matrix is computed as the product of the reference equations's Jacobians
+        for each point in time, i.e.:
         A = J[u(t_N), t_N] * J[u(t_{N-1}), t_{N-1}] * ... * J[u(t_0), t_0]
 
-        The Jacobians J[u, t] are cached when the total Jacobian of the orbit handler
-        (TimePeriodicOrbitHandler.jacobian(u)) is computed. This normally happens during solving
-        (unless using a Krylov method), so they should be up to date as the stability calculation
-        should normally happen after solving. If caching is not desired, the cache can be ignored
-        by setting `use_cache = False`.
+        Parameters
+        ----------
+        use_cache
+            Whether to use cached Jacobians from the last solving step.
+
+        Returns
+        -------
+        sp.csr_matrix
+            The monodromy matrix.
         """
         # store whether there was something cached
         had_cache = len(self._jacobian_cache) > 0
@@ -176,8 +269,8 @@ class TimePeriodicOrbitHandler(Equation):
         if len(self._jacobian_cache) != self.Nt:
             # if not, we will definitely need to regenerate the Jacobians
             use_cache = False
-        # If we are not using the cached Jacobians, regenerate Jacobians by computing the
-        # orbit handlers Jacobian (this method updates the cache)
+        # If we are not using the cached Jacobians, regenerate Jacobians by computing
+        # the orbit handlers Jacobian (this method updates the cache)
         if not use_cache:
             _ = self.jacobian(self.u)
         # Cache should now be up to date
@@ -187,8 +280,8 @@ class TimePeriodicOrbitHandler(Equation):
         for i in range(1, self.Nt):
             mon_mat = mon_mat.dot(jacs[i])
         # If there was no cache, it is likely that we are using some matrix free method
-        # (e.g. Krylov subspace methods) for Jacobian estimation that does not generate a cache.
-        # If so, invalidate the cache:
+        # (e.g. Krylov subspace methods) for Jacobian estimation that does not
+        # generate a cache. If so, invalidate the cache:
         if not had_cache:
             self._jacobian_cache = []
         # return the monodromy matrix
@@ -197,16 +290,21 @@ class TimePeriodicOrbitHandler(Equation):
     def floquet_multipliers(self, k: int = 20, use_cache: bool = True) -> Array:
         """
         Calculate the Floquet multipliers to obtain the stability of the orbit.
-        The Floquet multipliers are the eigenvalues of the monodromy matrix
-        (cf. TimePeriodicOrbitHander.monodromy_matrix(...)).
 
-        k is the number of desired Floquet multipliers to be calculated by the iterative eigensolver
+        The Floquet multipliers are the eigenvalues of the monodromy matrix.
 
-        If `use_cache=True` (default), the Jacobians will be cached from the last solving step.
-        This is typically a good choice, because it saves computation time and the solving should
-        happen right before the stability calculation. However, if a (matrix free) Krylov method
-        is used for solving, the Jacobians will never actually be computed, thus requiring
-        `use_cache=False`.
+        Parameters
+        ----------
+        k
+            Number of desired Floquet multipliers to be calculated by the iterative
+            eigensolver.
+        use_cache
+            Whether to use cached Jacobians.
+
+        Returns
+        -------
+        Array
+            The Floquet multipliers (eigenvalues).
         """
         # obtain the monodromy matrix and mass matrix
         A = self.monodromy_matrix(use_cache)
@@ -238,7 +336,14 @@ class TimePeriodicOrbitHandler(Equation):
     # TODO: test this
     # TODO: ddt does currently not support non-uniform time, make uniform?
     def adapt(self) -> tuple:
-        """Adapt the time mesh to the solution"""
+        """
+        Adapt the time mesh to the solution.
+
+        Returns
+        -------
+        tuple
+            (min_error, max_error) estimates.
+        """
         # number of unknowns of a single equation
         N = self.ref_eq.ndofs
         # split the unknowns into:
@@ -286,7 +391,8 @@ class TimePeriodicOrbitHandler(Equation):
         # assign new variables and timesteps
         self.u = u
         self.dt = dt
-        # if the equation belongs to a group of equations, redo it's mapping of the unknowns
+        # if the equation belongs to a group of equations, redo it's mapping of the
+        # unknowns
         if self.group is not None:
             self.group.map_unknowns()
         # rebuild FD time-derivative matrix
@@ -297,13 +403,27 @@ class TimePeriodicOrbitHandler(Equation):
         return (min(error_estimate), max(error_estimate))
 
     def save(self) -> dict:
-        """Save the state of the equation, including the dt-values"""
+        """
+        Save the state of the equation, including the dt-values.
+
+        Returns
+        -------
+        dict
+            The state dictionary.
+        """
         data = super().save()
         data.update({"dt": self.dt})
         return data
 
     def load(self, data) -> None:
-        """Load the state of the equation, including the dt-values"""
+        """
+        Load the state of the equation, including the dt-values.
+
+        Parameters
+        ----------
+        data
+            The state dictionary.
+        """
         self.dt = data["dt"]
         # rebuild FD time-derivative matrix
         self.ddt = self.build_ddt_matrix()
@@ -313,7 +433,14 @@ class TimePeriodicOrbitHandler(Equation):
         super().load(data)
 
     def plot(self, ax) -> None:
-        """Plot the solutions for different timesteps"""
+        """
+        Plot the solutions for different timesteps.
+
+        Parameters
+        ----------
+        ax
+            The matplotlib axes.
+        """
         orbit = self.u_orbit().T
         num_plots = min(40, self.Nt)
         cmap = plt.cm.viridis
