@@ -5,8 +5,6 @@
 
 A numerical path continuation software written in Python.
 
-TODO: find new name!
-
 ## Example
 
 Example of a bifurcation diagram with snaking in the Swift-Hohenberg equation obtained with _bice_, see the [corresponding SHE demo](src/bice/demos/notebooks/she.ipynb).
