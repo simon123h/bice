@@ -1,5 +1,8 @@
 # BICE
 
+[![CI](https://github.com/simon123h/bice/actions/workflows/ci.yml/badge.svg)](https://github.com/simon123h/bice/actions/workflows/ci.yml)
+![PyPI - Version](https://img.shields.io/pypi/v/bice)
+
 A numerical path continuation software written in Python.
 
 TODO: find new name!
