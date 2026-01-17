@@ -6,16 +6,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
 
-from bice import Problem, Profiler, profile, time_steppers
+from bice import Problem, Profiler, time_steppers
 from bice.continuation import TranslationConstraint, VolumeConstraint
-from bice.core.solvers import MyNewtonSolver, NewtonKrylovSolver, NewtonSolver
+from bice.core.solvers import NewtonKrylovSolver
 from bice.pde import FiniteDifferencesEquation
 from bice.pde.finite_differences import (
-    DirichletBC,
-    NeumannBC,
-    NoBoundaryConditions,
     PeriodicBC,
-    RobinBC,
 )
 
 

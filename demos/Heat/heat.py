@@ -4,18 +4,11 @@ import shutil
 
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy.sparse as sp
-from scipy.sparse import diags
 
 from bice import Problem, Profiler, profile, time_steppers
-from bice.continuation import ConstraintEquation
 from bice.pde import FiniteDifferencesEquation
 from bice.pde.finite_differences import (
-    DirichletBC,
-    NeumannBC,
-    NoBoundaryConditions,
     PeriodicBC,
-    RobinBC,
 )
 
 

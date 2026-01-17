@@ -1,7 +1,6 @@
 import numpy as np
 import scipy.sparse as sp
 
-from bice import profile
 from bice.continuation import ConstraintEquation
 
 

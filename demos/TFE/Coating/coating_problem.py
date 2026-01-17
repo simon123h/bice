@@ -2,11 +2,10 @@
 import numpy as np
 from scipy.sparse import diags
 
-from bice import Problem, profile, time_steppers
+from bice import Problem, time_steppers
 from bice.pde import FiniteDifferencesEquation
 from bice.pde.finite_differences import (
     DirichletBC,
-    NeumannBC,
     NoBoundaryConditions,
     RobinBC,
 )

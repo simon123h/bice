@@ -1,9 +1,6 @@
 #!/usr/bin/python3
 import os
-import shutil
 import sys
-
-import matplotlib
 
 # matplotlib.use('svg')
 import matplotlib.pyplot as plt

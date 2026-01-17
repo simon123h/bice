@@ -4,11 +4,10 @@ import shutil
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.sparse import diags
 
 from bice import Problem, Profiler, profile, time_steppers
 from bice.continuation import TranslationConstraint
-from bice.pde import FiniteDifferencesEquation, PseudospectralEquation
+from bice.pde import PseudospectralEquation
 
 
 class SwiftHohenbergEquation(PseudospectralEquation):

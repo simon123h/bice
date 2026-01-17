@@ -3,7 +3,6 @@ import os
 import shutil
 
 import matplotlib.pyplot as plt
-import numpy as np
 from adaptive_problem import AdaptiveSubstrateProblem
 
 from bice import Profiler, Solution

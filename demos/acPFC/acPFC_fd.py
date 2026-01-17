@@ -7,12 +7,9 @@ is imported by other codes, so we don't have to write the SHE from scratch for e
 import sys
 
 import numpy as np
-import scipy.sparse as sp
-from scipy.sparse import diags
 
 sys.path.append("../..")  # noqa, needed for relative import of package
-from bice import Problem, profile, time_steppers
-from bice.continuation import ConstraintEquation
+from bice import Problem, time_steppers
 from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
 
 

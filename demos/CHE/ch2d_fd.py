@@ -8,7 +8,7 @@ from scipy.sparse import diags
 
 from bice import Problem, Profiler, profile, time_steppers
 from bice.continuation import TranslationConstraint, VolumeConstraint
-from bice.pde.finite_differences import FiniteDifferencesEquation, NeumannBC, PeriodicBC
+from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
 
 
 class CahnHilliardEquation(FiniteDifferencesEquation):

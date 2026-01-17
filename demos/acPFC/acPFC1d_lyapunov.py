@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from acPFC1d import acPFCProblem
 
-from bice import Profiler, profile, time_steppers
+from bice import time_steppers
 from bice.measure import LyapunovExponentCalculator
 
 # create output folder

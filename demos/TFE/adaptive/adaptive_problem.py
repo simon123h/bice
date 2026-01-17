@@ -1,6 +1,4 @@
 #!/usr/bin/python3
-import os
-import shutil
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,8 +7,6 @@ from scipy.sparse import diags
 from volume_constraint import VolumeConstraint
 
 from bice import Problem, time_steppers
-from bice.continuation import NaturalContinuation
-from bice.core.profiling import Profiler
 from bice.pde.finite_differences import (
     DirichletBC,
     FiniteDifferencesEquation,
