@@ -13,5 +13,6 @@ venv/
 *.egg-info/
 build/
 dist/
-
+# tools artifacts
 *flake8.txt
+.mypy_cache
