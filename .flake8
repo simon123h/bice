@@ -1,4 +1,5 @@
 [flake8]
 max-line-length = 88
 extend-ignore = E203
+docstring-convention = numpy
 exclude = .git,__pycache__,docs/source/conf.py,old,build,dist

@@ -35,6 +35,7 @@ dev = [
     "black",
     "isort",
     "flake8",
+    "flake8-docstrings",
     "mypy",
     "types-setuptools"
 ]
