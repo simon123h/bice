@@ -79,7 +79,7 @@ class BifurcationConstraint(Equation):
         Gu = self.original_jacobian(u)
         # check for mismatch in dimension
         if Gu.shape != (phi.size, phi.size):
-            raise Exception(
+            raise ValueError(
                 "It seems that the dimension of the problem does not "
                 "match the dimension of the null-eigenvector phi in "
                 "the BifurcationConstraint. Did your problem change "

@@ -377,7 +377,7 @@ class Problem:
         # bisection method loop
         while np.abs(ev.real) > tolerance and intvl[1] - intvl[0] > 1e-4:
             if self.settings.verbose:
-                self.log("Bisection: [{:.6f} {:.6f}], Re: {:e}".format(*intvl, ev.real))
+                self.log(f"Bisection: [{intvl[0]:.6f} {intvl[1]:.6f}], Re: {ev.real:e}")
             # new middle point
             pos_old = pos
             pos = (intvl[0] + intvl[1]) / 2.0
