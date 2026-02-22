@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
     phi01 = float(sys.argv[1])
 
-    filepath = "acPFC_phi01{:+01.4f}/".format(phi01).replace(".", "")
+    filepath = f"acPFC_phi01{phi01:+01.4f}/".replace(".", "")
     shutil.rmtree(filepath + "out", ignore_errors=True)
     os.makedirs(filepath + "out/img", exist_ok=True)
 

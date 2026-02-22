@@ -20,7 +20,7 @@ class Solution:
     # static variable counting the total number of Solutions
     _solution_count = 0
 
-    def __init__(self, problem: Optional["Problem"] = None) -> None:
+    def __init__(self, problem: Optional[Problem] = None) -> None:
         """
         Initialize the Solution.
 

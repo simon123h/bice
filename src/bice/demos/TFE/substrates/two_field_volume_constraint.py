@@ -26,7 +26,7 @@ class VolumeConstraint(ConstraintEquation):
 
     def rhs(self, u):
         # generate empty vector of residual contributions
-        res = np.zeros((u.size))
+        res = np.zeros(u.size)
         # reference to the indices of the unknowns that we work on
         self_idx = self.group.idx[self]
         eq_idx = self.group.idx[self.ref_eq]
