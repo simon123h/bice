@@ -1,7 +1,9 @@
-#!/usr/bin/python3
-import matplotlib  # noqa # isort:skip
+"""2D Nikolaevskiy Equation demo with automated bifurcation diagram generation."""
 
-matplotlib.use("Tkagg")  # noqa # isort:skip
+#!/usr/bin/python3
+import matplotlib  # noqa: E402 # isort:skip
+
+matplotlib.use("Tkagg")
 import os
 import shutil
 
@@ -16,12 +18,14 @@ from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
 
 class NikolaevskiyEquation(FiniteDifferencesEquation):
     r"""
-    Finite difference implementation of the 2-dimensional Nikolaevskiy Equation
+    Finite difference implementation of the 2-dimensional Nikolaevskiy Equation.
+
     equation, a nonlinear PDE
     \partial t h &= -\Delta (r - (1+\Delta)^2) h - 1/2 (\nabla h)^2.
     """
 
     def __init__(self, Nx, Ny):
+        """Initialize the equation."""
         super().__init__()
         # parameters
         self.r = 0.5  # drive
@@ -41,13 +45,13 @@ class NikolaevskiyEquation(FiniteDifferencesEquation):
         self.translation_constraint_x = TranslationConstraint(self, direction=0)
         self.translation_constraint_y = TranslationConstraint(self, direction=1)
 
-    # characteristic length scale
     @property
     def L0(self):
+        """Calculate characteristic length scale."""
         return 2 * np.pi / np.sqrt(1 + np.sqrt(self.r))
 
-    # definition of the Nikolaevskiy equation (right-hand side)
     def rhs(self, u):
+        """Calculate the right-hand side of the equation."""
         # calculate the system length
         Lx = self.L0 * self.m
         Ly = Lx * self.ratio
@@ -60,8 +64,8 @@ class NikolaevskiyEquation(FiniteDifferencesEquation):
         nonlin = nabla_x.dot(u) ** 2 + nabla_y.dot(u) ** 2
         return lin - 0.5 * nonlin
 
-    # definition of the Jacobian
     def jacobian(self, u):
+        """Calculate the Jacobian of the equation."""
         Lx = self.L0 * self.m
         Ly = Lx * self.ratio
         nabla_x = self.nabla[0] / Lx
@@ -72,8 +76,8 @@ class NikolaevskiyEquation(FiniteDifferencesEquation):
         nonlin = diags(nabla_x.dot(u)) * nabla_x + diags(nabla_y.dot(u)) * nabla_y
         return lin - nonlin
 
-    # plot the solution
     def plot(self, ax):
+        """Plot the solution."""
         ax.set_xlabel("x")
         ax.set_ylabel("y")
         ax.set_aspect("equal")
@@ -98,7 +102,10 @@ class NikolaevskiyEquation(FiniteDifferencesEquation):
 
 
 class NikolaevskiyProblem(Problem):
+    """Problem class for the 2D Nikolaevskiy equation with automated diagram generation."""
+
     def __init__(self, Nx, Ny):
+        """Initialize the problem."""
         super().__init__()
         # Add the Nikolaevskiy equation to the problem
         self.ne = NikolaevskiyEquation(Nx, Ny)
@@ -108,13 +115,13 @@ class NikolaevskiyProblem(Problem):
         # assign the continuation parameter
         self.continuation_parameter = (self.ne, "m")
 
-    # reset zero-mode, for conservation of volume
     def dealias(self):
+        """Reset zero-mode, for conservation of volume."""
         # subtract volume
         self.ne.u -= np.mean(self.ne.u)
 
-    # Norm is the L2-norm of the NE
     def norm(self):
+        """Return the L2-norm of the solution."""
         # TODO: divide by Nx*Nx*Lx*Ly
         return np.linalg.norm(self.ne.u)
 

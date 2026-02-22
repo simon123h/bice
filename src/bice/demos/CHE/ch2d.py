@@ -1,3 +1,5 @@
+"""2D Cahn-Hilliard Equation demo using Pseudospectral method."""
+
 #!/usr/bin/python3
 import os
 import shutil
@@ -12,12 +14,14 @@ from bice.pde import PseudospectralEquation
 
 class CahnHilliardEquation(PseudospectralEquation):
     r"""
-    Pseudospectral implementation of the 1-dimensional Cahn-Hilliard Equation
+    Pseudospectral implementation of the 1-dimensional Cahn-Hilliard Equation.
+
     equation, a nonlinear PDE
     \partial t c &= \Delta (c^3 + a * c - \kappa * \Delta c).
     """
 
     def __init__(self, N, L):
+        """Initialize the equation."""
         super().__init__(shape=(N, N))
         # parameters
         self.a = -0.5
@@ -35,6 +39,7 @@ class CahnHilliardEquation(PseudospectralEquation):
     # definition of the CHE (right-hand side)
     @profile
     def rhs(self, u):
+        """Calculate the right-hand side of the equation."""
         u_k = np.fft.rfft2(u)
         u3_k = np.fft.rfft2(u**3)
         result_k = -self.ksquare * (self.kappa * self.ksquare * u_k + self.a * u_k + u3_k)
@@ -42,12 +47,16 @@ class CahnHilliardEquation(PseudospectralEquation):
 
     @profile
     def du_dx(self, u, direction=0):
+        """Calculate the spatial derivative."""
         du_dx = 1j * self.k[direction] * np.fft.rfft2(u)
         return np.fft.irfft2(du_dx)
 
 
 class CahnHilliardProblem(Problem):
+    """Problem class for the 2D Cahn-Hilliard equation."""
+
     def __init__(self, N, L):
+        """Initialize the problem."""
         super().__init__()
         # Add the Cahn-Hilliard equation to the problem
         self.che = CahnHilliardEquation(N, L)

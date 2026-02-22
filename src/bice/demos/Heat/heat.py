@@ -1,3 +1,5 @@
+"""1D Heat Equation demo using Finite Differences method."""
+
 #!/usr/bin/python3
 import os
 import shutil
@@ -14,12 +16,14 @@ from bice.pde.finite_differences import (
 
 class HeatEquation(FiniteDifferencesEquation):
     r"""
-    Finite difference implementation of the 1-dimensional Heat-Equation
+    Finite difference implementation of the 1-dimensional Heat-Equation.
+
     equation, a linear PDE
     \partial t u &= -k \Delta u.
     """
 
     def __init__(self, N, L):
+        """Initialize the equation."""
         super().__init__()
         # parameters
         self.k = 1
@@ -45,20 +49,26 @@ class HeatEquation(FiniteDifferencesEquation):
 
     # definition of the equation (right-hand side)
     def rhs(self, u):
+        """Calculate the right-hand side of the equation."""
         # return -self.nabla(u)  # advection equation
         return self.laplace(u)
 
     # definition of the Jacobian
     @profile
     def jacobian(self, u):
+        """Calculate the Jacobian of the equation."""
         return self.laplace()
 
     def plot(self, ax):
+        """Plot the equation's solution."""
         ax.plot(self.x[0], self.u, marker="x")
 
 
 class HeatProblem(Problem):
+    """Problem class for the 1D Heat equation."""
+
     def __init__(self, N, L):
+        """Initialize the problem."""
         super().__init__()
         # Add the Swift-Hohenberg equation to the problem
         self.she = HeatEquation(N, L)

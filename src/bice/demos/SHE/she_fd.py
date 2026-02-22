@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """
-Finite difference implementation of the 1-dimensional Swift-Hohenberg Equation (SHE).
+1D Swift-Hohenberg Equation implementation using Finite Differences.
+
 This code does nothing with the equation, it only provides the implementation and
 is imported by other codes, so we don't have to write the SHE from scratch for every demo.
 """
@@ -16,12 +17,14 @@ from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
 
 class SwiftHohenbergEquation(FiniteDifferencesEquation):
     r"""
-    Finite difference implementation of the 1-dimensional Swift-Hohenberg Equation
+    Finite difference implementation of the 1-dimensional Swift-Hohenberg Equation.
+
     equation, a nonlinear PDE
     \partial t h &= (r - (kc^2 + \Delta)^2)h + v * h^2 - g * h^3.
     """
 
     def __init__(self, N, L):
+        """Initialize the equation."""
         super().__init__()
         # parameters
         self.r = -0.013
@@ -40,16 +43,21 @@ class SwiftHohenbergEquation(FiniteDifferencesEquation):
 
     # definition of the SHE (right-hand side)
     def rhs(self, u):
+        """Calculate the right-hand side of the equation."""
         return self.linear_op.dot(u) + (self.r - self.kc**4) * u + self.v * u**2 - self.g * u**3
 
     # definition of the Jacobian
     @profile
     def jacobian(self, u):
+        """Calculate the Jacobian of the equation."""
         return self.linear_op + diags(self.r - self.kc**4 + self.v * 2 * u - self.g * 3 * u**2)
 
 
 class SwiftHohenbergProblem(Problem):
+    """Problem class for the 1D Swift-Hohenberg equation."""
+
     def __init__(self, N, L):
+        """Initialize the problem."""
         super().__init__()
         # Add the Swift-Hohenberg equation to the problem
         self.she = SwiftHohenbergEquation(N, L)
@@ -61,7 +69,10 @@ class SwiftHohenbergProblem(Problem):
 
 
 class TranslationConstraint(ConstraintEquation):
+    """Translation constraint for the Swift-Hohenberg equation."""
+
     def __init__(self, reference_equation):
+        """Initialize the constraint."""
         # call parent constructor
         super().__init__(shape=(1,))
         # on which equation/unknowns should the constraint be imposed?
@@ -70,6 +81,7 @@ class TranslationConstraint(ConstraintEquation):
         self.u = np.zeros(1)
 
     def rhs(self, u):
+        """Calculate the right-hand side of the constraint."""
         # set up the vector of the residual contributions
         res = np.zeros(u.size)
         # reference to the equation and indices of the unknowns that we work on
@@ -89,6 +101,7 @@ class TranslationConstraint(ConstraintEquation):
 
     @profile
     def jacobian(self, u):
+        """Calculate the Jacobian of the constraint."""
         # reference to the equation and indices of the unknowns that we work on
         eq = self.ref_eq
         eq_idx = self.group.idx[eq]

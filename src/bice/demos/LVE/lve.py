@@ -1,11 +1,13 @@
+"""Lotka-Volterra Predator-Prey model demo."""
+
 #!/usr/bin/python3
 import time
 
 import matplotlib
 
-from bice.core.solvers import MyNewtonSolver  # noqa
+from bice.core.solvers import MyNewtonSolver  # noqa: E402
 
-matplotlib.use("GTK3Agg")  # noqa
+matplotlib.use("GTK3Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -13,9 +15,11 @@ from bice import Equation, Problem, time_steppers
 from bice.continuation import NaturalContinuation, TimePeriodicOrbitHandler
 
 
-# The Lotka-Volterra equations (predator prey model)
 class LotkaVolterraEquations(Equation):
+    """The Lotka-Volterra equations (predator prey model)."""
+
     def __init__(self):
+        """Initialize the equations."""
         super().__init__()
         # parameters
         self.a = 1
@@ -26,13 +30,16 @@ class LotkaVolterraEquations(Equation):
         self.u = np.array([1.0, 0.7])
 
     def rhs(self, u):
+        """Calculate the right-hand side of the equations."""
         x, y = u
         return np.array([(self.a - self.b * y) * x, (self.d * x - self.c) * y])
 
 
-# The Lotka-Volterra equations (predator prey model)
 class LotkaVolterra(Problem):
+    """Problem class for the Lotka-Volterra equations."""
+
     def __init__(self):
+        """Initialize the problem."""
         super().__init__()
         # create and add the equation
         self.lve = LotkaVolterraEquations()

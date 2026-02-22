@@ -1,6 +1,5 @@
 """Base classes for partial differential equations (PDEs)."""
 
-
 import numpy as np
 
 from bice.core.equation import Equation

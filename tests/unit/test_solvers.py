@@ -1,3 +1,5 @@
+"""Unit tests for the solver classes."""
+
 import numpy as np
 import pytest
 
@@ -21,6 +23,8 @@ def simple_quadratic_jacobian(u):
 
 def system_2d(u):
     """
+    Solve a 2D system of equations.
+
     f1 = x^2 + y^2 - 1 (circle radius 1)
     f2 = x - y (line x=y)
     Solutions: x=y=1/sqrt(2) approx 0.707.
@@ -30,12 +34,14 @@ def system_2d(u):
 
 
 def system_2d_jacobian(u):
+    """Calculate the Jacobian of the 2D system."""
     x, y = u
     # J = [[2x, 2y], [1, -1]]
     return np.array([[2 * x, 2 * y], [1, -1]])
 
 
 def test_mynewtonsolver_scalar():
+    """Test MyNewtonSolver with a scalar equation."""
     solver = MyNewtonSolver()
     u0 = np.array([1.0])  # Guess close to 2
 
@@ -53,6 +59,7 @@ def test_mynewtonsolver_scalar():
 
 
 def test_mynewtonsolver_system():
+    """Test MyNewtonSolver with a 2D system."""
     solver = MyNewtonSolver()
     u0 = np.array([0.5, 0.5])  # Guess inside circle
 

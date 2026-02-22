@@ -1,3 +1,5 @@
+"""1D Nikolaevskiy Equation Lyapunov exponent demo."""
+
 #!/usr/bin/python3
 import os
 import shutil

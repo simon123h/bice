@@ -1,3 +1,5 @@
+"""2D semi-active coupled Phase Field Crystal Equation demo."""
+
 #!/usr/bin/python3
 import os
 import shutil
@@ -13,13 +15,16 @@ from bice.pde import PseudospectralEquation
 
 class acPFCEquation(PseudospectralEquation):
     r"""
-    Pseudospectral implementation of the 1-dimensional semi-active coupled Phase Field Crystal Equation, a nonlinear PDE
+    Pseudospectral implementation of the 2-dimensional semi-active coupled Phase Field Crystal Equation.
+
+    equation, a nonlinear PDE
     \partial_t psi_1 &= \Delta((r + (q_1^2 + \Delta)^2)\psi_1 + (\psi_1 + \bar\phi_1)^3 + c\psi_2) - v0\nabla P
     \partial_t psi_2 &= \Delta((r + (q_2^2 + \Delta)^2)\psi_2 + (\psi_2 + \bar\phi_2)^3 + c\psi_1)
     \partial_t P &= = C_1\Delta P - D_r C_1 P - v0\nabla\psi_1.
     """
 
     def __init__(self, Nx, Lx, Ny, Ly, particles1, particles2):
+        """Initialize the equation."""
         super().__init__(shape=(4, Nx, Ny))
 
         # parameters
@@ -64,6 +69,7 @@ class acPFCEquation(PseudospectralEquation):
             self.u = np.array([u1, u2, u3, u4])
 
     def rhs(self, u):
+        """Calculate the right-hand side of the equation."""
         u_k = np.fft.rfft(u)
         psi1_k3 = np.fft.rfft((u[0] + self.phi01) ** 3)
         psi2_k3 = np.fft.rfft((u[1] + self.phi02) ** 3)
@@ -79,12 +85,16 @@ class acPFCEquation(PseudospectralEquation):
         return res
 
     def plot(self, ax):
+        """Plot the solution fields."""
         for i in range(3):
             ax[i].imshow(self.u[i])
 
 
 class acPFCProblem(Problem):
+    """Problem class for the 2D semi-active coupled Phase Field Crystal Equation."""
+
     def __init__(self, Nx, Lx, Ny, Ly, particles1=10, particles2=10):
+        """Initialize the problem."""
         super().__init__()
         # add the acPFC equation to the problem
         self.acpfc = acPFCEquation(Nx, Lx, Ny, Ly, particles1, particles2)
@@ -93,8 +103,8 @@ class acPFCProblem(Problem):
         self.time_stepper = time_steppers.RungeKuttaFehlberg45(1e-2)
         self.continuation_parameter = (self.acpfc, "phi01")
 
-    # Norm is the L2-norm of the three fields
     def norm(self):
+        """Return the L2-norm of the three fields."""
         u = self.acpfc.u
         N = self.acpfc.shape[-1]
         return np.sqrt(np.sum(u[0] ** 2 / N + u[1] ** 2 / N + u[2] ** 2 / N))

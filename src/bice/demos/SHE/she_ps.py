@@ -1,3 +1,5 @@
+"""1D Swift-Hohenberg Equation demo using Pseudospectral method."""
+
 #!/usr/bin/python3
 import os
 import shutil
@@ -12,12 +14,14 @@ from bice.pde import PseudospectralEquation
 
 class SwiftHohenbergEquation(PseudospectralEquation):
     r"""
-    Pseudospectral implementation of the 1-dimensional Swift-Hohenberg Equation
+    Pseudospectral implementation of the 1-dimensional Swift-Hohenberg Equation.
+
     equation, a nonlinear PDE
     \partial t h &= (r - (kc^2 + \Delta)^2)h + v * h^2 - g * h^3.
     """
 
     def __init__(self, N, L):
+        """Initialize the equation."""
         super().__init__(shape=N)
         # parameters
         self.r = -0.013
@@ -33,17 +37,22 @@ class SwiftHohenbergEquation(PseudospectralEquation):
     # definition of the SHE (right-hand side)
     @profile
     def rhs(self, u):
+        """Calculate the right-hand side of the equation."""
         u_k = np.fft.rfft(u)
         return np.fft.irfft((self.r - (self.kc**2 - self.k[0] ** 2) ** 2) * u_k) + self.v * u**2 - self.g * u**3
 
     # definition of spatial derivative for translation constraint
     def du_dx(self, u, direction=0):
+        """Calculate the spatial derivative."""
         du_dx = 1j * self.k[direction] * np.fft.rfft(u)
         return np.fft.irfft(du_dx)
 
 
 class SwiftHohenbergProblem(Problem):
+    """Problem class for the 1D Swift-Hohenberg equation."""
+
     def __init__(self, N, L):
+        """Initialize the problem."""
         super().__init__()
         # Add the Swift-Hohenberg equation to the problem
         self.she = SwiftHohenbergEquation(N, L)
@@ -54,9 +63,9 @@ class SwiftHohenbergProblem(Problem):
         # assign the continuation parameter
         self.continuation_parameter = (self.she, "r")
 
-    # set higher modes to null, for numerical stability
     @profile
     def dealias(self, fraction=1.0 / 2.0):
+        """Set higher modes to null, for numerical stability."""
         u_k = np.fft.rfft(self.she.u)
         N = len(u_k)
         k = int(N * fraction)

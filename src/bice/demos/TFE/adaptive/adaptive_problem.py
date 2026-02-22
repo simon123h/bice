@@ -1,3 +1,5 @@
+"""Adaptive substrate Thin-Film Equation demo."""
+
 #!/usr/bin/python3
 
 import matplotlib.pyplot as plt
@@ -16,7 +18,10 @@ from bice.pde.finite_differences import (
 
 
 class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
+    """Adaptive substrate Thin-Film Equation."""
+
     def __init__(self, N, L):
+        """Initialize the equation."""
         super().__init__(shape=(2, N))
         # parameters
         self.theta = np.sqrt(0.6)  # contact angle
@@ -42,8 +47,8 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         # build finite difference matrices
         self.build_FD_matrices(approx_order=2)
 
-    # overload building of FD matrices, because this equation has a more complicated set up
     def build_FD_matrices(self, approx_order=2):
+        """Build finite difference matrices."""
         # build finite differences matrices...
         # (i) including the flux boundary conditions for Q * dF/dh
         self.bc = DirichletBC(vals=(1, 0))
@@ -59,8 +64,8 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         super().build_FD_matrices(approx_order)
         self.nabla0 = self.nabla
 
-    # definition of the equation, using finite difference method
     def rhs(self, u):
+        """Calculate the right-hand side."""
         # expand unknowns
         h, z = u
         # dry brush height
@@ -97,6 +102,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         return np.array([dhdt, dzdt])
 
     def jacobian2(self, u):
+        """Calculate analytical Jacobian."""
         # expand unknowns
         h, z = u
         # dry brush height
@@ -136,17 +142,17 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         ddFdh_dh = -self.laplace_h() - ddjp_dh
         ddFdh_dz = -self.laplace_h() - ddjp_dz
         ddFdz_dh = -self.laplace_h()
-        ddFdz_dz = -self.laplace_h() - self.laplace_h(diags(gamma_bl + z * dgamma_bl_dz)) + diags(ddfbrush_dz)
+        ddzdt_dz = -self.laplace_h() - self.laplace_h(diags(gamma_bl + z * dgamma_bl_dz)) + diags(ddfbrush_dz)
         # absorption term derivative
         dM_absorb_dh = self.M * (ddFdh_dh - ddFdz_dh)
-        dM_absorb_dz = self.M * (ddFdh_dz - ddFdz_dz)
+        dM_absorb_dz = self.M * (ddFdh_dz - ddzdt_dz)
         # flux into the liquid film to conserve liquid volume
         q = -(h[-1] - h[0] + z[-1] - z[0]) * self.U
         # derivatives of dynamic equations
         ddhdt_dh = self.nabla_F(dQhh_dh * diags(self.nabla0(dFdh)) + Qhh * self.nabla0(ddFdh_dh), q) - dM_absorb_dh
         ddhdt_dz = self.nabla_F(Qhh * self.nabla0(ddFdh_dz), q) - dM_absorb_dz
         ddzdt_dh = self.nabla_F(Qzz * self.nabla0(ddFdz_dh), 0) + dM_absorb_dh
-        ddzdt_dz = self.nabla_F(dQzz_dz * diags(self.nabla0(dFdz)) + Qzz * self.nabla0(ddFdz_dz), 0) + dM_absorb_dz
+        ddzdt_dz = self.nabla_F(dQzz_dz * diags(self.nabla0(dFdz)) + Qzz * self.nabla0(ddzdt_dz), 0) + dM_absorb_dz
         # combine and return
         an_jac = sp.bmat([[ddhdt_dh, ddhdt_dz], [ddzdt_dh, ddzdt_dz]]).toarray()
         fd_jac = super().jacobian(u).toarray()
@@ -165,13 +171,16 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         return sp.bmat([[ddhdt_dh, ddhdt_dz], [ddzdt_dh, ddzdt_dz]])
 
     def du_dx(self, u, direction=0):
+        """Calculate the spatial derivative."""
         return self.nabla0(u)
 
     def liquid_volume(self):
+        """Calculate liquid volume."""
         h, z = self.u
         return np.trapezoid(h + z, self.x[0])
 
     def plot(self, ax):
+        """Plot the solution."""
         ax.set_ylim((0, 1.5))
         ax.set_xlabel("x")
         ax.set_ylabel("solution h(x,t)")
@@ -184,7 +193,10 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
 
 
 class AdaptiveSubstrateProblem(Problem):
+    """Problem class for the adaptive substrate Thin-Film Equation."""
+
     def __init__(self, N, L):
+        """Initialize the problem."""
         super().__init__()
         # Add the Thin-Film equation to the problem
         self.tfe = AdaptiveSubstrateEquation(N, L)

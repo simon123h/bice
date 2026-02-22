@@ -1,3 +1,5 @@
+"""Adiabatic substrate demo for the adaptive Thin-Film Equation."""
+
 #!/usr/bin/python3
 import os
 import shutil

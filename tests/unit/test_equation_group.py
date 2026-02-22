@@ -1,3 +1,5 @@
+"""Unit tests for the EquationGroup class."""
+
 import numpy as np
 import scipy.sparse as sp
 
@@ -8,14 +10,17 @@ class SimpleEquation(Equation):
     """A simple equation: rhs(u) = u * multiplier."""
 
     def __init__(self, shape, multiplier=1.0):
+        """Initialize the equation."""
         super().__init__(shape)
         self.multiplier = multiplier
         self.u = np.ones(shape)
 
     def rhs(self, u):
+        """Calculate the right-hand side."""
         return u * self.multiplier
 
     def jacobian(self, u):
+        """Calculate the Jacobian."""
         # Jacobian is diagonal with entries = multiplier
         return sp.diags([self.multiplier] * u.size, shape=(u.size, u.size))
 
@@ -23,16 +28,19 @@ class SimpleEquation(Equation):
 class CoupledEquation(Equation):
     """
     An equation that depends on another equation.
+
     rhs(u_this) = u_this - u_other.
     """
 
     def __init__(self, shape, other_eq):
+        """Initialize the equation."""
         super().__init__(shape)
         self.other_eq = other_eq
         self.is_coupled = True
         self.u = np.zeros(shape)
 
     def rhs(self, u_full):
+        """Calculate the right-hand side."""
         # We need to extract our part and the other part from u_full
         # This requires knowledge of the group mapping, which is available in self.group.idx
         if self.group is None:
@@ -55,6 +63,7 @@ class CoupledEquation(Equation):
         return res
 
     def jacobian(self, u_full):
+        """Calculate the Jacobian."""
         # Jacobian needs to be full size
         my_idx = self.group.idx[self]
         other_idx = self.group.idx[self.other_eq]
