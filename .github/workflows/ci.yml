@@ -99,26 +99,6 @@ jobs:
           path: dist/
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-  publish-gh-packages:
-    name: Upload release to GitHub Packages
-    needs: build
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-    steps:
-      - name: Download all the dists
-        uses: actions/download-artifact@v4
-        with:
-          name: python-package-dist
-          path: dist/
-      - name: Publish package distributions to GitHub Packages
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://pypi.pkg.github.com/${{ github.repository_owner }}/
-          password: ${{ secrets.GITHUB_TOKEN }}
-          user: ${{ github.actor }}
-          attestations: false
   github-release:
     name: Create GitHub Release
     needs: build

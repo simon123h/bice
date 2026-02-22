@@ -32,7 +32,6 @@ The primary distribution channel. Users can install the latest version using `pi
 ### 2. GitHub Integration (Primary Repository)
 
 - **GitHub Release**: An official GitHub Release is created automatically. It includes the source code, built wheels, and automatically generated release notes based on the commit history.
-- **GitHub Package Registry**: The package is published to the project's GitHub Packages page. This can be used as an alternative mirror or for internal dependencies within GitHub Actions.
 
 ### 3. GitLab Integration (Alternative Channel)
 
@@ -46,7 +45,6 @@ For the deployment to succeed, you must configure the following:
 ### GitHub Actions
 
 - **PyPI Publishing**: Uses **Trusted Publishing** (OIDC). No manual API token setup is required in GitHub secrets. The connection is configured directly on PyPI.org.
-- **GitHub Packages**: No extra setup required; uses the built-in `GITHUB_TOKEN` with `packages: write` permissions.
 - **GitHub Releases**: No extra setup required; uses the built-in `GITHUB_TOKEN` with `contents: write` permissions.
 
 ### GitLab CI/CD
@@ -61,7 +59,6 @@ For the deployment to succeed, you must configure the following:
 3. **Publishing**:
    - **GitHub**:
      - `publish-pypi`: Uploads to PyPI using Trusted Publishing (OIDC).
-     - `publish-gh-packages`: Uploads to GitHub's package index.
      - `github-release`: Creates the release entry and attaches files.
    - **GitLab**:
      - `deploy_pypi`: (Disabled) Previously used for PyPI uploads.
