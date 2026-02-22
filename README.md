@@ -1,6 +1,7 @@
 # BICE
 
-[![CI](https://github.com/simon123h/bice/actions/workflows/ci.yml/badge.svg)](https://github.com/simon123h/bice/actions)
+[![CI-Checks](https://github.com/simon123h/bice/actions/workflows/checks.yml/badge.svg)](https://github.com/simon123h/bice/actions)
+[![CI-Docs](https://github.com/simon123h/bice/actions/workflows/docs.yml/badge.svg)](https://github.com/simon123h/bice/actions)
 [![codecov](https://codecov.io/gh/simon123h/bice/graph/badge.svg?token=XGO94FUCSH)](https://codecov.io/gh/simon123h/bice)
 ![PyPI - Version](https://img.shields.io/pypi/v/bice)
 
