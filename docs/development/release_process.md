@@ -40,7 +40,11 @@ The primary distribution channel. Users can install the latest version using `pi
 
 ## CI/CD Configuration
 
-For the deployment to succeed, you must configure the following:
+The project uses three separate GitHub Actions workflows to manage different parts of the lifecycle:
+
+- `checks.yml`: Handles linting, type-checking, and tests. Runs on every push and pull request.
+- `docs.yml`: Builds and deploys documentation to GitHub Pages. Runs on pushes to the main branch.
+- `release.yml`: Handles building the package, publishing to PyPI, and creating GitHub Releases. Runs only on version tags (`v*`).
 
 ### GitHub Actions
 
