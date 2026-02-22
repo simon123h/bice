@@ -1,6 +1,6 @@
 """Parameter continuation stepping strategies."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 import scipy.sparse as sp
@@ -111,7 +111,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
         #: step size is adapted if we over/undershoot this number
         self.ndesired_newton_steps = 3
         #: the actual number of newton iterations taken in the last continuation step
-        self.nnewton_iter_taken: Optional[int] = None
+        self.nnewton_iter_taken: int | None = None
         #: ds decreases by this factor when less than desired_newton_steps are performed
         self.ds_decrease_factor = 0.5
         #: ds increases by this factor when more than desired_newton_steps are performed

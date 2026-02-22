@@ -1,6 +1,5 @@
 """Solver implementations (Newton, Eigenvalues)."""
 
-from typing import Optional, Tuple
 
 import numpy as np
 import scipy.linalg
@@ -54,7 +53,7 @@ class AbstractNewtonSolver:
         raise NotImplementedError("'AbstractNewtonSolver' is an abstract base class - do not use for actual solving!")
 
     @property
-    def niterations(self) -> Optional[int]:
+    def niterations(self) -> int | None:
         """
         Return the number of iterations taken in the last Newton solve.
 
@@ -325,7 +324,7 @@ class EigenSolver:
         #: convergence tolerance of the eigensolver
         self.tol = 1e-8
 
-    def solve(self, A: Matrix, M: Optional[Matrix] = None, k: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
+    def solve(self, A: Matrix, M: Matrix | None = None, k: int | None = None) -> tuple[np.ndarray, np.ndarray]:
         """
         Solve the eigenproblem A*x = v*x for the eigenvalues v and the eigenvectors x.
 

@@ -1,4 +1,3 @@
-from typing import Optional
 
 import numpy as np
 
@@ -14,7 +13,7 @@ class PseudospectralEquation(PartialDifferentialEquation):
     PDEs with a pseudospectral scheme.
     """
 
-    def __init__(self, shape: Optional[Shape] = None) -> None:
+    def __init__(self, shape: Shape | None = None) -> None:
         super().__init__(shape)
         # the spatial coordinates
         if len(self.shape) > 0:

@@ -1,8 +1,8 @@
 """Profiling functionality for method execution time measurement."""
 
 import time
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, Dict, List, Optional
 
 
 class MethodProfile:
@@ -28,9 +28,9 @@ class MethodProfile:
         # the total number of calls
         self.ncalls: int = 0
         # any nested method's and their profiles
-        self.nested_profiles: Dict[str, MethodProfile] = {}
+        self.nested_profiles: dict[str, MethodProfile] = {}
 
-    def flattened_data(self) -> Dict[str, "MethodProfile"]:
+    def flattened_data(self) -> dict[str, "MethodProfile"]:
         """
         Drop all the nesting data and give a simple dictionary of execution times.
 
@@ -40,7 +40,7 @@ class MethodProfile:
             A dictionary mapping method names to MethodProfile objects.
         """
         # empty result dict
-        data: Dict[str, MethodProfile] = {}
+        data: dict[str, MethodProfile] = {}
         # add own execution times to the result dict
         if self.execution_time > 0:
             data[self.name] = self
@@ -92,7 +92,7 @@ class MethodProfile:
         # if we're showing nested calls or if this is the root call
         if nested or self.name == "":
             # if not nested, flatten the tree
-            profiles: List[MethodProfile]
+            profiles: list[MethodProfile]
             if nested:
                 profiles = list(self.nested_profiles.values())
             else:
@@ -108,10 +108,10 @@ class MethodProfile:
 class Profiler:
     """Static class for accessing/controlling the profiling of the code."""
 
-    __start_time: Optional[float] = None
+    __start_time: float | None = None
     __root_profile: MethodProfile = MethodProfile("")
     _current_profile: MethodProfile = __root_profile
-    execution_times: Dict[str, float] = {}
+    execution_times: dict[str, float] = {}
 
     @staticmethod
     def start() -> None:

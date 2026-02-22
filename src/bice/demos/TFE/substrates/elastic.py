@@ -82,7 +82,7 @@ class ThinFilm(Problem):
         h, xi = self.tfe.u
         x = self.tfe.x[0]
         L = np.max(x) - np.min(x)
-        return np.trapz(h**2, x) / L
+        return np.trapezoid(h**2, x) / L
 
 
 # create output folder

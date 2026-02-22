@@ -24,8 +24,8 @@ class HeatEquation(FiniteDifferencesEquation):
         # parameters
         self.k = 1
         # create non-uniform grid
-        np.random.seed(4)
-        x = np.cumsum(np.random.random(N) * 0.1 + 0.5)
+        rng = np.random.default_rng(4)
+        x = np.cumsum(rng.random(N) * 0.1 + 0.5)
         x = x / x[-1] * L
         self.x = [x - np.mean(x)]
         # self.x = [np.linspace(-L/2, L/2, N)] # uniform grid

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Union
-
 import numpy as np
 import scipy.sparse as sp
 
@@ -278,7 +276,7 @@ class EquationGroup:
         #: the list of sub-equations (or even sub-groups-of-equations)
         self.equations: list[EquationLike] = []
         #: The indices of the equation's unknowns to the group's unknowns and vice versa
-        self.idx: Dict[EquationLike, slice] = {}
+        self.idx: dict[EquationLike, slice] = {}
         #: optional reference to a parent EquationGroup
         self.group: EquationGroup | None = None
         # optionally add the given equations
@@ -595,4 +593,4 @@ class DummyEquationGroup(EquationGroup):
 
 
 # common type for Equations/EquationGroups
-EquationLike = Union[Equation, EquationGroup]
+EquationLike = Equation | EquationGroup

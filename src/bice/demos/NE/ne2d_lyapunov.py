@@ -31,7 +31,8 @@ class NikolaevskiyEquation(FiniteDifferencesEquation):
         self.bc = PeriodicBC()
         self.build_FD_matrices()
         # initial condition
-        self.u = 2 * (np.random.rand(Nx, Ny) - 0.5) * 1e-5
+        rng = np.random.default_rng()
+        self.u = 2 * (rng.random((Nx, Ny)) - 0.5) * 1e-5
         self.u = self.u.ravel()
         # create constraints
         self.volume_constraint = VolumeConstraint(self)

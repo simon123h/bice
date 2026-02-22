@@ -1,6 +1,6 @@
 "The core Problem class and helper classes."
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,13 +27,13 @@ class Problem:
     Custom problems should be implemented as children of this class.
     """
 
-    eq: Union[None, Equation, EquationGroup]
+    eq: None | Equation | EquationGroup
 
     # Constructor
     def __init__(self) -> None:
         """Initialize the Problem."""
         #: the equation (or system of equation) that governs the problem
-        self.eq: Optional[EquationLike] = None
+        self.eq: EquationLike | None = None
         #: Time variable
         self.time: float = 0.0
         #: The time-stepper for integration in time
@@ -55,7 +55,7 @@ class Problem:
         #: The continuation parameter is defined by passing an object and the name of
         #: the object's attribute that corresponds to the continuation parameter as a
         #: tuple
-        self.continuation_parameter: Optional[Tuple[Any, str]] = None
+        self.continuation_parameter: tuple[Any, str] | None = None
 
     @property
     def ndofs(self) -> int:
@@ -141,7 +141,7 @@ class Problem:
             print("Equation was not removed, since it is not part of the problem!")
         # TODO: clear history?
 
-    def list_equations(self) -> List[Equation]:
+    def list_equations(self) -> list[Equation]:
         """
         List all equations that are part of the problem.
 
@@ -221,7 +221,7 @@ class Problem:
         self.u = self.newton_solver.solve(self.rhs, self.u, self.jacobian)
 
     @profile
-    def solve_eigenproblem(self) -> Tuple[np.ndarray, np.ndarray]:
+    def solve_eigenproblem(self) -> tuple[np.ndarray, np.ndarray]:
         """
         Calculate the eigenvalues and eigenvectors of the Jacobian.
 
@@ -331,7 +331,7 @@ class Problem:
 
     def locate_bifurcation(
         self,
-        ev_index: Optional[int] = None,
+        ev_index: int | None = None,
         tolerance: float = 1e-5,
     ) -> bool:
         """
@@ -436,7 +436,7 @@ class Problem:
 
     def switch_branch(
         self,
-        ev_index: Optional[int] = None,
+        ev_index: int | None = None,
         amplitude: float = 1e-3,
         locate: bool = True,
     ) -> bool:
@@ -512,7 +512,7 @@ class Problem:
         return np.linalg.norm(self.u)
 
     @profile
-    def save(self, filename: Optional[str] = None) -> dict:
+    def save(self, filename: str | None = None) -> dict:
         """
         Save the current solution to the file <filename>.
 
@@ -529,7 +529,7 @@ class Problem:
             The serialized data.
         """
         # dict of data to store
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         # the number of equations
         equations = self.list_equations()
         data["Problem.nequations"] = len(equations)
@@ -597,7 +597,7 @@ class Problem:
 
     def log(self, *args, **kwargs) -> None:
         """
-        Wrapper for print() for log messages.
+        Wrap print() for log messages.
 
         Log messages are printed only if verbosity is switched on.
 
@@ -836,13 +836,13 @@ class ProblemHistory:
         # what 'type' of history is currently stored? options are:
         #  - "time" for a time-stepping history
         #  - "continuation" for a history of continuation steps
-        self.type: Optional[str] = None
+        self.type: str | None = None
         # storage for the values of the time or the continuation parameter
-        self.__t: List[float] = []
+        self.__t: list[float] = []
         # storage for the values of the stepsize
-        self.__dt: List[float] = []
+        self.__dt: list[float] = []
 
-    def update(self, history_type: Optional[str] = None) -> None:
+    def update(self, history_type: str | None = None) -> None:
         """
         Update the history with the current unknowns of the problem.
 
@@ -998,7 +998,7 @@ class ProblemSettings:
         #: is called?
         #: Set to 'None' for computing all eigenvalues using a direct solver.
         #: TODO: could have a more verbose name
-        self.neigs: Union[int, None] = 20
+        self.neigs: int | None = 20
         #: How small does an eigenvalue need to be in order to be counted as 'zero'?
         self.eigval_zero_tolerance = 1e-16
         #: Should we always try to exactly locate bifurcations when passing one?

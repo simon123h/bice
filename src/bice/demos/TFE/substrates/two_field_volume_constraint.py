@@ -40,8 +40,8 @@ class VolumeConstraint(ConstraintEquation):
         x = self.ref_eq.x[0]
         res[self_idx] = np.array(
             [
-                np.trapz(u[eq_idx1] - self.group.u[eq_idx1], x),
-                np.trapz(u[eq_idx2] - self.group.u[eq_idx2], x),
+                np.trapezoid(u[eq_idx1] - self.group.u[eq_idx1], x),
+                np.trapezoid(u[eq_idx2] - self.group.u[eq_idx2], x),
             ]
         )
         # Add the constraint to the reference equation: unknown influx is the Langrange multiplier
@@ -72,7 +72,7 @@ class VolumeConstraint(ConstraintEquation):
         if self.fixed_volume is None:
             dcnstr_du = np.ones((1, N)) / float(N)
         else:
-            dcnstr_du = np.trapz(np.eye(N), eq.x[0]).reshape((1, N))
+            dcnstr_du = np.trapezoid(np.eye(N), eq.x[0]).reshape((1, N))
         # contribution of d(constraint) / dinflux
         dcnstr_dv = sp.csr_matrix((1, 1))
         # stack everything together and return

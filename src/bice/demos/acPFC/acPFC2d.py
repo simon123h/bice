@@ -6,7 +6,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 
-sys.path.append("../..")  # noqa, needed for relative import of package
+sys.path.append("../..")  # noqa: E402, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde import PseudospectralEquation
 
@@ -53,13 +53,14 @@ class acPFCEquation(PseudospectralEquation):
         if os.path.exists("initial_state_2D.npz"):
             self.u = np.loadtxt("initial_state_2D.npz").reshape(self.shape)
         else:
+            rng = np.random.default_rng()
             for i in range(particles1):
-                u1 = 2.7 * np.exp(-((self.x[0] - Lx * np.random.random()) ** 2 + (self.x[1] - Ly * np.random.random()) ** 2) / 5)
+                u1 = 2.7 * np.exp(-((self.x[0] - Lx * rng.random()) ** 2 + (self.x[1] - Ly * rng.random()) ** 2) / 5)
 
             for i in range(particles2):
-                u2 = 2.7 * np.exp(-((self.x[0] - Lx * np.random.random()) ** 2 + (self.x[1] - Ly * np.random.random()) ** 2) / 5)
-            u3 = np.random.random((Ny, Nx)) - 0.5
-            u4 = np.random.random((Ny, Nx)) - 0.5
+                u2 = 2.7 * np.exp(-((self.x[0] - Lx * rng.random()) ** 2 + (self.x[1] - Ly * rng.random()) ** 2) / 5)
+            u3 = rng.random((Ny, Nx)) - 0.5
+            u4 = rng.random((Ny, Nx)) - 0.5
             self.u = np.array([u1, u2, u3, u4])
 
     def rhs(self, u):

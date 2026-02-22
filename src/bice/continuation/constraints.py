@@ -129,7 +129,7 @@ class VolumeConstraint(ConstraintEquation):
             x = [np.arange(self.ref_eq.shape[-1])]
             if hasattr(self.ref_eq, "x") and getattr(self.ref_eq, "x") is not None:
                 x = getattr(self.ref_eq, "x")
-            res[self_idx] = np.trapz(u[eq_idx], x) - self.fixed_volume
+            res[self_idx] = np.trapezoid(u[eq_idx], x) - self.fixed_volume
         # Add the constraint to the reference equation: unknown influx is the
         # Langrange multiplier
         res[eq_idx] = u[self_idx]

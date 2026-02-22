@@ -1,6 +1,6 @@
 "Bifurcation tracking classes for the bice package."
 
-from typing import Any, Tuple, Union
+from typing import Any
 
 import numpy as np
 import scipy.sparse as sp
@@ -18,7 +18,7 @@ class BifurcationConstraint(Equation):
     a null vector).
     """
 
-    def __init__(self, phi: np.ndarray, free_parameter: Tuple[Any, str]):
+    def __init__(self, phi: np.ndarray, free_parameter: tuple[Any, str]):
         """
         Initialize the BifurcationConstraint.
 
@@ -92,7 +92,7 @@ class BifurcationConstraint(Equation):
         res[self_idx] = np.concatenate((res1, res2))
         return res
 
-    def jacobian(self, u: Array) -> Union[Matrix, float]:
+    def jacobian(self, u: Array) -> Matrix | float:
         """
         Calculate the Jacobian of the extended system.
 

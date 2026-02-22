@@ -117,7 +117,7 @@ translation_constraint = TranslationConstraint(problem.che)
 problem.add_equation(translation_constraint)
 problem.volume_constraint = VolumeConstraint(problem.che)
 problem.add_equation(problem.volume_constraint)
-problem.volume_constraint.fixed_volume = np.trapz(problem.che.u, problem.che.x[0])
+problem.volume_constraint.fixed_volume = np.trapezoid(problem.che.u, problem.che.x[0])
 problem.continuation_parameter = (problem.volume_constraint, "fixed_volume")
 
 n = 0

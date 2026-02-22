@@ -210,7 +210,7 @@ class Branch:
         #: unique identifier of the branch
         self.id = Branch._branch_count
         #: list of solutions along the branch
-        self.solutions: List[Solution] = []
+        self.solutions: list[Solution] = []
 
     def is_empty(self) -> bool:
         """Check if the current branch is empty."""
@@ -288,7 +288,7 @@ class Branch:
         Tuple[np.ndarray, np.ndarray]
             Tuple of (parameter values, norm values).
         """
-        condition: Union[bool, List[bool]] = False
+        condition: bool | list[bool] = False
         if only == "stable":
             condition = [not s.is_stable() for s in self.solutions]
         elif only == "unstable":

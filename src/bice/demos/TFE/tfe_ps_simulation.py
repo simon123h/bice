@@ -88,7 +88,7 @@ class ThinFilm(Problem):
         self.tfe.u = self.tfe.dealias(self.tfe.u, True)
 
     def norm(self):
-        return np.trapz(self.tfe.u, self.tfe.x[0])
+        return np.trapezoid(self.tfe.u, self.tfe.x[0])
 
 
 # create output folder
@@ -139,7 +139,7 @@ problem.continuation_stepper.ds = 1e-2
 problem.continuation_stepper.ndesired_newton_steps = 3
 
 # Impose the constraints
-problem.volume_constraint.fixed_volume = np.trapz(problem.tfe.u, problem.tfe.x[0])
+problem.volume_constraint.fixed_volume = np.trapezoid(problem.tfe.u, problem.tfe.x[0])
 problem.add_equation(problem.volume_constraint)
 problem.add_equation(problem.translation_constraint)
 
