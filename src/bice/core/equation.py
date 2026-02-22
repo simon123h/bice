@@ -441,12 +441,12 @@ class EquationGroup:
         for eq in self.equations:
             if eq.is_coupled:
                 # coupled equations work on the full set of variables
-                res += eq.rhs(u)
+                res = res + eq.rhs(u)
             else:
                 # uncoupled equations simply work on their own variables, so we do the
                 # mapping
                 idx = self.idx[eq]
-                res[idx] += eq.rhs(u[idx].reshape(eq.shape)).ravel()
+                res[idx] = res[idx] + eq.rhs(u[idx].reshape(eq.shape)).ravel()
         # everything assembled, return result
         return res
 

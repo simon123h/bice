@@ -8,7 +8,7 @@ import scipy.sparse as sp
 Shape = int | tuple[int, ...]
 
 # Common type for Arrays, e.g. the vector of unknowns
-Array = numpy.typing.NDArray[np.float64 | np.complexfloating | np.bool_]
+Array = numpy.typing.NDArray[np.float64 | np.complexfloating]
 
 # Objects that can be coerced into an Array
 ArrayLike = numpy.typing.ArrayLike

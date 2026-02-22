@@ -321,9 +321,15 @@ class Branch:
         data["norm"] = [s.norm for s in self.solutions]
         data["p"] = [s.p for s in self.solutions]
         data["nunstable_eigenvalues"] = [s.nunstable_eigenvalues for s in self.solutions]
-        data["nunstable_imaginary_eigenvalues"] = [s.nunstable_imaginary_eigenvalues for s in self.solutions]
         # save everything to the file
-        np.savez(filename, **data)
+        np.savez(
+            filename,
+            solution_data=np.array([s.data for s in self.solutions], dtype=object),
+            norm=np.array([s.norm for s in self.solutions]),
+            p=np.array([s.p for s in self.solutions]),
+            nunstable_eigenvalues=np.array([s.nunstable_eigenvalues for s in self.solutions]),
+            nunstable_imaginary_eigenvalues=np.array([s.nunstable_imaginary_eigenvalues for s in self.solutions]),
+        )
 
 
 class BifurcationDiagram:

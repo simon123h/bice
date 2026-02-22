@@ -246,23 +246,24 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
                 x_new.append((x + x_old[i - 1]) / 2)
             x_new.append(x)
             i += 1
-        x_new_arr = cast(np.ndarray, np.array(x_new))
+        x_new_arr: np.ndarray = np.array(x_new)
         # interpolate unknowns to new grid points
         nvars = self.shape[0] if len(self.shape) > 1 else 1
+        u_new: Array
         if nvars > 1:
             u_new = np.array([np.interp(x_new_arr, x_old, self.u[n]) for n in range(nvars)])
         else:
-            u_new = np.interp(x_new_arr, x_old, self.u)
+            u_new = np.atleast_1d(np.interp(x_new_arr, x_old, self.u))
         # update shape, u and x
         self.reshape(u_new.shape)
         self.u = u_new
         self.x = [x_new_arr]
         # interpolate history to new grid points
-        for t, u in enumerate(self.u_history):
+        for t, u_hist in enumerate(self.u_history):
             if nvars > 1:
-                self.u_history[t] = cast(Array, np.array([np.interp(x_new_arr, x_old, u[n]) for n in range(nvars)]))
+                self.u_history[t] = np.array([np.interp(x_new_arr, x_old, u_hist[n]) for n in range(nvars)])
             else:
-                self.u_history[t] = cast(Array, np.interp(x_new_arr, x_old, u))
+                self.u_history[t] = np.atleast_1d(np.interp(x_new_arr, x_old, u_hist))
         # re-build the finite difference matrices
         self.build_FD_matrices()
 

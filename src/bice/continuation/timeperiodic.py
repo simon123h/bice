@@ -434,7 +434,7 @@ class TimePeriodicOrbitHandler(Equation):
         """
         orbit = self.u_orbit().T
         num_plots = min(40, self.Nt)
-        cmap = plt.cm.viridis
+        cmap = plt.get_cmap("viridis")
         ax.set_prop_cycle(plt.cycler("color", cmap(np.linspace(0, 1, num_plots))))
         for i in range(0, self.Nt, self.Nt // num_plots):
             self.ref_eq.u = orbit.T[i]
