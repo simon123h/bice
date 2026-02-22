@@ -29,15 +29,12 @@ lint:
     - ruff check .
     - ruff format --check .
     - mypy src/bice
-  allow_failure: true
 
 test:
   stage: test
   script:
     - pip install -e ".[dev]"
     - pytest
-  # We allow failure for now since the existing tests might not be robust
-  allow_failure: true
 
 build:
   stage: build
