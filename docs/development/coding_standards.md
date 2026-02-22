@@ -15,19 +15,41 @@ We use **Ruff** for both linting and formatting. Ruff is configured in `pyprojec
 To check your code for style issues:
 
 ```bash
+
+# Using nox (recommended)
+
+nox -s lint
+
+
+
+# Manual
+
 ruff check .
+
 ```
 
 To automatically fix most issues:
 
 ```bash
+
 ruff check --fix .
+
 ```
 
 To format your code:
 
 ```bash
+
+# Using nox (recommended)
+
+nox -s format
+
+
+
+# Manual
+
 ruff format .
+
 ```
 
 ## Type Checking
@@ -37,7 +59,17 @@ We use **Mypy** for static type checking. All core library code (`src/bice/core/
 To run type checks:
 
 ```bash
+
+# Using nox (recommended)
+
+nox -s type_check
+
+
+
+# Manual
+
 mypy src/bice
+
 ```
 
 ## Docstrings
