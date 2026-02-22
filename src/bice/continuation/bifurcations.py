@@ -86,7 +86,7 @@ class BifurcationConstraint(Equation):
                 "since you imposed the constraint?"
             )
         # calculate the residuals
-        res = np.zeros((u.size))
+        res = np.zeros(u.size)
         res1 = np.matmul(Gu, phi)
         res2 = np.array([np.dot(phi, phi_old) - 1])
         res[self_idx] = np.concatenate((res1, res2))

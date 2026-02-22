@@ -280,7 +280,7 @@ class EquationGroup:
         #: The indices of the equation's unknowns to the group's unknowns and vice versa
         self.idx: Dict[EquationLike, slice] = {}
         #: optional reference to a parent EquationGroup
-        self.group: Optional["EquationGroup"] = None
+        self.group: Optional[EquationGroup] = None
         # optionally add the given equations
         if equations is not None:
             for eq in equations:

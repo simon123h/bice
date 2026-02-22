@@ -108,7 +108,7 @@ class VolumeConstraint(ConstraintEquation):
             The residuals vector.
         """
         # generate empty vector of residual contributions
-        res = np.zeros((u.size))
+        res = np.zeros(u.size)
         # reference to the indices of the unknowns that we work on
         self_idx = self.group.idx[self]
         eq_idx = self.group.idx[self.ref_eq]
@@ -167,7 +167,7 @@ class TranslationConstraint(ConstraintEquation):
 
     def __init__(
         self,
-        reference_equation: "PartialDifferentialEquation",
+        reference_equation: PartialDifferentialEquation,
         variable: Optional[int] = None,
         direction: int = 0,
     ) -> None:
@@ -209,7 +209,7 @@ class TranslationConstraint(ConstraintEquation):
             The residuals vector.
         """
         # set up the vector of the residual contributions
-        res = np.zeros((u.size))
+        res = np.zeros(u.size)
         # reference to the equation, shape and indices of the unknowns that we work on
         eq = self.ref_eq
         eq_shape = eq.shape

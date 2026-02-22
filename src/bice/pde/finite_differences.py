@@ -116,7 +116,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         return self.ddx
 
     @profile
-    def build_FD_matrices_1d(self, approx_order=2, x=None) -> list["AffineOperator"]:
+    def build_FD_matrices_1d(self, approx_order=2, x=None) -> list[AffineOperator]:
         """
         Build 1D finite difference differentiation matrices.
 
