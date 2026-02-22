@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bice"
-version = "0.4.4"
+version = "0.4.6"
 description = "Numerical continuation and bifurcation package"
 readme = "docs/pypi-description.md"
 requires-python = ">=3.11"
