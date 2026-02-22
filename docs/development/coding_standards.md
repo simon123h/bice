@@ -13,16 +13,19 @@ We use **Ruff** for both linting and formatting. Ruff is configured in `pyprojec
 ### Running Checks
 
 To check your code for style issues:
+
 ```bash
 ruff check .
 ```
 
 To automatically fix most issues:
+
 ```bash
 ruff check --fix .
 ```
 
 To format your code:
+
 ```bash
 ruff format .
 ```
@@ -32,6 +35,7 @@ ruff format .
 We use **Mypy** for static type checking. All core library code (`src/bice/core/`) should be fully typed and pass Mypy checks without errors.
 
 To run type checks:
+
 ```bash
 mypy src/bice
 ```
@@ -41,6 +45,7 @@ mypy src/bice
 We follow the **NumPy-style docstring convention**. Every public class and method must have a descriptive docstring.
 
 Example:
+
 ```python
 def solve(self, A: Matrix, M: Matrix | None = None) -> tuple[np.ndarray, np.ndarray]:
     """

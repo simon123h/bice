@@ -49,6 +49,7 @@ To set up a local development environment:
    ```
 
 2. Set up a virtual environment:
+
    - **Linux / macOS**:
 
      ```bash

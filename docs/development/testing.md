@@ -7,16 +7,19 @@ Testing is a critical part of the **bice** development process. All new features
 We use **pytest** as our test runner.
 
 ### Run all tests:
+
 ```bash
 pytest
 ```
 
 ### Run specific test files:
+
 ```bash
 pytest tests/unit/test_equation.py
 ```
 
 ### Run with coverage:
+
 ```bash
 pytest --cov=src/bice
 ```
@@ -30,7 +33,7 @@ Tests are located in the `tests/` directory and are split into two categories:
 
 ## Writing New Tests
 
--   Place unit tests in `tests/unit/` following the naming convention `test_<module_name>.py`.
--   Use clear, descriptive function names for your tests.
--   Include assertions that verify both expected success and failure cases (using `pytest.raises` for exceptions).
--   If your test requires random numbers, use `np.random.default_rng()` for reproducibility if possible.
+- Place unit tests in `tests/unit/` following the naming convention `test_<module_name>.py`.
+- Use clear, descriptive function names for your tests.
+- Include assertions that verify both expected success and failure cases (using `pytest.raises` for exceptions).
+- If your test requires random numbers, use `np.random.default_rng()` for reproducibility if possible.
