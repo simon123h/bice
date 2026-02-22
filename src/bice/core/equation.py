@@ -67,7 +67,7 @@ class Equation:
         int
             The total number of degrees of freedom.
         """
-        return np.prod(self.shape)
+        return int(np.prod(self.shape))
 
     @property
     def shape(self) -> tuple:
@@ -276,9 +276,9 @@ class EquationGroup:
             A list of equations or equation groups to include.
         """
         #: the list of sub-equations (or even sub-groups-of-equations)
-        self.equations = []
+        self.equations: List[EquationLike] = []
         #: The indices of the equation's unknowns to the group's unknowns and vice versa
-        self.idx = {}
+        self.idx: Dict[EquationLike, slice] = {}
         #: optional reference to a parent EquationGroup
         self.group: Optional["EquationGroup"] = None
         # optionally add the given equations

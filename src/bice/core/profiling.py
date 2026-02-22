@@ -5,6 +5,9 @@ from functools import wraps
 from typing import Callable
 
 
+from typing import Callable, Dict, List, Optional
+
+
 class MethodProfile:
     """
     Saves the execution times of a method.
@@ -22,25 +25,25 @@ class MethodProfile:
             The name of the method.
         """
         # name of the method
-        self.name = name
+        self.name: str = name
         # list of all the measured execution times
-        self.execution_time = 0.0
+        self.execution_time: float = 0.0
         # the total number of calls
-        self.ncalls = 0
+        self.ncalls: int = 0
         # any nested method's and their profiles
-        self.nested_profiles = {}
+        self.nested_profiles: Dict[str, MethodProfile] = {}
 
-    def flattened_data(self) -> dict:
+    def flattened_data(self) -> Dict[str, "MethodProfile"]:
         """
         Drop all the nesting data and give a simple dictionary of execution times.
 
         Returns
         -------
-        dict
+        Dict[str, MethodProfile]
             A dictionary mapping method names to MethodProfile objects.
         """
         # empty result dict
-        data = {}
+        data: Dict[str, MethodProfile] = {}
         # add own execution times to the result dict
         if self.execution_time > 0:
             data[self.name] = self
@@ -56,7 +59,7 @@ class MethodProfile:
         # return the dict
         return data
 
-    def print_stats(self, total_time, indentation=0, nested=True, last=False) -> None:
+    def print_stats(self, total_time: float, indentation: int = 0, nested: bool = True, last: bool = False) -> None:
         """
         Print the stats on this method's profile recursively.
 
@@ -92,12 +95,13 @@ class MethodProfile:
         # if we're showing nested calls or if this is the root call
         if nested or self.name == "":
             # if not nested, flatten the tree
+            profiles: List[MethodProfile]
             if nested:
-                profiles = self.nested_profiles
+                profiles = list(self.nested_profiles.values())
             else:
-                profiles = self.flattened_data()
+                profiles = list(self.flattened_data().values())
             # sort the nested profiles by total execution time
-            profiles = sorted(profiles.values(), key=lambda item: item.execution_time, reverse=True)
+            profiles = sorted(profiles, key=lambda item: item.execution_time, reverse=True)
             # print their summary recursively
             for i, p in enumerate(profiles):
                 is_last = i == len(profiles) - 1
@@ -109,10 +113,10 @@ class Profiler:
     Static class for accessing/controlling the profiling of the code.
     """
 
-    __start_time = 0
-    __root_profile = MethodProfile("")
-    _current_profile = __root_profile
-    execution_times = {}
+    __start_time: Optional[float] = None
+    __root_profile: MethodProfile = MethodProfile("")
+    _current_profile: MethodProfile = __root_profile
+    execution_times: Dict[str, float] = {}
 
     @staticmethod
     def start() -> None:
@@ -128,7 +132,7 @@ class Profiler:
         return Profiler.__start_time is not None
 
     @staticmethod
-    def print_summary(nested=True) -> None:
+    def print_summary(nested: bool = True) -> None:
         """
         Print a summary on the execution times of the decorated methods.
 
@@ -143,6 +147,7 @@ class Profiler:
             return
 
         # calculate total time
+        assert Profiler.__start_time is not None
         total_time = time.time() - Profiler.__start_time
         # print the header
         print("Profiler results:")

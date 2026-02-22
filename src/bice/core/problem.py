@@ -1,6 +1,6 @@
 "The core Problem class and helper classes."
 
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,7 +35,7 @@ class Problem:
         #: the equation (or system of equation) that governs the problem
         self.eq: Optional[EquationLike] = None
         #: Time variable
-        self.time = 0
+        self.time: float = 0.0
         #: The time-stepper for integration in time
         self.time_stepper: TimeStepper = RungeKutta4(dt=1e-2)
         #: The continuation stepper for parameter continuation
@@ -312,7 +312,7 @@ class Problem:
         assert self.continuation_parameter is not None
         # get the value using the builtin 'getattr'
         obj, attr_name = self.continuation_parameter
-        return getattr(obj, attr_name)
+        return float(getattr(obj, attr_name))
 
     def set_continuation_parameter(self, val) -> None:
         """
@@ -352,7 +352,7 @@ class Problem:
             True if the location converged, False otherwise.
         """
         # backup the initial state
-        u_old = self.u
+        u_old = self.u.copy()
         p_old = self.get_continuation_parameter()
         # backup stepsize
         ds = self.continuation_stepper.ds
@@ -372,15 +372,15 @@ class Problem:
         # TODO: it can happen that the bifurcation is at pos 1.001, then we will not
         #       find it! we somehow need to check on a broader interval first or known
         #       the sign of the eigenvalue at the limits of the interval
-        intvl = (-1, 1)  # in multiples of step size
-        pos = 1
+        intvl = (-1.0, 1.0)  # in multiples of step size
+        pos: float = 1.0
         # bisection method loop
         while np.abs(ev.real) > tolerance and intvl[1] - intvl[0] > 1e-4:
             if self.settings.verbose:
                 self.log("Bisection: [{:.6f} {:.6f}], Re: {:e}".format(*intvl, ev.real))
             # new middle point
             pos_old = pos
-            pos = (intvl[0] + intvl[1]) / 2
+            pos = (intvl[0] + intvl[1]) / 2.0
             # perform the continuation step to new center point
             self.continuation_stepper.ds = ds * (pos - pos_old)
             try:
@@ -529,7 +529,7 @@ class Problem:
             The serialized data.
         """
         # dict of data to store
-        data = {}
+        data: Dict[str, Any] = {}
         # the number of equations
         equations = self.list_equations()
         data["Problem.nequations"] = len(equations)
@@ -813,6 +813,7 @@ class Problem:
                 max_recursion=max_recursion - 1,
                 max_steps=max_steps,
                 plotevery=plotevery,
+                detect_circular_branches=detect_circular_branches,
             )
 
 
@@ -835,11 +836,11 @@ class ProblemHistory:
         # what 'type' of history is currently stored? options are:
         #  - "time" for a time-stepping history
         #  - "continuation" for a history of continuation steps
-        self.type = None
+        self.type: Optional[str] = None
         # storage for the values of the time or the continuation parameter
         self.__t: List[float] = []
         # storage for the values of the stepsize
-        self.__dt = []
+        self.__dt: List[float] = []
 
     def update(self, history_type: Optional[str] = None) -> None:
         """
@@ -864,6 +865,8 @@ class ProblemHistory:
         for eq in self.problem.list_equations():
             eq.u_history = [eq.u.copy()] + eq.u_history[: self.max_length - 1]
         # add the value of the time / continuation parameter and step size to the history
+        val: float
+        dval: float
         if self.type == "continuation":  # for continuation
             val = self.problem.get_continuation_parameter()
             dval = self.problem.continuation_stepper.ds
