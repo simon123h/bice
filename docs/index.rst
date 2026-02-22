@@ -10,7 +10,7 @@ Welcome to bice's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   source/bice
+   source/modules
    architecture/index
    development/index
 
