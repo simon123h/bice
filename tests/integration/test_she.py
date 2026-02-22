@@ -4,12 +4,11 @@
 import unittest
 
 import numpy as np
-import scipy.sparse as sp
 
 from bice import Problem, profile, time_steppers
 from bice.continuation import TranslationConstraint
+from bice.core.types import Array
 from bice.pde.finite_differences import AffineOperator, FiniteDifferencesEquation, PeriodicBC
-from bice.core.types import Array, Matrix, RealArray
 
 
 class SwiftHohenbergEquation(FiniteDifferencesEquation):
