@@ -45,7 +45,7 @@ For the deployment to succeed, you must configure the following:
 
 ### GitHub Actions
 
-- **PyPI Publishing**: Add a repository secret named `PYPI_API_TOKEN`.
+- **PyPI Publishing**: Uses **Trusted Publishing** (OIDC). No manual API token setup is required in GitHub secrets. The connection is configured directly on PyPI.org.
 - **GitHub Packages**: No extra setup required; uses the built-in `GITHUB_TOKEN` with `packages: write` permissions.
 - **GitHub Releases**: No extra setup required; uses the built-in `GITHUB_TOKEN` with `contents: write` permissions.
 
@@ -56,14 +56,14 @@ For the deployment to succeed, you must configure the following:
 
 ## Pipeline Workflow
 
-1.  **Build**: Every pipeline run builds the package distributions (sdist and wheel) and stores them as artifacts.
-2.  **Condition**: The deployment jobs only run if the Git reference is a tag starting with `v`.
-3.  **Publishing**:
-    - **GitHub**:
-      - `publish-pypi`: Uploads to PyPI using the API token.
-      - `publish-gh-packages`: Uploads to GitHub's package index.
-      - `github-release`: Creates the release entry and attaches files.
-    - **GitLab**:
-      - `deploy_pypi`: Uploads to PyPI.
-      - `deploy_gitlab_registry`: Uploads to the project's internal GitLab package index.
-      - `release`: Creates the official GitLab release entry.
+1. **Build**: Every pipeline run builds the package distributions (sdist and wheel) and stores them as artifacts.
+2. **Condition**: The deployment jobs only run if the Git reference is a tag starting with `v`.
+3. **Publishing**:
+   - **GitHub**:
+     - `publish-pypi`: Uploads to PyPI using Trusted Publishing (OIDC).
+     - `publish-gh-packages`: Uploads to GitHub's package index.
+     - `github-release`: Creates the release entry and attaches files.
+   - **GitLab**:
+     - `deploy_pypi`: (Disabled) Previously used for PyPI uploads.
+     - `deploy_gitlab_registry`: Uploads to the project's internal GitLab package index.
+     - `release`: Creates the official GitLab release entry.
