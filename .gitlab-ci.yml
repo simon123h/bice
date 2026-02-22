@@ -7,44 +7,31 @@ cache:
   key: "${CI_JOB_NAME}-${CI_COMMIT_REF_SLUG}"
   paths:
     - .cache/pip
-    - venv/
 
 stages:
   - lint
+  - type_check
   - test
   - build
   - deploy
 
-deploy_pypi:
-  stage: deploy
-  script:
-    - pip install twine
-    - twine upload --username __token__ --password $PYPI_API_TOKEN dist/*
-  rules:
-    - if: $CI_COMMIT_TAG =~ /^v/
-  dependencies:
-    - build
-
 before_script:
-  - python -V
-  - pip install virtualenv
-  - virtualenv venv
-  - source venv/bin/activate
-  - pip install --upgrade pip
+  - pip install nox
 
 lint:
   stage: lint
   script:
-    - pip install -e ".[dev]"
-    - ruff check .
-    - ruff format --check .
-    - mypy src/bice
+    - nox -s lint
+
+type_check:
+  stage: type_check
+  script:
+    - nox -s type_check
 
 test:
   stage: test
   script:
-    - pip install -e ".[dev]"
-    - pytest
+    - nox -s test-3.12
 
 build:
   stage: build
@@ -58,11 +45,20 @@ build:
 pages:
   stage: deploy
   script:
-    - pip install -e ".[dev]"
-    - cd docs ; make html
-    - mv _build/html/ ../public/
+    - nox -s docs
+    - mv docs/_build/html/ public/
   artifacts:
     paths:
       - public
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+deploy_pypi:
+  stage: deploy
+  script:
+    - pip install twine
+    - twine upload --username __token__ --password $PYPI_API_TOKEN dist/*
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
+  dependencies:
+    - build
