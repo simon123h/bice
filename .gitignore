@@ -16,3 +16,5 @@ dist/
 # tools artifacts
 *flake8.txt
 .mypy_cache
+.ruff_cache
+.pytest_cache
