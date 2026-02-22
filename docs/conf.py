@@ -14,6 +14,7 @@
 #
 import os
 import sys
+import tomllib
 
 sys.path.insert(0, os.path.abspath("../src"))
 
@@ -24,8 +25,11 @@ project = "bice"
 copyright = "2026, Simon Hartmann"
 author = "Simon Hartmann"
 
-# The full version, including alpha/beta/rc tags
-release = "0.4.3"
+# Read version from pyproject.toml
+with open("../pyproject.toml", "rb") as f:
+    pyproject = tomllib.load(f)
+release = pyproject["project"]["version"]
+version = ".".join(release.split(".")[:2])
 
 
 # -- General configuration ---------------------------------------------------
