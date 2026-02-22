@@ -4,22 +4,23 @@ import numpy as np
 import scipy.sparse as sp
 
 from bice.core.equation import Equation, EquationGroup
+from bice.core.types import Array, Matrix, Shape
 
 
 class SimpleEquation(Equation):
     """A simple equation: rhs(u) = u * multiplier."""
 
-    def __init__(self, shape, multiplier=1.0):
+    def __init__(self, shape: Shape, multiplier: float = 1.0) -> None:
         """Initialize the equation."""
         super().__init__(shape)
         self.multiplier = multiplier
         self.u = np.ones(shape)
 
-    def rhs(self, u):
+    def rhs(self, u: Array) -> Array:
         """Calculate the right-hand side."""
         return u * self.multiplier
 
-    def jacobian(self, u):
+    def jacobian(self, u: Array) -> Matrix:
         """Calculate the Jacobian."""
         # Jacobian is diagonal with entries = multiplier
         return sp.diags([self.multiplier] * u.size, shape=(u.size, u.size))
@@ -32,14 +33,14 @@ class CoupledEquation(Equation):
     rhs(u_this) = u_this - u_other.
     """
 
-    def __init__(self, shape, other_eq):
+    def __init__(self, shape: Shape, other_eq: Equation) -> None:
         """Initialize the equation."""
         super().__init__(shape)
         self.other_eq = other_eq
         self.is_coupled = True
         self.u = np.zeros(shape)
 
-    def rhs(self, u_full):
+    def rhs(self, u_full: Array) -> Array:
         """Calculate the right-hand side."""
         # We need to extract our part and the other part from u_full
         # This requires knowledge of the group mapping, which is available in self.group.idx
@@ -62,9 +63,12 @@ class CoupledEquation(Equation):
         res[my_idx] = u_me - u_other
         return res
 
-    def jacobian(self, u_full):
+    def jacobian(self, u_full: Array) -> Matrix:
         """Calculate the Jacobian."""
         # Jacobian needs to be full size
+        if self.group is None:
+            raise RuntimeError("Coupled equation must be in a group")
+
         my_idx = self.group.idx[self]
         other_idx = self.group.idx[self.other_eq]
 
@@ -87,7 +91,7 @@ class CoupledEquation(Equation):
         return sp.csr_matrix((data, (rows, cols)), shape=(ndofs, ndofs))
 
 
-def test_equation_group_mapping():
+def test_equation_group_mapping() -> None:
     """Test that EquationGroup maps unknowns correctly."""
     eq1 = SimpleEquation(shape=(2,), multiplier=2.0)
     eq2 = SimpleEquation(shape=(3,), multiplier=3.0)
@@ -109,7 +113,7 @@ def test_equation_group_mapping():
     np.testing.assert_array_equal(group.u[0:2], [-1, -1])
 
 
-def test_equation_group_rhs_uncoupled():
+def test_equation_group_rhs_uncoupled() -> None:
     """Test RHS assembly for uncoupled equations."""
     eq1 = SimpleEquation(shape=(2,), multiplier=2.0)
     eq2 = SimpleEquation(shape=(2,), multiplier=3.0)
@@ -127,7 +131,7 @@ def test_equation_group_rhs_uncoupled():
     np.testing.assert_array_equal(rhs, expected)
 
 
-def test_equation_group_jacobian_uncoupled():
+def test_equation_group_jacobian_uncoupled() -> None:
     """Test Jacobian assembly for uncoupled equations."""
     eq1 = SimpleEquation(shape=(2,), multiplier=2.0)
     eq2 = SimpleEquation(shape=(2,), multiplier=3.0)
@@ -142,7 +146,7 @@ def test_equation_group_jacobian_uncoupled():
     np.testing.assert_array_equal(J_dense, expected)
 
 
-def test_equation_group_coupled():
+def test_equation_group_coupled() -> None:
     """Test RHS and Jacobian for coupled equations."""
     eq1 = SimpleEquation(shape=(1,), multiplier=1.0)  # u1
     eq2 = CoupledEquation(shape=(1,), other_eq=eq1)  # u2 - u1

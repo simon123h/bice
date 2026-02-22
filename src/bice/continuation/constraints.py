@@ -142,7 +142,7 @@ class VolumeConstraint(ConstraintEquation):
             res[self_idx] = trapezoid(u[eq_idx], x_vals) - self.fixed_volume
         # Add the constraint to the reference equation: unknown influx is the
         # Langrange multiplier
-        res[eq_idx] += u[self_idx]
+        res[eq_idx] += float(u[self_idx][0])
         return res
 
     def jacobian(self, u: Array) -> sp.csr_matrix:

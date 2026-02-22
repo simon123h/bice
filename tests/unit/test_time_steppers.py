@@ -5,6 +5,7 @@ import pytest
 
 from bice.core.equation import Equation
 from bice.core.problem import Problem
+from bice.core.types import Array, Shape
 from bice.time_steppers.bdf import BDF2
 from bice.time_steppers.runge_kutta import RungeKutta4
 from bice.time_steppers.time_steppers import Euler, ImplicitEuler
@@ -13,17 +14,17 @@ from bice.time_steppers.time_steppers import Euler, ImplicitEuler
 class DecayEquation(Equation):
     """du/dt = -u. Analytical solution: u(t) = u(0) * exp(-t)."""
 
-    def __init__(self, shape=(1,)):
+    def __init__(self, shape: Shape = (1,)) -> None:
         super().__init__(shape=shape)
 
-    def rhs(self, u):
+    def rhs(self, u: Array) -> Array:
         return -u
 
-    def jacobian(self, u):
-        return np.array([[-1.0]])
+    def jacobian(self, u: Array) -> Array:
+        return np.asarray([[-1.0]])
 
 
-def test_euler_step():
+def test_euler_step() -> None:
     prob = Problem()
     prob.add_equation(DecayEquation())
     prob.u = np.array([1.0])
@@ -36,7 +37,7 @@ def test_euler_step():
     assert prob.time == pytest.approx(0.1)
 
 
-def test_implicit_euler_step():
+def test_implicit_euler_step() -> None:
     prob = Problem()
     prob.add_equation(DecayEquation())
     prob.u = np.array([1.0])
@@ -49,7 +50,7 @@ def test_implicit_euler_step():
     np.testing.assert_allclose(prob.u, [1.0 / 1.1])
 
 
-def test_rk4_step():
+def test_rk4_step() -> None:
     prob = Problem()
     prob.add_equation(DecayEquation())
     prob.u = np.array([1.0])
@@ -62,7 +63,7 @@ def test_rk4_step():
     np.testing.assert_allclose(prob.u, [expected], atol=1e-5)
 
 
-def test_bdf2_step():
+def test_bdf2_step() -> None:
     prob = Problem()
     prob.add_equation(DecayEquation())
     prob.u = np.array([1.0])

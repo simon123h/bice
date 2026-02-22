@@ -6,14 +6,15 @@ import pytest
 from bice.core.equation import Equation
 from bice.core.problem import Problem
 from bice.core.solution import BifurcationDiagram, Branch, Solution
+from bice.core.types import Array
 
 
 class SimpleEquation(Equation):
-    def rhs(self, u):
+    def rhs(self, u: Array) -> Array:
         return -u
 
 
-def test_solution_creation():
+def test_solution_creation() -> None:
     prob = Problem()
     prob.add_equation(SimpleEquation())
     prob.u = np.array([1.0])
@@ -25,7 +26,7 @@ def test_solution_creation():
     assert "SimpleEquation.u" in sol.data
 
 
-def test_branch_management():
+def test_branch_management() -> None:
     branch = Branch()
     assert branch.is_empty()
 
@@ -42,7 +43,7 @@ def test_branch_management():
     np.testing.assert_allclose(branch.norm_vals(), [0.0, 1.0, 2.0, 3.0, 4.0])
 
 
-def test_bifurcation_detection():
+def test_bifurcation_detection() -> None:
     branch = Branch()
 
     # Create a sequence of solutions where eigenvalues change sign
@@ -61,7 +62,7 @@ def test_bifurcation_detection():
     assert sol2.bifurcation_type() == "-"
 
 
-def test_bifurcation_diagram():
+def test_bifurcation_diagram() -> None:
     bd = BifurcationDiagram()
     assert len(bd.branches) == 1  # Active branch created by default
 

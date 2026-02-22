@@ -1,28 +1,31 @@
 """Sociable unit tests for the Problem class."""
 
+from typing import Any, cast
+
 import numpy as np
 
 from bice.core.equation import Equation
 from bice.core.problem import Problem
 from bice.core.solvers import MyNewtonSolver
+from bice.core.types import Array, ArrayLike, Shape
 
 
 class SimpleLinearEquation(Equation):
     """du/dt = a * u + b"""
 
-    def __init__(self, a=-1.0, b=1.0, shape=(1,)):
+    def __init__(self, a: float = -1.0, b: float = 1.0, shape: Shape = (1,)) -> None:
         super().__init__(shape=shape)
         self.a = a
         self.b = b
 
-    def rhs(self, u):
+    def rhs(self, u: Array) -> Array:
         return self.a * u + self.b
 
-    def jacobian(self, u):
-        return np.array([[self.a]])
+    def jacobian(self, u: Array) -> Array:
+        return np.asarray([[self.a]])
 
 
-def test_problem_initialization():
+def test_problem_initialization() -> None:
     """Test that a Problem initializes with default components."""
     prob = Problem()
     assert prob.eq is None
@@ -32,7 +35,7 @@ def test_problem_initialization():
     assert prob.history is not None
 
 
-def test_problem_add_remove_equation():
+def test_problem_add_remove_equation() -> None:
     """Test adding and removing equations to/from a Problem."""
     prob = Problem()
     eq1 = SimpleLinearEquation(a=-1.0, b=1.0, shape=(2,))
@@ -60,19 +63,19 @@ def test_problem_add_remove_equation():
     assert prob.ndofs == 0
 
 
-def test_problem_u_property():
+def test_problem_u_property() -> None:
     """Test the u getter and setter."""
     prob = Problem()
     eq = SimpleLinearEquation(shape=(2,))
     prob.add_equation(eq)
 
-    new_u = np.array([1.5, 2.5])
+    new_u: ArrayLike = np.array([1.5, 2.5])
     prob.u = new_u
-    np.testing.assert_allclose(prob.u, new_u)
-    np.testing.assert_allclose(eq.u, new_u)
+    np.testing.assert_allclose(cast(np.ndarray, prob.u), cast(np.ndarray, new_u))
+    np.testing.assert_allclose(cast(np.ndarray, eq.u), cast(np.ndarray, new_u))
 
 
-def test_problem_time_step():
+def test_problem_time_step() -> None:
     """Test performing a time step."""
     prob = Problem()
     eq = SimpleLinearEquation(a=-1.0, b=0.0, shape=(1,))
@@ -87,20 +90,20 @@ def test_problem_time_step():
     assert prob.time > 0
 
 
-def test_problem_newton_solve():
+def test_problem_newton_solve() -> None:
     """Test solving for steady state using Newton's method."""
     prob = Problem()
     # du/dt = -u + 2 => steady state at u = 2
     eq = SimpleLinearEquation(a=-1.0, b=2.0, shape=(1,))
     prob.add_equation(eq)
-    prob.newton_solver = MyNewtonSolver()
+    prob.newton_solver = cast(Any, MyNewtonSolver())
     prob.u = np.array([0.0])
 
     prob.newton_solve()
     np.testing.assert_allclose(prob.u, [2.0], atol=1e-5)
 
 
-def test_problem_history():
+def test_problem_history() -> None:
     """Test that history is updated during time steps."""
     prob = Problem()
     eq = SimpleLinearEquation(shape=(1,))

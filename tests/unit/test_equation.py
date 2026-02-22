@@ -3,6 +3,7 @@
 import numpy as np
 
 from bice.core.equation import Equation
+from bice.core.types import Array
 
 
 class LinearEquation(Equation):
@@ -13,12 +14,12 @@ class LinearEquation(Equation):
     Jacobian should be Identity.
     """
 
-    def rhs(self, u):
+    def rhs(self, u: Array) -> Array:
         """Calculate the right-hand side."""
         return u - 1
 
 
-def test_equation_jacobian_fd():
+def test_equation_jacobian_fd() -> None:
     """
     Test that the base Equation class correctly computes the Jacobian.
 
@@ -50,7 +51,7 @@ def test_equation_jacobian_fd():
     )
 
 
-def test_equation_shape():
+def test_equation_shape() -> None:
     """Test shape handling."""
     eq = Equation(shape=(10, 2))
     assert eq.shape == (10, 2)

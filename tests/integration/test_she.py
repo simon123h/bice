@@ -4,10 +4,12 @@
 import unittest
 
 import numpy as np
+import scipy.sparse as sp
 
 from bice import Problem, profile, time_steppers
 from bice.continuation import TranslationConstraint
-from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
+from bice.pde.finite_differences import AffineOperator, FiniteDifferencesEquation, PeriodicBC
+from bice.core.types import Array, Matrix, RealArray
 
 
 class SwiftHohenbergEquation(FiniteDifferencesEquation):
@@ -18,14 +20,14 @@ class SwiftHohenbergEquation(FiniteDifferencesEquation):
     \partial t h &= (r - (kc^2 + \Delta)^2)h + v * h^2 - g * h^3.
     """
 
-    def __init__(self, N, L):
+    def __init__(self, N: int, L: float) -> None:
         """Initialize the equation."""
         super().__init__()
         # parameters
         self.r = -0.013
         self.kc = 0.5
         self.v = 0.41
-        self.g = 1
+        self.g = 1.0
         # spatial coordinate
         self.x = [np.linspace(-L / 2, L / 2, N)]
         # initial condition
@@ -33,14 +35,24 @@ class SwiftHohenbergEquation(FiniteDifferencesEquation):
         # build finite difference matrices
         self.bc = PeriodicBC()
         self.build_FD_matrices(approx_order=2)
-        laplace = self.laplace()
-        self.linear_op = -2 * self.kc**2 * laplace - laplace.dot(laplace)
+        # laplace is now a Matrix or AffineOperator
+        laplace = self.laplace
+        assert laplace is not None
+        
+        # for construction, we want the matrix part
+        if isinstance(laplace, AffineOperator):
+            L_mat = laplace.Q
+        else:
+            L_mat = laplace
+            
+        self.linear_op = -2 * self.kc**2 * L_mat - L_mat.dot(L_mat)
 
     # definition of the SHE (right-hand side)
     @profile
-    def rhs(self, u):
+    def rhs(self, u: Array) -> Array:
         """Calculate the right-hand side."""
-        return self.linear_op.dot(u) + (self.r - self.kc**4) * u + self.v * u**2 - self.g * u**3
+        return np.asarray(self.linear_op.dot(u) + (self.r - self.kc**4) * u + self.v * u**2 - self.g * u**3)
+
 
 
 class TestSwiftHohenbergEquation(unittest.TestCase):
@@ -54,7 +66,7 @@ class TestSwiftHohenbergEquation(unittest.TestCase):
     - perform parameter continuation.
     """
 
-    def test_SHE(self):
+    def test_SHE(self) -> None:
         """Run the test for the Swift-Hohenberg equation."""
         # create problem
         self.problem = Problem()

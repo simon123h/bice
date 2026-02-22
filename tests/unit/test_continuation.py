@@ -1,5 +1,7 @@
 """Sociable unit tests for continuation and constraints."""
 
+from typing import Any, cast
+
 import numpy as np
 import pytest
 
@@ -7,20 +9,21 @@ from bice.continuation.constraints import VolumeConstraint
 from bice.continuation.continuation_steppers import NaturalContinuation
 from bice.core.equation import Equation
 from bice.core.problem import Problem
+from bice.core.types import Array
 
 
 class ParameterizedEquation(Equation):
     """du/dt = -u + p"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(shape=(1,))
         self.p = 0.0
 
-    def rhs(self, u):
+    def rhs(self, u: Array) -> Array:
         return -u + self.p
 
 
-def test_natural_continuation():
+def test_natural_continuation() -> None:
     prob = Problem()
     eq = ParameterizedEquation()
     prob.add_equation(eq)
@@ -28,7 +31,7 @@ def test_natural_continuation():
     prob.continuation_parameter = (eq, "p")
 
     stepper = NaturalContinuation(ds=0.1)
-    prob.continuation_stepper = stepper
+    prob.continuation_stepper = cast(Any, stepper)
 
     # First point: p=0, u=0
     prob.newton_solve()
@@ -43,7 +46,7 @@ def test_natural_continuation():
     np.testing.assert_allclose(prob.u, [0.1], atol=1e-5)
 
 
-def test_volume_constraint():
+def test_volume_constraint() -> None:
     """Test VolumeConstraint which enforces integral of u = constant."""
     prob = Problem()
     # Simple equation where we want to enforce integral
@@ -53,11 +56,11 @@ def test_volume_constraint():
     # constraint: u1 + u2 = fixed_volume
 
     class MultiVarEq(Equation):
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__(shape=(2,))
             self.source = 0.0  # This will be the Lagrange multiplier from constraint
 
-        def rhs(self, u):
+        def rhs(self, u: Array) -> Array:
             # source acts on both variables
             return -u + self.source
 
