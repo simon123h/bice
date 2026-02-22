@@ -73,8 +73,7 @@ To set up a local development environment:
 4. Build documentation:
 
    ```bash
-   cd docs
-   make html
+   nox -s docs
    ```
 
 5. Linting and Formatting:

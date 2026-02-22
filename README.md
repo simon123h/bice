@@ -86,12 +86,7 @@ Click here for the
 The documentation can be generated locally with:
 
 ```bash
-# Using nox (recommended)
 nox -s docs
-
-# Or using make (Unix-like systems only)
-cd docs
-make html
 ```
 
 The documentation can then be found in the folder `docs`.

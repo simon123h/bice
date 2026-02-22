@@ -14,12 +14,7 @@ We follow a **documentation-as-code** approach. Documentation is written in Mark
 To generate the HTML documentation on your machine:
 
 ```bash
-# Using nox (recommended)
 nox -s docs
-
-# Or using make
-cd docs
-make html
 ```
 
 The output will be available in `docs/_build/html/index.html`.
