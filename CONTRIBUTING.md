@@ -48,20 +48,35 @@ To set up a local development environment:
    cd bice
    ```
 
-2. Install development dependencies:
+2. Set up a virtual environment:
+   - **Linux / macOS**:
+
+     ```bash
+     python3 -m venv venv
+     source venv/bin/activate
+     ```
+
+   - **Windows**:
+
+     ```powershell
+     python -m venv venv
+     .\venv\Scripts\Activate.ps1
+     ```
+
+3. Install development dependencies:
 
    ```bash
    pip install -e ".[dev]"
    ```
 
-3. Build documentation:
+4. Build documentation:
 
    ```bash
    cd docs
    make html
    ```
 
-4. Linting and Formatting:
+5. Linting and Formatting:
 
    ```bash
    # Run linter and import sorter
