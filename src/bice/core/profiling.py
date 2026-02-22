@@ -146,7 +146,7 @@ class Profiler:
         total_time = time.time() - Profiler.__start_time
         # print the header
         print("Profiler results:")
-        print("{:<70} {:>11} {:>11} {:>8}".format("method name", "total", "relative", "#calls"))
+        print(f'{"method name":<70} {"total":>11} {"relative":>11} {"#calls":>8}')
         print("-" * 103)
         # print the stats of each call recursively, starting with the root call
         Profiler.__root_profile.print_stats(total_time, nested=nested)
