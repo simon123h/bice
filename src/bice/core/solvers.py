@@ -65,7 +65,7 @@ class AbstractNewtonSolver:
         """
         return self._iteration_count
 
-    def norm(self, residuals) -> float:
+    def norm(self, residuals: np.ndarray) -> float:
         """
         Return the norm used for checking the residuals for convergence.
 
@@ -79,7 +79,7 @@ class AbstractNewtonSolver:
         float
             The norm of the residuals.
         """
-        return np.max(residuals)
+        return float(np.max(residuals))
 
     def throw_no_convergence_error(self, res=None):
         """
@@ -375,6 +375,6 @@ class EigenSolver:
         idx = np.argsort(eigenvalues)[::-1]
         idx = idx[np.isfinite(eigenvalues[idx])]
         # store and return
-        self.latest_eigenvalues = eigenvalues[idx]
-        self.latest_eigenvectors = eigenvectors.T[idx]
+        self.latest_eigenvalues = np.asarray(eigenvalues[idx])
+        self.latest_eigenvectors = np.asarray(eigenvectors.T[idx])
         return (self.latest_eigenvalues, self.latest_eigenvectors)

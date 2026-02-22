@@ -212,7 +212,7 @@ class Branch:
         #: unique identifier of the branch
         self.id = Branch._branch_count
         #: list of solutions along the branch
-        self.solutions = []
+        self.solutions: List[Solution] = []
 
     def is_empty(self) -> bool:
         """Check if the current branch is empty."""
@@ -276,7 +276,7 @@ class Branch:
         """
         return [s for s in self.solutions if s.is_bifurcation()]
 
-    def data(self, only=None) -> Tuple[np.ndarray, np.ndarray]:
+    def data(self, only: Optional[str] = None) -> Tuple[np.ndarray, np.ndarray]:
         """
         Return the list of parameters and norms of the branch.
 
@@ -290,11 +290,11 @@ class Branch:
         Tuple[np.ndarray, np.ndarray]
             Tuple of (parameter values, norm values).
         """
-        condition = False
+        condition: Union[bool, List[bool]] = False
         if only == "stable":
             condition = [not s.is_stable() for s in self.solutions]
         elif only == "unstable":
-            condition = [s.is_stable() for s in self.solutions]
+            condition = [bool(s.is_stable()) for s in self.solutions]
         elif only == "bifurcations":
             condition = [not s.is_bifurcation() for s in self.solutions]
         # mask lists where condition is met and return
