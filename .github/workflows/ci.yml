@@ -115,9 +115,10 @@ jobs:
       - name: Publish package distributions to GitHub Packages
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: https://pypi.pkg.github.com/${{ github.repository }}
+          repository-url: https://pypi.pkg.github.com/${{ github.repository_owner }}/
           password: ${{ secrets.GITHUB_TOKEN }}
-
+          user: ${{ github.actor }}
+          attestations: false
   github-release:
     name: Create GitHub Release
     needs: build
