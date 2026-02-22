@@ -42,20 +42,27 @@ To contribute code or documentation:
 To set up a local development environment:
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/simon123h/bice.git
    cd bice
    ```
+
 2. Install development dependencies:
+
    ```bash
    pip install -e ".[dev]"
    ```
+
 3. Build documentation:
+
    ```bash
    cd docs
    make html
    ```
+
 4. Linting and Formatting:
+
    ```bash
    # Run linter and import sorter
    ruff check .
