@@ -1,3 +1,5 @@
+"""2D Cahn-Hilliard Equation demo using Finite Differences method."""
+
 #!/usr/bin/python3
 import os
 import shutil
@@ -13,12 +15,14 @@ from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
 
 class CahnHilliardEquation(FiniteDifferencesEquation):
     r"""
-    Finite difference implementation of the 2-dimensional Cahn-Hilliard Equation
+    Finite difference implementation of the 2-dimensional Cahn-Hilliard Equation.
+
     equation, a nonlinear PDE
     \partial t c &= \Delta (c^3 + a * c - \kappa * \Delta c).
     """
 
     def __init__(self, N, L):
+        """Initialize the equation."""
         super().__init__()
         # parameters
         self.a = -0.5
@@ -40,18 +44,23 @@ class CahnHilliardEquation(FiniteDifferencesEquation):
     # definition of the CHE (right-hand side)
     @profile
     def rhs(self, u):
+        """Calculate the right-hand side of the equation."""
         Delta = self.laplace
         return Delta.dot(u**3 + self.a * u - self.kappa * Delta.dot(u))
 
     # definition of the Jacobian
     @profile
     def jacobian(self, u):
+        """Calculate the Jacobian of the equation."""
         Delta = self.laplace
         return Delta.dot(3 * diags(u**2) - self.kappa * Delta) + self.a * Delta
 
 
 class CahnHilliardProblem(Problem):
+    """Problem class for the 2D Cahn-Hilliard equation using Finite Differences."""
+
     def __init__(self, N, L):
+        """Initialize the problem."""
         super().__init__()
         # Add the Cahn-Hilliard equation to the problem
         self.che = CahnHilliardEquation(N, L)

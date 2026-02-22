@@ -1,3 +1,5 @@
+"""Unit tests for the Equation class."""
+
 import numpy as np
 
 from bice.core.equation import Equation
@@ -5,25 +7,29 @@ from bice.core.equation import Equation
 
 class LinearEquation(Equation):
     """
-    A simple linear equation: du/dt = u - 1
+    A simple linear equation: du/dt = u - 1.
+
     So rhs(u) = u - 1
     Jacobian should be Identity.
     """
 
     def rhs(self, u):
+        """Calculate the right-hand side."""
         return u - 1
 
 
 def test_equation_jacobian_fd():
     """
-    Test that the base Equation class correctly computes the Jacobian
-    using finite differences for a simple linear equation.
+    Test that the base Equation class correctly computes the Jacobian.
+
+    Uses finite differences for a simple linear equation.
     """
     N = 5
     eq = LinearEquation(shape=(N,))
 
     # Set a random state for u
-    eq.u = np.random.rand(N)
+    rng = np.random.default_rng()
+    eq.u = rng.random(N)
 
     # Compute Jacobian using the default FD implementation
     J = eq.jacobian(eq.u)

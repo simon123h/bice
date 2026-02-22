@@ -1,6 +1,5 @@
 """Solver implementations (Newton, Eigenvalues)."""
 
-
 import numpy as np
 import scipy.linalg
 import scipy.optimize

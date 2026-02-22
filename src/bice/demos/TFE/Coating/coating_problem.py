@@ -1,3 +1,5 @@
+"""1D Thin-Film Equation coating problem demo."""
+
 #!/usr/bin/python3
 import numpy as np
 from scipy.sparse import diags
@@ -12,9 +14,14 @@ from bice.pde.finite_differences import (
 
 
 class CoatingEquation(FiniteDifferencesEquation):
-    r"""Finite differences implementation of the 1-dimensional coating problem."""
+    r"""
+    Finite differences implementation of the 1-dimensional coating problem.
+
+    Solves the Thin-Film Equation on a moving substrate.
+    """
 
     def __init__(self, N, L):
+        """Initialize the equation."""
         super().__init__(shape=(N,))
         # parameters:
         self.U = 0.5  # substrate velocity
@@ -36,8 +43,8 @@ class CoatingEquation(FiniteDifferencesEquation):
         # build finite differences matrices
         self.build_FD_matrices(approx_order=2)
 
-    # overload building of FD matrices, because this equation has a more complicated set up
     def build_FD_matrices(self, approx_order):
+        """Build finite difference matrices."""
         # build finite differences matrices...
         # (i) including the flux boundary conditions for h^3 * dF/dh
         self.bc = DirichletBC(vals=(1, 0))
@@ -53,8 +60,8 @@ class CoatingEquation(FiniteDifferencesEquation):
         super().build_FD_matrices(approx_order)
         self.nabla0 = self.nabla
 
-    # definition of the equation
     def rhs(self, h):
+        """Calculate the right-hand side."""
         h3 = h**3
         # disjoining pressure
         djp = 5 / 3 * (self.theta * self.h_p) ** 2 * (self.h_p**3 / h3**2 - 1.0 / h3)
@@ -71,6 +78,7 @@ class CoatingEquation(FiniteDifferencesEquation):
         return dhdt
 
     def jacobian(self, h):
+        """Calculate the Jacobian."""
         # disjoining pressure
         h3 = h**3
         djp = 5 / 3 * (self.theta * self.h_p) ** 2 * (self.h_p**3 / h3**2 - 1.0 / h3)
@@ -86,9 +94,11 @@ class CoatingEquation(FiniteDifferencesEquation):
         return jac
 
     def du_dx(self, u, direction=0):
+        """Calculate the spatial derivative."""
         return self.nabla[direction].dot(u)
 
     def plot(self, ax):
+        """Plot the solution."""
         global problem
         ax.set_xlabel("x")
         ax.set_ylabel("solution h(x,t)")
@@ -104,7 +114,10 @@ class CoatingEquation(FiniteDifferencesEquation):
 
 
 class CoatingProblem(Problem):
+    """Problem class for the 1D coating problem."""
+
     def __init__(self, N, L):
+        """Initialize the problem."""
         super().__init__()
         # Add the Thin-Film equation to the problem
         self.tfe = CoatingEquation(N, L)
@@ -114,4 +127,5 @@ class CoatingProblem(Problem):
         # self.time_stepper = time_steppers.BDF(self)
 
     def norm(self):
+        """Return the L2-norm of the solution."""
         return np.trapezoid(self.tfe.u, self.tfe.x[0])

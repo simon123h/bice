@@ -1,3 +1,5 @@
+"""1D Nikolaevskiy Equation demo using Pseudospectral method."""
+
 #!/usr/bin/python3
 import os
 import shutil
@@ -11,12 +13,14 @@ from bice.pde import PseudospectralEquation
 
 class NikolaevskiyEquation(PseudospectralEquation):
     r"""
-    Pseudospectral implementation of the 1-dimensional Nikolaevskiy Equation
+    Pseudospectral implementation of the 1-dimensional Nikolaevskiy Equation.
+
     equation, a nonlinear PDE
     \partial t h &= -\Delta (r - (1+\Delta)^2) h - 1/2 (\nabla h)^2.
     """
 
     def __init__(self, N):
+        """Initialize the equation."""
         # make sure N is even
         N = int(np.floor(N / 2) * 2)
         super().__init__(shape=N)
@@ -30,13 +34,13 @@ class NikolaevskiyEquation(PseudospectralEquation):
         rng = np.random.default_rng()
         self.u = 2 * (rng.random(N) - 0.5) * 1e-5
 
-    # characteristic length scale
     @property
     def L0(self):
+        """Calculate characteristic length scale."""
         return 2 * np.pi / np.sqrt(1 + np.sqrt(self.r))
 
-    # definition of the Nikolaevskiy equation (right-hand side)
     def rhs(self, u):
+        """Calculate the right-hand side of the equation."""
         # calculate the system length
         L = self.L0 * self.m
         # include length scale in the k-vector
@@ -51,13 +55,13 @@ class NikolaevskiyEquation(PseudospectralEquation):
         # sum up and return
         return np.fft.irfft(lin) - 0.5 * nonlin
 
-    # calculate the spatial derivative
     def du_dx(self, u, direction=0):
+        """Calculate the spatial derivative."""
         du_dx = 1j * self.k[direction] * np.fft.rfft(u)
         return np.fft.irfft(du_dx)
 
-    # plot the solution
     def plot(self, ax):
+        """Plot the solution."""
         ax.set_xlabel("x")
         ax.set_ylabel("h(x,t)")
         L = self.L0 * self.m
@@ -65,7 +69,10 @@ class NikolaevskiyEquation(PseudospectralEquation):
 
 
 class NikolaevskiyProblem(Problem):
+    """Problem class for the 1D Nikolaevskiy equation."""
+
     def __init__(self, N):
+        """Initialize the problem."""
         super().__init__()
         # Add the Nikolaevskiy equation to the problem
         self.ne = NikolaevskiyEquation(N)
@@ -78,8 +85,8 @@ class NikolaevskiyProblem(Problem):
         # assign the continuation parameter
         self.continuation_parameter = (self.ne, "m")
 
-    # set higher modes to null, for numerical stability
     def dealias(self, fraction=1.0 / 2.0):
+        """Set higher modes to null, for numerical stability."""
         u_k = np.fft.rfft(self.ne.u)
         N = len(u_k)
         k = int(N * fraction)
@@ -87,8 +94,8 @@ class NikolaevskiyProblem(Problem):
         u_k[0] = 0
         self.ne.u = np.fft.irfft(u_k)
 
-    # Norm is the L2-norm of the NE
     def norm(self):
+        """Return the L2-norm of the solution."""
         return np.linalg.norm(self.ne.u)
 
 

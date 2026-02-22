@@ -1,3 +1,5 @@
+"""Integration test using the Swift-Hohenberg Equation."""
+
 #!/usr/bin/python3
 import unittest
 
@@ -10,12 +12,14 @@ from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
 
 class SwiftHohenbergEquation(FiniteDifferencesEquation):
     r"""
-    Finite difference implementation of the 1-dimensional Swift-Hohenberg Equation
+    Finite difference implementation of the 1-dimensional Swift-Hohenberg Equation.
+
     equation, a nonlinear PDE
     \partial t h &= (r - (kc^2 + \Delta)^2)h + v * h^2 - g * h^3.
     """
 
     def __init__(self, N, L):
+        """Initialize the equation."""
         super().__init__()
         # parameters
         self.r = -0.013
@@ -35,12 +39,15 @@ class SwiftHohenbergEquation(FiniteDifferencesEquation):
     # definition of the SHE (right-hand side)
     @profile
     def rhs(self, u):
+        """Calculate the right-hand side."""
         return self.linear_op.dot(u) + (self.r - self.kc**4) * u + self.v * u**2 - self.g * u**3
 
 
 class TestSwiftHohenbergEquation(unittest.TestCase):
     """
-    A simple test using the Swift-Hohenberg equation (SHE) testing if it is possible to:
+    Test the Swift-Hohenberg equation (SHE).
+
+    Tests if it is possible to:
     - create a FiniteDifferencesEquation
     - create a Problem
     - perform time simulation

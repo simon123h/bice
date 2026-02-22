@@ -1,3 +1,5 @@
+"""1D semi-active coupled Phase Field Crystal Equation Lyapunov exponent demo."""
+
 #!/usr/bin/python3
 import os
 import shutil

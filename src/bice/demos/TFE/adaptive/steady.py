@@ -1,3 +1,5 @@
+"""Steady state demo for the adaptive substrate Thin-Film Equation."""
+
 #!/usr/bin/python3
 import os
 import shutil

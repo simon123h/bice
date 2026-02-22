@@ -1,3 +1,5 @@
+"""1D Thin-Film Equation simulation using Finite Differences."""
+
 #!/usr/bin/python3
 import os
 import shutil
@@ -17,7 +19,8 @@ from bice.pde.finite_differences import (
 
 class ThinFilmEquation(FiniteDifferencesEquation):
     r"""
-    Finite differences implementation of the 1-dimensional Thin-Film Equation
+    Finite differences implementation of the 1-dimensional Thin-Film Equation.
+
     equation
     dh/dt = d/dx (h^3 d/dx dF/dh )
     with the variation of the free energy:
@@ -27,6 +30,7 @@ class ThinFilmEquation(FiniteDifferencesEquation):
     """
 
     def __init__(self, N, L):
+        """Initialize the equation."""
         super().__init__(shape=(2, N))
         # parameters:
         self.U = 0
@@ -47,6 +51,7 @@ class ThinFilmEquation(FiniteDifferencesEquation):
 
     # definition of the equation
     def rhs(self, u):
+        """Calculate the right-hand side of the equation."""
         h, dFdh = u
         h3 = h**3
         djp = 1.0 / h3**2 - 1.0 / h3
@@ -55,6 +60,7 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         return np.array([eq1, eq2])
 
     def jacobian(self, u):
+        """Calculate the Jacobian of the equation."""
         h, dFdh = u
         ddjpdh = 3.0 / h**4 - 6.0 / h**7
         eq1dh = self.nabla(sp.diags(3 * h**2 * self.nabla(dFdh)))
@@ -64,9 +70,11 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         return sp.bmat([[eq1dh, eq1dF], [eq2dh, eq2dF]])
 
     def du_dx(self, u, direction=0):
+        """Calculate the spatial derivative."""
         return self.nabla[direction](u)
 
     def plot(self, ax):
+        """Plot the solution."""
         ax.set_xlabel("x")
         ax.set_ylabel("solution h(x,t)")
         h, dFdh = self.u
@@ -75,15 +83,19 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         ax.legend()
 
     def mass_matrix(self):
+        """Calculate the mass matrix."""
         nvar, ngrid = self.shape
         dynamics = np.eye(nvar)
         dynamics[1, 1] = 0
-        I = sp.eye(ngrid)
-        return sp.kron(dynamics, I)
+        eye_matrix = sp.eye(ngrid)
+        return sp.kron(dynamics, eye_matrix)
 
 
 class ThinFilm(Problem):
+    """Problem class for the 1D Thin-Film equation."""
+
     def __init__(self, N, L):
+        """Initialize the problem."""
         super().__init__()
         # Add the Thin-Film equation to the problem
         self.tfe = ThinFilmEquation(N, L)

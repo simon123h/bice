@@ -1,3 +1,5 @@
+"""Volume constraint implementation for the adaptive substrate TFE demo."""
+
 import numpy as np
 import scipy.sparse as sp
 
@@ -6,15 +8,17 @@ from bice.continuation import ConstraintEquation
 
 class VolumeConstraint(ConstraintEquation):
     """
-    A volume constraint (or mass constraint) assures the conservation of
-    the integral of the unknowns of some given equation when solving the system.
-    We may even prescribe the target volume (or mass) with a parameter,
-    but we don't have to.
-    The constraint equation comes with an additional (unknown) Lagrange
-    multiplier that can be interpreted as an influx into the system.
+    A volume constraint (or mass constraint) for the adaptive substrate TFE.
+
+    Assures the conservation of the integral of the unknowns of some given equation
+    when solving the system. We may even prescribe the target volume (or mass)
+    with a parameter, but we don't have to. The constraint equation comes with an
+    additional (unknown) Lagrange multiplier that can be interpreted as an influx
+    into the system.
     """
 
     def __init__(self, reference_equation):
+        """Initialize the constraint."""
         super().__init__(shape=(1,))
         # on which equation/unknowns should the constraint be imposed?
         self.ref_eq = reference_equation
@@ -24,6 +28,7 @@ class VolumeConstraint(ConstraintEquation):
         self.fixed_volume = None
 
     def rhs(self, u):
+        """Calculate the right-hand side of the constraint."""
         # generate empty vector of residual contributions
         res = np.zeros(u.size)
         # reference to the indices of the unknowns that we work on
@@ -52,6 +57,7 @@ class VolumeConstraint(ConstraintEquation):
         return res
 
     def jacobian(self, u):
+        """Calculate the Jacobian of the constraint."""
         # TODO: implement analytical / semi-analytical Jacobian
         # convert FD Jacobian to sparse matrix
         return sp.csr_matrix(super().jacobian(u))

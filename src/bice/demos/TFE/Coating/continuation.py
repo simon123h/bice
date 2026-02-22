@@ -1,3 +1,5 @@
+"""Continuation demo for the coating problem."""
+
 #!/usr/bin/python3
 import os
 import shutil
