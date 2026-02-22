@@ -170,7 +170,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
                 op = sp.eye(N, N + Ngp, k=Ngp // 2)
             else:
                 # obtain differentiation matrix from findiff package
-                op = findiff.FinDiff(0, x_pad, order, acc=ao).matrix(x_pad.shape)
+                op = (findiff.Diff(0, x_pad, acc=ao) ** order).matrix(x_pad.shape)
                 # slice rows corresponding to ghost nodes
                 op = op[Ngp // 2 : N + Ngp // 2, :]
             # include the boundary conditions into the differentiation operator by pre-multiplying
