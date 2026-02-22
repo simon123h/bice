@@ -1,5 +1,9 @@
 """Time-periodic orbit handling."""
 
+from __future__ import annotations
+
+from typing import cast
+
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.linalg
@@ -7,7 +11,7 @@ import scipy.sparse as sp
 
 from bice.core.equation import Equation
 from bice.core.profiling import profile
-from bice.core.types import Array
+from bice.core.types import Array, Matrix
 
 # TODO: make this work for multiple variables, regarding ref_eq.shape
 
@@ -25,7 +29,7 @@ class TimePeriodicOrbitHandler(Equation):
 
     # reference equation, initial guess for period length, initial number of points in
     # time
-    def __init__(self, reference_equation, T, Nt) -> None:
+    def __init__(self, reference_equation: Equation, T: float, Nt: int) -> None:
         """
         Initialize the TimePeriodicOrbitHandler.
 
@@ -54,7 +58,7 @@ class TimePeriodicOrbitHandler(Equation):
         self.ddt = self.build_ddt_matrix()
         # cache for storing the Jacobians J[u, t_i] = d(ref_eq.rhs)/du for each point
         # in time t_i
-        self._jacobian_cache = []
+        self._jacobian_cache: list[Matrix] = []
 
     @property
     def T(self) -> float:
@@ -66,7 +70,7 @@ class TimePeriodicOrbitHandler(Equation):
         float
             The period length.
         """
-        return self.u[-1]
+        return cast(float, self.u[-1])
 
     @T.setter
     def T(self, v: float) -> None:
@@ -313,7 +317,7 @@ class TimePeriodicOrbitHandler(Equation):
                 M = M.todense()
             # calculate eigenvalues and return
             eigval, _ = scipy.linalg.eig(A, M)
-            return eigval[:k]
+            return cast(Array, eigval[:k])
         else:
             # make sure both are sparse
             if not sp.issparse(A):
@@ -322,7 +326,7 @@ class TimePeriodicOrbitHandler(Equation):
                 M = sp.csr_matrix(M)
             # calculate eigenvalues and return
             eigval, _ = sp.linalg.eigs(A, k=k, M=M, sigma=1)
-            return eigval
+            return cast(Array, eigval)
 
     # TODO: test this
     # TODO: ddt does currently not support non-uniform time, make uniform?

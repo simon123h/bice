@@ -1,6 +1,8 @@
 """Backward Differentiation Formula (BDF) time-stepping schemes."""
 
-from typing import TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 import scipy.integrate
@@ -32,7 +34,7 @@ class BDF2(TimeStepper):
         #: the order of the scheme
         self.order = 2
 
-    def step(self, problem: "Problem") -> None:
+    def step(self, problem: Problem) -> None:
         """
         Perform a single BDF2 step.
 
@@ -73,7 +75,7 @@ class BDF(TimeStepper):
     with variable order.
     """
 
-    def __init__(self, problem: "Problem", dt_max: float = np.inf) -> None:
+    def __init__(self, problem: Problem, dt_max: float = np.inf) -> None:
         """
         Initialize the adaptive BDF time-stepper.
 
@@ -97,7 +99,7 @@ class BDF(TimeStepper):
         self.bdf = None
         self.factory_reset()
 
-    def step(self, problem: "Problem") -> None:
+    def step(self, problem: Problem) -> None:
         """
         Perform a single adaptive BDF step.
 
@@ -107,11 +109,13 @@ class BDF(TimeStepper):
             The problem instance to step in time.
         """
         # perform the step
-        self.bdf.step()
+        # cast to Any because scipy.integrate.BDF attributes are not always correctly typed by mypy
+        bdf = cast(Any, self.bdf)
+        bdf.step()
         # assign the new variables
-        self.dt = self.bdf.step_size
-        self.problem.time = self.bdf.t
-        self.problem.u = self.bdf.y
+        self.dt = bdf.step_size
+        self.problem.time = bdf.t
+        self.problem.u = bdf.y
 
     def factory_reset(self) -> None:
         """

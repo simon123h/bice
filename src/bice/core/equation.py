@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import scipy.sparse as sp
 
@@ -185,7 +187,7 @@ class Equation:
         # default case: assume the identity matrix I (--> du/dt = rhs(u))
         return sp.eye(self.ndofs)
 
-    def adapt(self) -> None:
+    def adapt(self) -> Any:
         """
         Adapt the equation to the solution (mesh refinement or similar).
 
@@ -193,7 +195,7 @@ class Equation:
         do not forget to adapt Equation.u_history as well!
         """
 
-    def save(self) -> dict:
+    def save(self) -> dict[str, Any]:
         """
         Save everything that is relevant for this equation to a dict.
 
@@ -207,7 +209,7 @@ class Equation:
         """
         return {"u": self.u}
 
-    def load(self, data) -> None:
+    def load(self, data: dict[str, Any]) -> None:
         """
         Restore unknowns / parameters / etc. from the given dictionary.
 
@@ -222,7 +224,7 @@ class Equation:
         """
         self.u = data["u"]
 
-    def plot(self, ax) -> None:
+    def plot(self, ax: Any) -> None:
         """
         Plot the solution into a matplotlib axes object.
 
@@ -335,7 +337,7 @@ class EquationGroup:
         return np.concatenate([eq.u.ravel() for eq in self.equations])
 
     @u.setter
-    def u(self, u) -> None:
+    def u(self, u: Array) -> None:
         """
         Set the unknowns.
 
@@ -548,7 +550,7 @@ class EquationGroup:
                 res.append(eq)
         return res
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Return a string representation of the EquationGroups in the terminal.
 

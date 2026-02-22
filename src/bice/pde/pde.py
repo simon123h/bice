@@ -1,5 +1,9 @@
 """Base classes for partial differential equations (PDEs)."""
 
+from __future__ import annotations
+
+from typing import cast
+
 import numpy as np
 
 from bice.core.equation import Equation
@@ -25,6 +29,7 @@ class PartialDifferentialEquation(Equation):
         """
         super().__init__(shape)
         #: the spatial coordinates
+        self.x: list[np.ndarray] | None
         if len(self.shape) > 0:
             self.x = [np.linspace(0, 1, self.shape[-1])]
         else:
@@ -63,7 +68,7 @@ class PartialDifferentialEquation(Equation):
         if u is None:
             u = self.u
         # typically, the mass matrix determines which part of rhs(u) go into du/dt
-        return self.mass_matrix().dot(self.rhs(u))
+        return cast(Array, self.mass_matrix().dot(self.rhs(u)))
 
     def du_dx(self, u: Array | None = None, direction: int = 0) -> Array:
         """

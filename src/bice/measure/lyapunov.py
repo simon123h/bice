@@ -112,7 +112,7 @@ class LyapunovExponentCalculator:
         reference = self.problem.u.copy()
         # generate perturbed trajectories from reference and perturbations
         trajectories = [reference + ptb * self.epsilon for ptb in self.perturbations]
-        trajectories.append(reference)  # type: ignore
+        trajectories.append(reference)
         # integrate every trajectory, including reference
         time = float(self.problem.time)
         dt = self.problem.time_stepper.dt

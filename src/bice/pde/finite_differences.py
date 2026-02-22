@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import findiff
 import numdifftools.fornberg as fornberg
 import numpy as np
@@ -32,13 +34,13 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         """
         super().__init__(shape)
         #: List of differential matrices: ddx[order] for d^order / dx^order operator
-        self.ddx: list = []
+        self.ddx: list[Any] = []
         #: first order derivative operator
-        self.nabla: AffineOperator | list | None = None
+        self.nabla: AffineOperator | list[Matrix] | None = None
         #: second order derivative operator (Laplacian)
-        self.laplace: AffineOperator | list | None = None
+        self.laplace: AffineOperator | list[Matrix] | None = None
         #: the spatial coordinates
-        self.x: list | None = None
+        self.x: list[np.ndarray] | None = None
         if len(self.shape) > 0:
             self.x = [np.linspace(0, 1, self.shape[-1], endpoint=False)]
         #: the boundary conditions, if None, defaults to periodic BCs
@@ -244,23 +246,23 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
                 x_new.append((x + x_old[i - 1]) / 2)
             x_new.append(x)
             i += 1
-        x_new = np.array(x_new)
+        x_new_arr = cast(np.ndarray, np.array(x_new))
         # interpolate unknowns to new grid points
         nvars = self.shape[0] if len(self.shape) > 1 else 1
         if nvars > 1:
-            u_new = np.array([np.interp(x_new, x_old, self.u[n]) for n in range(nvars)])
+            u_new = np.array([np.interp(x_new_arr, x_old, self.u[n]) for n in range(nvars)])
         else:
-            u_new = np.interp(x_new, x_old, self.u)
+            u_new = np.interp(x_new_arr, x_old, self.u)
         # update shape, u and x
         self.reshape(u_new.shape)
         self.u = u_new
-        self.x = [x_new]
+        self.x = [x_new_arr]
         # interpolate history to new grid points
         for t, u in enumerate(self.u_history):
             if nvars > 1:
-                self.u_history[t] = np.array([np.interp(x_new, x_old, u[n]) for n in range(nvars)])
+                self.u_history[t] = cast(Array, np.array([np.interp(x_new_arr, x_old, u[n]) for n in range(nvars)]))
             else:
-                self.u_history[t] = np.interp(x_new, x_old, u)
+                self.u_history[t] = cast(Array, np.interp(x_new_arr, x_old, u))
         # re-build the finite difference matrices
         self.build_FD_matrices()
 
@@ -282,17 +284,21 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         err = 0
         assert self.x is not None
         dx = np.diff(self.x[0])
-        dx = [max(dx[i], dx[i + 1]) for i in range(len(dx) - 1)]
-        dx = np.concatenate(([0], dx, [0]))
+        dx_vals = [max(dx[i], dx[i + 1]) for i in range(len(dx) - 1)]
+        dx_padded = np.concatenate(cast(Any, ([0], dx_vals, [0])))
         nvars = self.shape[0] if len(self.shape) > 1 else 1
         for n in range(nvars):
             u = self.u[n] if len(self.shape) > 1 else self.u
             assert self.laplace is not None
-            curv = self.laplace(u)
-            err += np.abs(curv * dx)
-        return err
+            # laplace can be an AffineOperator or a list of matrices
+            if isinstance(self.laplace, AffineOperator):
+                curv = self.laplace(u)
+            else:
+                curv = self.laplace[0].dot(u)
+            err += np.abs(curv * dx_padded)
+        return cast(np.ndarray, err)
 
-    def du_dx(self, u: Array, direction: int = 0) -> Array:
+    def du_dx(self, u: Array | None = None, direction: int = 0) -> Array:
         """
         Calculate the spatial derivative in a given direction.
 
@@ -308,11 +314,13 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         Array
             The spatial derivative vector.
         """
+        if u is None:
+            u = self.u
         assert self.nabla is not None
         if self.spatial_dimension == 1:  # 1d case
             assert isinstance(self.nabla, AffineOperator)
-            return self.nabla(u)
-        return self.nabla[direction].dot(u)
+            return cast(Array, self.nabla(u))
+        return cast(Array, cast(list, self.nabla)[direction].dot(u))
 
     def save(self) -> dict:
         """
@@ -467,7 +475,7 @@ class FDBoundaryConditions:
             The padded vector.
         """
         assert self.Q is not None
-        return self.Q.dot(u) + self.G
+        return cast(Array, self.Q.dot(u) + self.G)
 
     def pad_x(self, x: Array) -> Array:
         """
@@ -485,7 +493,7 @@ class FDBoundaryConditions:
         """
         dxl = x[1] - x[0]
         dxr = x[-1] - x[-2]
-        return np.concatenate(([x[0] - dxl], x, [x[-1] + dxr]))
+        return np.concatenate(cast(Any, ([x[0] - dxl], x, [x[-1] + dxr])))
 
 
 class PeriodicBC(FDBoundaryConditions):
@@ -538,12 +546,12 @@ class PeriodicBC(FDBoundaryConditions):
             self.boundary_dx = x[1] - x[0]
         dx_lr = np.array([self.boundary_dx])
         # build the full list of dx's for the periodic domain
-        dx = np.concatenate((dx_lr, np.diff(x), dx_lr))
+        dx = np.concatenate(cast(Any, (dx_lr, np.diff(x), dx_lr)))
         # construct the left and right ghost nodes (number of ghost points = self.order)
         x_l = [x[0] - sum(dx[-n - 1 :]) for n in range(self.order)][::-1]
         x_r = [x[-1] + sum(dx[: n + 1]) for n in range(self.order)]
         # concatenate for full padded x vector
-        return np.concatenate((x_l, x, x_r))
+        return np.concatenate(cast(Any, (x_l, x, x_r)))
 
 
 class RobinBC(FDBoundaryConditions):

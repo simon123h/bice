@@ -59,7 +59,7 @@ class Euler(TimeStepper):
         problem
             The problem instance to step in time.
         """
-        problem.u += self.dt * problem.rhs(problem.u)
+        problem.u = problem.u + self.dt * problem.rhs(problem.u)
         problem.time += self.dt
 
 

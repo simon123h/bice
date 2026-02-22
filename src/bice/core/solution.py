@@ -74,7 +74,10 @@ class Solution:
             # if there is no previous solution with info on eigenvalues, we have no result
             return None
         # return the difference in unstable eigenvalues to the previous solution
-        return self.nunstable_eigenvalues - bps[index].nunstable_eigenvalues
+        prev_neig = bps[index].nunstable_eigenvalues
+        assert self.nunstable_eigenvalues is not None
+        assert prev_neig is not None
+        return self.nunstable_eigenvalues - prev_neig
 
     @property
     def nimaginary_eigenvalues_crossed(self) -> int | None:
@@ -99,7 +102,10 @@ class Solution:
             # if there is no previous solution with info on eigenvalues, we have no result
             return None
         # return the difference in unstable eigenvalues to the previous solution
-        return self.nunstable_imaginary_eigenvalues - bps[index].nunstable_imaginary_eigenvalues
+        prev_neig = bps[index].nunstable_imaginary_eigenvalues
+        assert self.nunstable_imaginary_eigenvalues is not None
+        assert prev_neig is not None
+        return self.nunstable_imaginary_eigenvalues - prev_neig
 
     def is_stable(self) -> bool | None:
         """

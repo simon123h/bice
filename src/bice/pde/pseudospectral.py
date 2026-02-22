@@ -1,5 +1,7 @@
 "Pseudospectral discretization for Partial Differential Equations."
 
+from __future__ import annotations
+
 import numpy as np
 
 from bice.core.types import Shape
@@ -19,13 +21,14 @@ class PseudospectralEquation(PartialDifferentialEquation):
     def __init__(self, shape: Shape | None = None) -> None:
         super().__init__(shape)
         # the spatial coordinates
+        self.x: list[np.ndarray] | None
         if len(self.shape) > 0:
             self.x = [np.linspace(0, 1, self.shape[-1])]
         else:
             self.x = None
         #: the wavevector
-        self.k = None
-        self.ksquare = None
+        self.k: list[np.ndarray] | None = None
+        self.ksquare: np.ndarray | None = None
 
     def build_kvectors(self, real_fft: bool = False) -> None:
         """
