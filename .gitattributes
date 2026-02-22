@@ -1,0 +1,2 @@
+# Mark Jupyter Notebooks as documentation so they are excluded from language statistics
+*.ipynb linguist-documentation=true
