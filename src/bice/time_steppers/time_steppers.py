@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-import numpy as np
-
 from bice.core.types import Array, Matrix
 
 if TYPE_CHECKING:

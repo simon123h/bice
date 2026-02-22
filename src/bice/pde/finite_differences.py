@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Union, cast
+from typing import cast
 
 import findiff
 import numdifftools.fornberg as fornberg

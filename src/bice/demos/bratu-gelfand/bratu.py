@@ -10,10 +10,11 @@ The resulting bifurcation diagram, matches figure 1.1 (left) of Farrell, Birkiss
 
 """
 
+from typing import cast
+
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import cast
 from skfem import ElementLineP1, InteriorBasis, MeshLine, asm
 from skfem.models.poisson import laplace, mass
 
