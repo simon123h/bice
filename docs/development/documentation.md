@@ -14,11 +14,23 @@ We follow a **documentation-as-code** approach. Documentation is written in Mark
 To generate the HTML documentation on your machine:
 
 ```bash
+# Using nox (recommended)
+nox -s docs
+
+# Or using make
 cd docs
 make html
 ```
 
 The output will be available in `docs/_build/html/index.html`.
+
+### Live Reloading
+
+For a better development experience, you can use the `serve_docs` session which will automatically rebuild and reload your browser when you save changes:
+
+```bash
+nox -s serve_docs
+```
 
 ## Architecture Documentation
 

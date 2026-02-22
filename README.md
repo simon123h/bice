@@ -83,9 +83,13 @@ Click here for the
 
 ### Building the documentation locally
 
-The documentation can also be generated locally with the commands
+The documentation can be generated locally with:
 
 ```bash
+# Using nox (recommended)
+nox -s docs
+
+# Or using make (Unix-like systems only)
 cd docs
 make html
 ```
@@ -103,6 +107,12 @@ pip3 install -e ".[dev]"
 To ensure code quality, you can run the following commands locally:
 
 ```bash
+# Using nox (recommended, handles its own environments)
+nox -s lint
+nox -s type_check
+nox -s test
+
+# Or manually in your active environment:
 # Linting and formatting
 ruff check .
 ruff format .

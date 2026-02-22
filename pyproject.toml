@@ -34,6 +34,7 @@ dev = [
     "pytest-cov",
     "ruff",
     "mypy",
+    "nox",
     "types-setuptools",
     "myst-parser",
     "sphinxcontrib-mermaid",
