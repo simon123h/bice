@@ -28,6 +28,36 @@ pip3 install -e bice/
 
 in any directory of your choice.
 
+### Development Setup
+
+To set up a local development environment with all dependencies, it is recommended to use a virtual environment:
+
+#### Linux / macOS
+
+```bash
+# Create a virtual environment
+python3 -m venv venv
+
+# Activate the virtual environment
+source venv/bin/activate
+
+# Install the package in editable mode with development dependencies
+pip install -e ".[dev]"
+```
+
+#### Windows
+
+```powershell
+# Create a virtual environment
+python -m venv venv
+
+# Activate the virtual environment
+.\venv\Scripts\Activate.ps1
+
+# Install the package in editable mode with development dependencies
+pip install -e ".[dev]"
+```
+
 ### Requirements
 
 The software depends on Python 3 and the following third-party packages:
