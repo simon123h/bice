@@ -9,7 +9,7 @@ import sys
 
 import numpy as np
 
-sys.path.append("../..")  # noqa, needed for relative import of package
+sys.path.append("../..")  # noqa: E402, needed for relative import of package
 from bice import Problem, time_steppers
 from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
 

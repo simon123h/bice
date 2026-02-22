@@ -7,7 +7,7 @@ name = "bice"
 version = "0.4.0"
 description = "Numerical continuation and bifurcation package"
 readme = "docs/pypi-description.md"
-requires-python = ">=3.7"
+requires-python = ">=3.11"
 license = {file = "LICENSE"}
 authors = [
   {name = "Simon Hartmann", email = "s.hartmann@wwu.de"}
@@ -18,7 +18,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "numpy",
+    "numpy>=2.4.2",
     "scipy",
     "matplotlib",
     "findiff",
@@ -48,7 +48,7 @@ include = ["bice*"]
 [tool.ruff]
 # Same as Black.
 line-length = 140
-target-version = "py38"
+target-version = "py312"
 
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
@@ -87,7 +87,7 @@ pythonpath = [
 ]
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true

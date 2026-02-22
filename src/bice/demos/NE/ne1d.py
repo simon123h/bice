@@ -27,7 +27,8 @@ class NikolaevskiyEquation(PseudospectralEquation):
         self.x = [np.linspace(0, 1, N)]
         self.build_kvectors(real_fft=True)
         # initial condition
-        self.u = 2 * (np.random.rand(N) - 0.5) * 1e-5
+        rng = np.random.default_rng()
+        self.u = 2 * (rng.random(N) - 0.5) * 1e-5
 
     # characteristic length scale
     @property

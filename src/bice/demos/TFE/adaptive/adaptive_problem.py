@@ -140,6 +140,8 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         # absorption term derivative
         dM_absorb_dh = self.M * (ddFdh_dh - ddFdz_dh)
         dM_absorb_dz = self.M * (ddFdh_dz - ddFdz_dz)
+        # flux into the liquid film to conserve liquid volume
+        q = -(h[-1] - h[0] + z[-1] - z[0]) * self.U
         # derivatives of dynamic equations
         ddhdt_dh = self.nabla_F(dQhh_dh * diags(self.nabla0(dFdh)) + Qhh * self.nabla0(ddFdh_dh), q) - dM_absorb_dh
         ddhdt_dz = self.nabla_F(Qhh * self.nabla0(ddFdh_dz), q) - dM_absorb_dz
@@ -167,7 +169,7 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
 
     def liquid_volume(self):
         h, z = self.u
-        return np.trapz(h + z, self.x[0])
+        return np.trapezoid(h + z, self.x[0])
 
     def plot(self, ax):
         ax.set_ylim((0, 1.5))

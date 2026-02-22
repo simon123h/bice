@@ -1,6 +1,5 @@
 """Base classes for partial differential equations (PDEs)."""
 
-from typing import Optional
 
 import numpy as np
 
@@ -16,7 +15,7 @@ class PartialDifferentialEquation(Equation):
     pseudospectral or finite difference schemes.
     """
 
-    def __init__(self, shape: Optional[Shape] = None) -> None:
+    def __init__(self, shape: Shape | None = None) -> None:
         """
         Initialize the PDE.
 
@@ -47,7 +46,7 @@ class PartialDifferentialEquation(Equation):
             return self.x.ndim
         return len(self.x)
 
-    def du_dt(self, u: Optional[Array] = None) -> Array:
+    def du_dt(self, u: Array | None = None) -> Array:
         """
         Calculate the time derivative du/dt of the unknowns.
 
@@ -67,7 +66,7 @@ class PartialDifferentialEquation(Equation):
         # typically, the mass matrix determines which part of rhs(u) go into du/dt
         return self.mass_matrix().dot(self.rhs(u))
 
-    def du_dx(self, u: Optional[Array] = None, direction: int = 0) -> Array:
+    def du_dx(self, u: Array | None = None, direction: int = 0) -> Array:
         """
         Calculate the spatial derivative du/dx in a given direction.
 

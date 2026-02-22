@@ -34,9 +34,9 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         #: List of differential matrices: ddx[order] for d^order / dx^order operator
         self.ddx: list = []
         #: first order derivative operator
-        self.nabla: Union[AffineOperator, list] | None = None
+        self.nabla: AffineOperator | list | None = None
         #: second order derivative operator (Laplacian)
-        self.laplace: Union[AffineOperator, list] | None = None
+        self.laplace: AffineOperator | list | None = None
         #: the spatial coordinates
         self.x: list | None = None
         if len(self.shape) > 0:
@@ -347,7 +347,7 @@ class AffineOperator:
     Used for including boundary conditions into differentiation operators.
     """
 
-    def __init__(self, Q: Matrix, G: Union[float, Array] = 0):
+    def __init__(self, Q: Matrix, G: float | Array = 0):
         """
         Initialize the AffineOperator.
 
@@ -363,7 +363,7 @@ class AffineOperator:
         #: constant (affine) part
         self.G = G
 
-    def __call__(self, u: Array | None = None, g: float = 1.0) -> Union[Matrix, Array]:
+    def __call__(self, u: Array | None = None, g: float = 1.0) -> Matrix | Array:
         """
         Apply the operator to a vector/tensor u.
 
@@ -433,7 +433,7 @@ class FDBoundaryConditions:
         #: linear part of the boundary operator
         self.Q: Matrix | None = None
         #: constant part of the boundary operator
-        self.G: Union[float, Array] = 0
+        self.G: float | Array = 0
 
     def update(self, x: Array, approx_order: int) -> None:
         """

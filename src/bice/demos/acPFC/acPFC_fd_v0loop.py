@@ -9,7 +9,7 @@ import numpy as np
 matplotlib.use("svg")
 import matplotlib.pyplot as plt
 
-sys.path.append("../..")  # noqa, needed for relative import of package
+sys.path.append("../..")  # noqa: E402, needed for relative import of package
 import sys
 
 from acPFC_fd import acPFC

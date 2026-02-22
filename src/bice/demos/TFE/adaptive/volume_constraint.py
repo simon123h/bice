@@ -39,7 +39,7 @@ class VolumeConstraint(ConstraintEquation):
         x = self.ref_eq.x[0]
         res[self_idx] = np.array(
             [
-                np.trapz(u[eq_idx1] - self.group.u[eq_idx1], x),
+                np.trapezoid(u[eq_idx1] - self.group.u[eq_idx1], x),
             ]
         )
         # res[self_idx] = np.array([

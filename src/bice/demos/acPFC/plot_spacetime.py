@@ -6,7 +6,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 
-sys.path.append("../..")  # noqa, needed for relative import of package
+sys.path.append("../..")  # noqa: E402, needed for relative import of package
 import sys
 
 from acPFC1d import acPFCProblem

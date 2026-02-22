@@ -114,4 +114,4 @@ class CoatingProblem(Problem):
         # self.time_stepper = time_steppers.BDF(self)
 
     def norm(self):
-        return np.trapz(self.tfe.u, self.tfe.x[0])
+        return np.trapezoid(self.tfe.u, self.tfe.x[0])
