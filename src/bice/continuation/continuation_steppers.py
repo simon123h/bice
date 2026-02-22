@@ -45,10 +45,7 @@ class ContinuationStepper:
         NotImplementedError
             This is an abstract base class.
         """
-        raise NotImplementedError(
-            "'ContinuationStepper' is an abstract base class - "
-            "do not use for actual parameter continuation!"
-        )
+        raise NotImplementedError("'ContinuationStepper' is an abstract base class - do not use for actual parameter continuation!")
 
     def factory_reset(self) -> None:
         """
@@ -183,9 +180,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
             zero[N] = 1  # for solvability, determines length of tangent vector
             jac = sp.vstack((jac, zero.reshape((1, N + 1))))
             # compute tangent by solving (jac)*tangent=0 and normalize
-            tangent = self._linear_solve(
-                jac, zero, problem.settings.use_sparse_matrices
-            )
+            tangent = self._linear_solve(jac, zero, problem.settings.use_sparse_matrices)
             tangent /= np.linalg.norm(tangent)
             # make sure that the tangent points in positive parameter direction
             tangent *= np.sign(tangent[-1])
@@ -212,17 +207,11 @@ class PseudoArclengthContinuation(ContinuationStepper):
             # last row of extended jacobian: tangent vector
             jac_ext = sp.vstack((jac_ext, tangent.reshape((1, N + 1))))
             # extended rhs: model's rhs & arclength condition
-            arclength_condition = (
-                (u - u_old).dot(tangent[:N])
-                + (p - p_old) * tangent[N] * self.parameter_arc_length_proportion
-                - self.ds
-            )
+            arclength_condition = (u - u_old).dot(tangent[:N]) + (p - p_old) * tangent[N] * self.parameter_arc_length_proportion - self.ds
             rhs_ext = np.append(problem.rhs(u), arclength_condition)
             # solving (jac_ext) * du_ext = rhs_ext for du_ext will now give the new
             # solution
-            du_ext = self._linear_solve(
-                jac_ext, rhs_ext, problem.settings.use_sparse_matrices
-            )
+            du_ext = self._linear_solve(jac_ext, rhs_ext, problem.settings.use_sparse_matrices)
             u -= du_ext[:N]
             p -= du_ext[N]
             # TODO: use max(rhs_ext(u)) < tol as convergence check, as in other
@@ -244,28 +233,20 @@ class PseudoArclengthContinuation(ContinuationStepper):
             problem.set_continuation_parameter(p_old)
             # if step size is already minimal, throw an error
             if abs(self.ds) < self.ds_min:
-                raise np.linalg.LinAlgError(
-                    f"Newton solver did not converge after {count} iterations!"
-                )
+                raise np.linalg.LinAlgError(f"Newton solver did not converge after {count} iterations!")
             # else, retry with a smaller step size
             self.ds /= 2
-            print(
-                f"Newton solver did not converge, trying again with ds = {self.ds:.3e}"
-            )
+            print(f"Newton solver did not converge, trying again with ds = {self.ds:.3e}")
             return self.step(problem)
 
         # adapt step size
         if self.adapt_stepsize:
             if count > self.ndesired_newton_steps and abs(self.ds) > self.ds_min:
                 # decrease step size
-                self.ds = max(
-                    abs(self.ds) * self.ds_decrease_factor, self.ds_min
-                ) * np.sign(self.ds)
+                self.ds = max(abs(self.ds) * self.ds_decrease_factor, self.ds_min) * np.sign(self.ds)
             elif count < self.ndesired_newton_steps:
                 # increase step size
-                self.ds = min(
-                    abs(self.ds) * self.ds_increase_factor, self.ds_max
-                ) * np.sign(self.ds)
+                self.ds = min(abs(self.ds) * self.ds_increase_factor, self.ds_max) * np.sign(self.ds)
 
     def _linear_solve(self, A, b: Array, use_sparse_matrices: bool = False) -> Array:
         """

@@ -83,7 +83,6 @@ class ThinFilmEquation(FiniteDifferencesEquation):
 
 
 class ThinFilm(Problem):
-
     def __init__(self, N, L):
         super().__init__()
         # Add the Thin-Film equation to the problem

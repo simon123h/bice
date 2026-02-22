@@ -71,9 +71,7 @@ class VolumeConstraint(ConstraintEquation):
     multiplier that can be interpreted as an influx into the system.
     """
 
-    def __init__(
-        self, reference_equation: Equation, variable: Optional[int] = None
-    ) -> None:
+    def __init__(self, reference_equation: Equation, variable: Optional[int] = None) -> None:
         """
         Initialize the VolumeConstraint.
 

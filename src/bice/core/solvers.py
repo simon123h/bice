@@ -51,10 +51,7 @@ class AbstractNewtonSolver:
         NotImplementedError
             This is an abstract base class.
         """
-        raise NotImplementedError(
-            "'AbstractNewtonSolver' is an abstract base class - do not use for actual "
-            "solving!"
-        )
+        raise NotImplementedError("'AbstractNewtonSolver' is an abstract base class - do not use for actual solving!")
 
     @property
     def niterations(self) -> Optional[int]:
@@ -147,9 +144,7 @@ class MyNewtonSolver(AbstractNewtonSolver):
             err = self.norm(f(u))
             # print some info on the step, if desired
             if self.verbosity > 1:
-                print(
-                    f"Newton step #{self._iteration_count}, max. residuals: {err:.2e}"
-                )
+                print(f"Newton step #{self._iteration_count}, max. residuals: {err:.2e}")
             # if system converged to new solution, return solution
             if err < self.convergence_tolerance:
                 if self.verbosity > 0:
@@ -229,9 +224,7 @@ class NewtonSolver(AbstractNewtonSolver):
         opt_result = scipy.optimize.root(f, u0, jac=my_jac, method=self.method)
         # fetch number of iterations, residuals and status
         err = self.norm(opt_result.fun)
-        self._iteration_count = (
-            opt_result.nit if "nit" in opt_result.keys() else opt_result.nfev
-        )
+        self._iteration_count = opt_result.nit if "nit" in opt_result.keys() else opt_result.nfev
         # if we didn't converge, throw an error
         if not opt_result.success:
             self.throw_no_convergence_error(err)
@@ -332,9 +325,7 @@ class EigenSolver:
         #: convergence tolerance of the eigensolver
         self.tol = 1e-8
 
-    def solve(
-        self, A: Matrix, M: Optional[Matrix] = None, k: Optional[int] = None
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def solve(self, A: Matrix, M: Optional[Matrix] = None, k: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
         """
         Solve the eigenproblem A*x = v*x for the eigenvalues v and the eigenvectors x.
 
@@ -379,9 +370,7 @@ class EigenSolver:
             #     pde2path uses a [1,...,1]-vector
             # For more info, see the documentation:
             # https://docs.scipy.org/doc/scipy/reference/generated/sp.linalg.eigs.html
-            eigenvalues, eigenvectors = sp.linalg.eigs(
-                A, k=k, M=M, sigma=self.shift, which="LM", tol=self.tol
-            )
+            eigenvalues, eigenvectors = sp.linalg.eigs(A, k=k, M=M, sigma=self.shift, which="LM", tol=self.tol)
         # sort by largest eigenvalue (largest real part) and filter infinite eigenvalues
         idx = np.argsort(eigenvalues)[::-1]
         idx = idx[np.isfinite(eigenvalues[idx])]

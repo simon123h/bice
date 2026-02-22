@@ -122,9 +122,7 @@ class Equation:
         NotImplementedError
             If the method is not implemented by the subclass.
         """
-        raise NotImplementedError(
-            "No right-hand side (rhs) implemented for this equation!"
-        )
+        raise NotImplementedError("No right-hand side (rhs) implemented for this equation!")
 
     @profile
     def jacobian(self, u: Array) -> Matrix:
@@ -368,10 +366,7 @@ class EquationGroup:
             return
         # check if eq already in other group
         if hasattr(eq, "group") and not isinstance(eq.group, DummyEquationGroup):
-            print(
-                "Error: Equation is already part of another group of equations!"
-                "Remove equation from other group first!"
-            )
+            print("Error: Equation is already part of another group of equations!Remove equation from other group first!")
             return
         # append to list of equations
         self.equations.append(eq)

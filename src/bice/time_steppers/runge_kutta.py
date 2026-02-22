@@ -124,46 +124,20 @@ class RungeKuttaFehlberg45(TimeStepper):
         problem.time = t + self._a3 * self.dt
         k3 = self.dt * problem.rhs(problem.u + self._b31 * k1 + self._b32 * k2)
         problem.time = t + self._a4 * self.dt
-        k4 = self.dt * problem.rhs(
-            problem.u + self._b41 * k1 + self._b42 * k2 + self._b43 * k3
-        )
+        k4 = self.dt * problem.rhs(problem.u + self._b41 * k1 + self._b42 * k2 + self._b43 * k3)
         problem.time = t + self._a5 * self.dt
-        k5 = self.dt * problem.rhs(
-            problem.u
-            + self._b51 * k1
-            + self._b52 * k2
-            + self._b53 * k3
-            + self._b54 * k4
-        )
+        k5 = self.dt * problem.rhs(problem.u + self._b51 * k1 + self._b52 * k2 + self._b53 * k3 + self._b54 * k4)
         problem.time = t + self._a6 * self.dt
-        k6 = self.dt * problem.rhs(
-            problem.u
-            + self._b61 * k1
-            + self._b62 * k2
-            + self._b63 * k3
-            + self._b64 * k4
-            + self._b65 * k5
-        )
+        k6 = self.dt * problem.rhs(problem.u + self._b61 * k1 + self._b62 * k2 + self._b63 * k3 + self._b64 * k4 + self._b65 * k5)
 
         # Calculate local truncation error
-        eps = (
-            np.linalg.norm(
-                self._r1 * k1
-                + self._r3 * k3
-                + self._r4 * k4
-                + self._r5 * k5
-                + self._r6 * k6
-            )
-            / self.dt
-        )
+        eps = np.linalg.norm(self._r1 * k1 + self._r3 * k3 + self._r4 * k4 + self._r5 * k5 + self._r6 * k6) / self.dt
 
         # Calculate next step size
         # NOTE: we may adjust the safety factor here
         dt_old = self.dt
         if eps != 0:
-            self.dt = self.dt * min(
-                max(1 * (self.error_tolerance / float(eps)) ** 0.25, 0.5), 2
-            )
+            self.dt = self.dt * min(max(1 * (self.error_tolerance / float(eps)) ** 0.25, 0.5), 2)
 
         # If it is less than the tolerance, the step is accepted and RK4 value is stored
         if eps <= self.error_tolerance:
@@ -178,7 +152,4 @@ class RungeKuttaFehlberg45(TimeStepper):
             self.step(problem)
         else:
             # if we rejected too many steps already: abort with Exception
-            raise Exception(
-                f"Runge-Kutta-Fehlberg time-stepper exceeded maximum"
-                f"number of rejected steps: {self.rejection_count}"
-            )
+            raise Exception(f"Runge-Kutta-Fehlberg time-stepper exceeded maximum number of rejected steps: {self.rejection_count}")

@@ -39,10 +39,7 @@ class TimeStepper:
         NotImplementedError
             This is an abstract base class.
         """
-        raise NotImplementedError(
-            "'TimeStepper' is an abstract base class - do not use for actual "
-            "time-stepping!"
-        )
+        raise NotImplementedError("'TimeStepper' is an abstract base class - do not use for actual time-stepping!")
 
 
 class Euler(TimeStepper):

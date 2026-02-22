@@ -4,6 +4,7 @@ Finite difference implementation of the 1-dimensional semiactive coupled PFC equ
 This code does nothing with the equation, it only provides the implementation and
 is imported by other codes, so we don't have to write the SHE from scratch for every demo.
 """
+
 import sys
 
 import numpy as np
@@ -47,23 +48,11 @@ class activePFCEquation(FiniteDifferencesEquation):
     # definition of the acPFC (right-hand side)
     def rhs(self, u):
         laplace = self.laplace()
-        f1 = laplace.dot(
-            self.linear_op1.dot(u[0])
-            + (self.r + self.q1**4) * u[0]
-            + u[0] ** 3
-            + self.c * u[1]
-        ) - self.v0 * self.nabla.dot(u[2])
-        f2 = laplace.dot(
-            self.linear_op2.dot(u[1])
-            + (self.r + self.q2**4) * u[1]
-            + u[1] ** 3
-            + self.c * u[0]
+        f1 = laplace.dot(self.linear_op1.dot(u[0]) + (self.r + self.q1**4) * u[0] + u[0] ** 3 + self.c * u[1]) - self.v0 * self.nabla.dot(
+            u[2]
         )
-        f3 = (
-            self.C1 * laplace.dot(u[2])
-            - self.Dr * self.C1 * u[2]
-            - self.v0 * self.nabla.dot(u[0])
-        )
+        f2 = laplace.dot(self.linear_op2.dot(u[1]) + (self.r + self.q2**4) * u[1] + u[1] ** 3 + self.c * u[0])
+        f3 = self.C1 * laplace.dot(u[2]) - self.Dr * self.C1 * u[2] - self.v0 * self.nabla.dot(u[0])
         return np.array([f1, f2, f3])
 
     # definition of the Jacobian
@@ -95,15 +84,13 @@ class activePFCEquation(FiniteDifferencesEquation):
         ax.legend()
 
     def gauss(self, mu, sigma=1.5):
-        return np.exp(-((self.x[0] - mu) ** 2) / (2.0 * sigma**2)) / np.sqrt(
-            2.0 * np.pi * sigma**2
-        )
+        return np.exp(-((self.x[0] - mu) ** 2) / (2.0 * sigma**2)) / np.sqrt(2.0 * np.pi * sigma**2)
 
     def add_gauss_to_sol(self, index):
         cond = True
         try:
-            gauss_pos = input(f"phi{index+1:1d}: position for gauss peak\n")
-            gauss_fac = input(f"phi{index+1:1d}: height of gauss peak\n")
+            gauss_pos = input(f"phi{index + 1:1d}: position for gauss peak\n")
+            gauss_fac = input(f"phi{index + 1:1d}: height of gauss peak\n")
             gauss_pos = float(gauss_pos)
             gauss_fac = float(gauss_fac)
             u = self.u[index]
@@ -120,7 +107,6 @@ class activePFCEquation(FiniteDifferencesEquation):
 
 
 class acPFC(Problem):
-
     def __init__(self, N, L):
         super().__init__()
         # Add the Thin-Film equation to the problem

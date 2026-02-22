@@ -92,21 +92,14 @@ class Solution:
         # else, compare with the nearest previous neighbor that has info on
         # eigenvalues
         # get branch points with eigenvalue info
-        bps = [
-            s
-            for s in self.branch.solutions
-            if s.nunstable_imaginary_eigenvalues is not None
-        ]
+        bps = [s for s in self.branch.solutions if s.nunstable_imaginary_eigenvalues is not None]
         # find index of previous solution
         index = bps.index(self) - 1
         if index < 0:
             # if there is no previous solution with info on eigenvalues, we have no result
             return None
         # return the difference in unstable eigenvalues to the previous solution
-        return (
-            self.nunstable_imaginary_eigenvalues
-            - bps[index].nunstable_imaginary_eigenvalues
-        )
+        return self.nunstable_imaginary_eigenvalues - bps[index].nunstable_imaginary_eigenvalues
 
     def is_stable(self) -> Optional[bool]:
         """
@@ -323,12 +316,8 @@ class Branch:
         data["solution_data"] = [s.data for s in self.solutions]
         data["norm"] = [s.norm for s in self.solutions]
         data["p"] = [s.p for s in self.solutions]
-        data["nunstable_eigenvalues"] = [
-            s.nunstable_eigenvalues for s in self.solutions
-        ]
-        data["nunstable_imaginary_eigenvalues"] = [
-            s.nunstable_imaginary_eigenvalues for s in self.solutions
-        ]
+        data["nunstable_eigenvalues"] = [s.nunstable_eigenvalues for s in self.solutions]
+        data["nunstable_imaginary_eigenvalues"] = [s.nunstable_imaginary_eigenvalues for s in self.solutions]
         # save everything to the file
         np.savez(filename, **data)
 
@@ -469,7 +458,5 @@ class BifurcationDiagram:
             sol.norm = data["norm"][i]
             sol.p = data["p"][i]
             sol.nunstable_eigenvalues = data["nunstable_eigenvalues"][i]
-            sol.nunstable_imaginary_eigenvalues = data[
-                "nunstable_imaginary_eigenvalues"
-            ][i]
+            sol.nunstable_imaginary_eigenvalues = data["nunstable_imaginary_eigenvalues"][i]
             branch.add_solution_point(sol)

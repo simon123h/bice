@@ -35,9 +35,7 @@ class CahnHilliardEquation(PseudospectralEquation):
     def rhs(self, u):
         u_k = np.fft.rfft(u)
         u3_k = np.fft.rfft(u**3)
-        result_k = -self.ksquare * (
-            self.kappa * self.ksquare * u_k + self.a * u_k + u3_k
-        )
+        result_k = -self.ksquare * (self.kappa * self.ksquare * u_k + self.a * u_k + u3_k)
         return np.fft.irfft(result_k)
 
     def du_dx(self, u, direction=0):
@@ -46,7 +44,6 @@ class CahnHilliardEquation(PseudospectralEquation):
 
 
 class CahnHilliardProblem(Problem):
-
     def __init__(self, N, L):
         super().__init__()
         # Add the Cahn-Hilliard equation to the problem

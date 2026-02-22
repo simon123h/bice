@@ -88,6 +88,4 @@ class PartialDifferentialEquation(Equation):
         NotImplementedError
             This is an abstract method.
         """
-        raise NotImplementedError(
-            "No spatial derivative (du_dx) implemented for this equation!"
-        )
+        raise NotImplementedError("No spatial derivative (du_dx) implemented for this equation!")

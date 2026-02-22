@@ -3,6 +3,7 @@
 Continuation of localized states in the 1d Swift-Hohenberg Equation using Finite Differences as
 spatial discretization and Pseudo-Arclength Continuation.
 """
+
 import os
 import shutil
 

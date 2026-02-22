@@ -91,7 +91,6 @@ class NikolaevskiyEquation(PseudospectralEquation):
 
 
 class NikolaevskiyProblem(Problem):
-
     def __init__(self, Nx, Ny):
         super().__init__()
         # Add the Nikolaevskiy equation to the problem

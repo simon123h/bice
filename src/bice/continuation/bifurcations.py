@@ -168,9 +168,7 @@ class BifurcationConstraint(Equation):
         J[:, self_idx.stop - 1] = (f1 - f0) / eps
 
         # last row: d(res2)/du = ([0]*N, phi_old, 0)
-        J[self_idx.stop - 1] = np.concatenate(
-            (np.zeros(phi_old.size), phi_old, np.array([0]))
-        )
+        J[self_idx.stop - 1] = np.concatenate((np.zeros(phi_old.size), phi_old, np.array([0])))
 
         return J
 

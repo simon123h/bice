@@ -4,6 +4,7 @@ Continuation of localized states in the 1d Swift-Hohenberg Equation using Finite
 spatial discretization and Pseudo-Arclength Continuation and automated bifurcation diagram
 generation.
 """
+
 import os
 import shutil
 
@@ -49,9 +50,7 @@ problem.add_equation(constraint)
 Profiler.start()
 
 # automatically generate bifurcation diagram
-problem.generate_bifurcation_diagram(
-    parameter_lims=(-0.016, -0.012), max_recursion=1, max_steps=1e3, ax=ax, plotevery=60
-)
+problem.generate_bifurcation_diagram(parameter_lims=(-0.016, -0.012), max_recursion=1, max_steps=1e3, ax=ax, plotevery=60)
 
 
 Profiler.print_summary()

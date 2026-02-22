@@ -218,24 +218,15 @@ class TimePeriodicOrbitHandler(Equation):
         M = self.ref_eq.mass_matrix()
         # Jacobian of reference equation for each time step
         # also, cache the Jacobians for later Floquet multiplier computation
-        self._jacobian_cache = [
-            sp.csr_matrix(self.ref_eq.jacobian(u[i])) for i in range(self.Nt)
-        ]
+        self._jacobian_cache = [sp.csr_matrix(self.ref_eq.jacobian(u[i])) for i in range(self.Nt)]
         # The different contributions to the jacobian: ((#1, #2), (#3, #4))
         # 1.: bulk equations du: d ( rhs(u) - M*dudt ) / du
         # jacobian of M.dot(dudt) w.r.t. u
-        d_bulk_du = (
-            sp.block_diag([self._jacobian_cache[i] for i in range(self.Nt)])
-            - sp.kron(self.ddt, M) / T
-        )
+        d_bulk_du = sp.block_diag([self._jacobian_cache[i] for i in range(self.Nt)]) - sp.kron(self.ddt, M) / T
         # 2.: bulk equations dT: d ( rhs(u) - M*dudt ) / dT
-        d_bulk_dT = sp.csr_matrix(
-            np.concatenate([M.dot(dudt[i]) / T for i in range(self.Nt)])
-        ).T
+        d_bulk_dT = sp.csr_matrix(np.concatenate([M.dot(dudt[i]) / T for i in range(self.Nt)])).T
         # 3.: constraint equation du: d ( \int_0^1 dt <u, dudt_old> = 0 ) / du
-        d_cnst_du = sp.csr_matrix(
-            np.concatenate([dudt_old[i] * self.dt[i] for i in range(self.Nt)])
-        )
+        d_cnst_du = sp.csr_matrix(np.concatenate([dudt_old[i] * self.dt[i] for i in range(self.Nt)]))
         # 4.: cnst equation dT: d ( \int_0^1 dt <u, dudt_old> = 0 ) / du = 0
         d_cnst_dT = 0 * sp.csr_matrix((1, 1))
         # combine the contributions to the full jacobian and return
@@ -355,9 +346,7 @@ class TimePeriodicOrbitHandler(Equation):
         dudt = self.ddt.dot(u)
         # estimate for the relative error in the time derivative
         # TODO: maybe there is something better than this
-        error_estimate = np.array(
-            [np.linalg.norm(dudt[i]) / np.linalg.norm(u[i]) for i in range(self.Nt)]
-        )
+        error_estimate = np.array([np.linalg.norm(dudt[i]) / np.linalg.norm(u[i]) for i in range(self.Nt)])
         # define error tolerances
         min_error = 1e-5
         max_error = 1e-3
@@ -379,9 +368,7 @@ class TimePeriodicOrbitHandler(Equation):
                 i2 = (i + 1) % len(dt)
                 u = np.insert(u, i, 0.5 * (u[i] + u[i2]), axis=0)
                 dt = np.insert(dt, i, 0.5 * (dt[i] + dt[i2]))
-                error_estimate = np.insert(
-                    error_estimate, i, 0.5 * (min_error + max_error)
-                )
+                error_estimate = np.insert(error_estimate, i, 0.5 * (min_error + max_error))
                 i += 1
             i += 1
         # build new u
