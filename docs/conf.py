@@ -25,7 +25,7 @@ copyright = "2026, Simon Hartmann"
 author = "Simon Hartmann"
 
 # The full version, including alpha/beta/rc tags
-release = "0.4.0"
+release = "0.4.3"
 
 
 # -- General configuration ---------------------------------------------------
