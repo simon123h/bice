@@ -15,7 +15,7 @@ To install the latest published version from PyPI simply execute:
 pip3 install bice
 ```
 
-Alternatively, `bice` can be installed locally using the source code from our [git repository](https://gitlab.com/simon123h/bice).
+Alternatively, `bice` can be installed locally using the source code from our [git repository](https://github.com/simon123h/bice).
 
 ### Requirements
 
@@ -27,9 +27,9 @@ All will be installed automatically when installing `bice`.
 
 We have first tutorials!
 
-- [Heat equation tutorial](https://gitlab.com/simon123h/bice/-/blob/master/src/bice/demos/notebooks/heat_eq.ipynb): a simple tutorial on how to use bice to implement a first partial differential equation and perform a time simulation of it.
-- [Swift-Hohenberg equation tutorial](https://gitlab.com/simon123h/bice/-/blob/master/src/bice/demos/notebooks/she.ipynb): a simple tutorial on how to use bice's path continuation capabilities.
-- [Predator-prey model tutorial](https://gitlab.com/simon123h/bice/-/blob/master/src/bice/demos/notebooks/lve.ipynb): an introduction into the continuation of periodic orbits.
+- [Heat equation tutorial](https://github.com/simon123h/bice/-/blob/master/src/bice/demos/notebooks/heat_eq.ipynb): a simple tutorial on how to use bice to implement a first partial differential equation and perform a time simulation of it.
+- [Swift-Hohenberg equation tutorial](https://github.com/simon123h/bice/-/blob/master/src/bice/demos/notebooks/she.ipynb): a simple tutorial on how to use bice's path continuation capabilities.
+- [Predator-prey model tutorial](https://github.com/simon123h/bice/-/blob/master/src/bice/demos/notebooks/lve.ipynb): an introduction into the continuation of periodic orbits.
 
 More will follow soon.
 
@@ -38,4 +38,4 @@ Meanwhile you can check out the less documented [demos](src/bice/demos/).
 ## Documentation
 
 Click here for the
-[online version of the documentation](https://simon123h.gitlab.io/bice).
+[online version of the documentation](https://simon123h.github.io/bice).

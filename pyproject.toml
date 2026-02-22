@@ -26,7 +26,7 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://gitlab.com/simon123h/bice"
+"Homepage" = "https://github.com/simon123h/bice"
 
 [project.optional-dependencies]
 dev = [

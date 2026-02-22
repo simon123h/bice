@@ -22,7 +22,7 @@ pip3 install bice
 If you instead want to install the package locally, e.g. for development purposes, you may download the latest version from this git and install it using:
 
 ```bash
-git clone https://gitlab.com/simon123h/bice
+git clone https://github.com/simon123h/bice
 pip3 install -e bice/
 ```
 
@@ -79,7 +79,7 @@ Meanwhile you can check out the less documented [demos](src/bice/demos/).
 ## Documentation
 
 Click here for the
-[online version of the documentation](https://simon123h.gitlab.io/bice).
+[online version of the documentation](https://simon123h.github.io/bice).
 
 ### Building the documentation locally
 

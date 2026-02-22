@@ -12,7 +12,7 @@ This guide will walk you through setting up a local development environment for 
 1. **Clone the repository**:
 
    ```bash
-   git clone https://gitlab.com/simon123h/bice
+   git clone https://github.com/simon123h/bice
    cd bice
    ```
 

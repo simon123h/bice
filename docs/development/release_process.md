@@ -29,12 +29,12 @@ When a release is triggered, the package is automatically published to several d
 
 The primary distribution channel. Users can install the latest version using `pip install bice`.
 
-### 2. GitHub Integration
+### 2. GitHub Integration (Primary Repository)
 
 - **GitHub Release**: An official GitHub Release is created automatically. It includes the source code, built wheels, and automatically generated release notes based on the commit history.
 - **GitHub Package Registry**: The package is published to the project's GitHub Packages page. This can be used as an alternative mirror or for internal dependencies within GitHub Actions.
 
-### 3. GitLab Integration
+### 3. GitLab Integration (Alternative Channel)
 
 - **GitLab Release**: An official GitLab Release entry is created, providing a permanent record of the version and links to the package registry.
 - **GitLab Package Registry**: The package is hosted in the project's internal PyPI repository on GitLab.
