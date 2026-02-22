@@ -9,8 +9,6 @@ cache:
     - .cache/pip
 
 stages:
-  - lint
-  - type_check
   - test
   - build
   - deploy
@@ -19,12 +17,12 @@ before_script:
   - pip install nox
 
 lint:
-  stage: lint
+  stage: test
   script:
     - nox -s lint
 
 type_check:
-  stage: type_check
+  stage: test
   script:
     - nox -s type_check
 
