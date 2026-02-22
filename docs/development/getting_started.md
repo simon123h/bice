@@ -10,6 +10,7 @@ This guide will walk you through setting up a local development environment for 
 ## Installation
 
 1. **Clone the repository**:
+
    ```bash
    git clone https://gitlab.com/simon123h/bice
    cd bice
@@ -19,12 +20,14 @@ This guide will walk you through setting up a local development environment for 
    It is highly recommended to use a virtual environment to isolate the project's dependencies.
 
    **Linux / macOS**:
+
    ```bash
    python3 -m venv venv
    source venv/bin/activate
    ```
 
    **Windows**:
+
    ```powershell
    python -m venv venv
    .\venv\Scripts\Activate.ps1
@@ -39,7 +42,9 @@ This guide will walk you through setting up a local development environment for 
 ## Verifying the Setup
 
 To ensure everything is installed correctly, run the following command:
+
 ```bash
 pytest
 ```
+
 If all tests pass, you are ready to start developing!
