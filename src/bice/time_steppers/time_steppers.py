@@ -95,11 +95,11 @@ class ImplicitEuler(TimeStepper):
 
         def f(u: Array) -> Array:
             # assemble the system
-            return cast(Array, np.asanyarray(problem.rhs(u) - M.dot(u - problem.u) / self.dt))
+            return cast(Array, problem.rhs(u) - M.dot(u - problem.u) / self.dt)
 
         def J(u: Array) -> Matrix:
             # Jacobian of the system
-            return cast(Matrix, np.asanyarray(problem.jacobian(u) - M / self.dt))
+            return cast(Matrix, problem.jacobian(u) - M / self.dt)
 
         # solve it with a Newton solver
         # TODO: detect if Newton solver failed and reject step

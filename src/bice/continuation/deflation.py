@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import cast
 
 import numpy as np
 import scipy.sparse as sp
@@ -68,7 +69,7 @@ class DeflationOperator:
         if not self.solutions:
             return np.zeros_like(u)
         op = self.operator(u)
-        return np.asanyarray(self.p * op * 2 * np.sum([(uk - u) / np.dot(uk - u, uk - u) for uk in self.solutions], axis=0))
+        return cast(Array, self.p * op * 2 * np.sum([(uk - u) / np.dot(uk - u, uk - u) for uk in self.solutions], axis=0))
 
     def deflated_rhs(self, rhs: Callable[[Array], Array]) -> Callable[[Array], Array]:
         """

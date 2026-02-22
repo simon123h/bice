@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, Union, cast
+
 import findiff
 import numdifftools.fornberg as fornberg
 import numpy as np
@@ -255,8 +257,8 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
             if np.iscomplexobj(data):
                 res_re = np.interp(new_grid, old_grid, data.real)
                 res_im = np.interp(new_grid, old_grid, data.imag)
-                return np.asanyarray(res_re + 1j * res_im, dtype=data.dtype)
-            return np.asanyarray(np.interp(new_grid, old_grid, data), dtype=data.dtype)
+                return np.asarray(res_re + 1j * res_im, dtype=data.dtype)
+            return np.asarray(np.interp(new_grid, old_grid, data), dtype=data.dtype)
 
         # interpolate unknowns to new grid points
         nvars = self.shape[0] if len(self.shape) > 1 else 1
@@ -331,9 +333,9 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
             u = self.u
         assert self.nabla is not None
         if isinstance(self.nabla, AffineOperator):
-            return np.asanyarray(self.nabla(u))
+            return cast(Array, self.nabla(u))
         if isinstance(self.nabla, list):
-            return np.asanyarray(self.nabla[direction].dot(u))
+            return cast(Array, self.nabla[direction].dot(u))
         raise TypeError(f"nabla has unexpected type: {type(self.nabla)}")
 
     def save(self) -> DataDict:
@@ -408,9 +410,9 @@ class AffineOperator:
         # check if u is not a vector (but a matrix or tensor)
         # make sure that a sparse matrix is returned
         if u.ndim > 1:
-            return self.Q.dot(u) + sp.coo_matrix(g * np.resize(self.G, u.shape))
+            return cast(Matrix, self.Q.dot(u) + sp.coo_matrix(g * np.resize(self.G, u.shape)))
         # else, u is a vector, simply perform the Q*u + G
-        return np.asanyarray(self.Q.dot(u) + g * self.G)
+        return cast(Array, self.Q.dot(u) + g * self.G)
 
     def dot(self, u: Array) -> Array:
         """
@@ -428,7 +430,7 @@ class AffineOperator:
         Array
             The result of the operator application.
         """
-        return np.asanyarray(self.__call__(u))
+        return cast(Array, self.__call__(u))
 
     def is_linear(self) -> bool:
         """
@@ -489,7 +491,7 @@ class FDBoundaryConditions:
             The padded vector.
         """
         assert self.Q is not None
-        return np.asanyarray(self.Q.dot(u) + self.G)
+        return cast(Array, self.Q.dot(u) + self.G)
 
     def pad_x(self, x: Array) -> Array:
         """

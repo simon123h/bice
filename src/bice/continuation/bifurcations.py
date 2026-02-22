@@ -210,7 +210,7 @@ class BifurcationConstraint(Equation):
         self_idx = self.group.idx[self]
         # remove those columns/rows of the Jacobian that belong to self,
         # so we are left with the original (unextended) Jacobian
-        return np.asanyarray(np.delete(np.delete(Gu, self_idx, axis=0), self_idx, axis=1))
+        return cast(Array, np.delete(np.delete(Gu, self_idx, axis=0), self_idx, axis=1))
 
     def actions_before_evaluation(self, u: Array) -> None:
         """

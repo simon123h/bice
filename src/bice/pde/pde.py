@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 
 from bice.core.equation import Equation
@@ -66,7 +68,7 @@ class PartialDifferentialEquation(Equation):
         # if u is not given, use self.u
         u_in = self.u if u is None else u
         # typically, the mass matrix determines which part of rhs(u) go into du/dt
-        return np.asanyarray(self.mass_matrix().dot(self.rhs(u_in)))
+        return cast(Array, self.mass_matrix().dot(self.rhs(u_in)))
 
     def du_dx(self, u: Array | None = None, direction: int = 0) -> Array:
         """

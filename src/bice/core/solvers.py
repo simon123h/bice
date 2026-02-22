@@ -251,7 +251,7 @@ class NewtonSolver(AbstractNewtonSolver):
                 "iterations, error:",
                 err,
             )
-        return np.asanyarray(opt_result.x)
+        return np.asarray(opt_result.x)
 
 
 class NewtonKrylovSolver(AbstractNewtonSolver):
@@ -323,7 +323,7 @@ class NewtonKrylovSolver(AbstractNewtonSolver):
                 err,
             )
         # return the result vector
-        return np.asanyarray(opt_result.x)
+        return np.asarray(opt_result.x)
 
 
 class EigenSolver:

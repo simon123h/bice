@@ -98,7 +98,7 @@ class Problem:
             The vector of unknowns.
         """
         assert self.eq is not None
-        u_arr = np.asanyarray(u)
+        u_arr = np.asarray(u)
         self.eq.u = u_arr.reshape(self.eq.shape)
 
     def add_equation(self, eq: EquationLike) -> None:
@@ -195,7 +195,7 @@ class Problem:
         """
         assert self.eq is not None
         # adjust the shape and return the Jacobian of the (system of) equations
-        u_arr = np.asanyarray(u)
+        u_arr = np.asarray(u)
         return self.eq.jacobian(u_arr.reshape(self.eq.shape))
 
     @profile
@@ -484,7 +484,7 @@ class Problem:
         if not np.iscomplexobj(self.u):
             eigenvector = eigenvector.real
         # perturb unknowns in direction of eigenvector
-        u_new: Array = np.asanyarray(self.u + amplitude * np.linalg.norm(self.u) * eigenvector, dtype=self.u.dtype)
+        u_new: Array = np.asarray(self.u + amplitude * np.linalg.norm(self.u) * eigenvector, dtype=self.u.dtype)
         self.u = u_new
         # TODO: deflate the original solution and newton_solve?
         # create a new branch in the bifurcation diagram

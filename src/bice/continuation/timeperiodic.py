@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.linalg
@@ -319,7 +321,7 @@ class TimePeriodicOrbitHandler(Equation):
                 M_dense = M
             # calculate eigenvalues and return
             eigval, _ = scipy.linalg.eig(A_dense, M_dense)
-            return np.asanyarray(eigval[:k])
+            return cast(RealArray, np.asarray(eigval[:k], dtype=np.float64))
         else:
             # make sure both are sparse
             if not sp.issparse(A):
@@ -328,7 +330,7 @@ class TimePeriodicOrbitHandler(Equation):
                 M = sp.csr_matrix(M)
             # calculate eigenvalues and return
             eigval, _ = sp.linalg.eigs(A, k=k, M=M, sigma=1)
-            return np.asanyarray(eigval)
+            return cast(RealArray, np.asarray(eigval, dtype=np.float64))
 
     # TODO: test this
     # TODO: ddt does currently not support non-uniform time, make uniform?

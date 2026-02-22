@@ -60,11 +60,11 @@ class BDF2(TimeStepper):
 
         def f(u: Array) -> Array:
             # assemble the system
-            return cast(Array, np.asanyarray(self.dt * problem.rhs(u) - M.dot(3 * u - 4 * u_1 + u_2)))
+            return cast(Array, self.dt * problem.rhs(u) - M.dot(3 * u - 4 * u_1 + u_2))
 
         def J(u: Array) -> Matrix:
             # Jacobian of the system
-            return cast(Matrix, np.asanyarray(self.dt * problem.jacobian(u) - 3 * M))
+            return cast(Matrix, self.dt * problem.jacobian(u) - 3 * M)
 
         # solve it with a Newton solver
         problem.u = problem.newton_solver.solve(f, problem.u, J)
@@ -129,12 +129,12 @@ class BDF(TimeStepper):
         # create wrapper for the right-hand side
         def f(t: float, u: Array) -> Array:
             self.problem.time = t
-            return np.asanyarray(self.problem.rhs(u))
+            return cast(Array, self.problem.rhs(u))
 
         # create wrapper for the jacobian
         def jac(t: float, u: Array) -> Matrix:
             self.problem.time = t
-            return np.asanyarray(self.problem.jacobian(u))
+            return self.problem.jacobian(u)
 
         # create instance of scipy.integrate.BDF
         self.bdf = scipy.integrate.BDF(

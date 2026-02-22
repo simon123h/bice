@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import scipy.sparse as sp
@@ -273,6 +273,6 @@ class PseudoArclengthContinuation(ContinuationStepper):
             A = sp.csr_matrix(A)
         # use either a solver for sparse matrices...
         if sp.issparse(A):
-            return np.asanyarray(sp.linalg.spsolve(sp.csr_matrix(A), b))
+            return cast(Array, sp.linalg.spsolve(sp.csr_matrix(A), b))
         # ...or simply the one for full rank matrices
-        return np.asanyarray(np.linalg.solve(A, b))
+        return cast(Array, np.linalg.solve(A, b))

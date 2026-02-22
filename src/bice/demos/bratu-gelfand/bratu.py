@@ -13,6 +13,7 @@ The resulting bifurcation diagram, matches figure 1.1 (left) of Farrell, Birkiss
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from typing import cast
 from skfem import ElementLineP1, InteriorBasis, MeshLine, asm
 from skfem.models.poisson import laplace, mass
 
@@ -41,7 +42,7 @@ class Bratu1dEquation(Equation):
     def rhs(self, u: Array) -> Array:
         res = self.lap @ u - self.lmbda * self.mass @ np.exp(u)
         res[self.D] = u[self.D]
-        return np.asanyarray(res)
+        return cast(Array, res)
 
     # def jacobian(self, u):
     #     jac = self.lap - self.lmbda * dia_matrix((self.mass @ np.exp(u), 0),
