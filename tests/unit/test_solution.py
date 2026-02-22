@@ -62,6 +62,66 @@ def test_bifurcation_detection() -> None:
     assert sol2.bifurcation_type() == "-"
 
 
+def test_bifurcation_detection_multiple_points() -> None:
+    """Test bifurcation detection across multiple points."""
+    branch = Branch()
+
+    # Solution 1: First point, no previous info
+    sol1 = Solution()
+    sol1.nunstable_eigenvalues = 0
+    branch.add_solution_point(sol1)
+    assert not sol1.is_bifurcation()
+
+    # Solution 2: Second point, still 0 unstable EVs
+    sol2 = Solution()
+    sol2.nunstable_eigenvalues = 0
+    branch.add_solution_point(sol2)
+    assert not sol2.is_bifurcation()
+
+    # Solution 3: Third point, bifurcation! (0 -> 1)
+    sol3 = Solution()
+    sol3.nunstable_eigenvalues = 1
+    branch.add_solution_point(sol3)
+    assert sol3.is_bifurcation()
+    assert sol3.neigenvalues_crossed == 1
+    assert sol3.bifurcation_type() == "+"
+
+    # Solution 4: Fourth point, still 1 unstable EV
+    sol4 = Solution()
+    sol4.nunstable_eigenvalues = 1
+    branch.add_solution_point(sol4)
+    assert not sol4.is_bifurcation()
+    assert sol4.neigenvalues_crossed == 0
+
+
+def test_neigenvalues_crossed_first_point() -> None:
+    """Test that the first point in a branch does not report a crossing."""
+    branch = Branch()
+    sol1 = Solution()
+    sol1.nunstable_eigenvalues = 1
+    branch.add_solution_point(sol1)
+
+    assert sol1.neigenvalues_crossed is None
+    assert not sol1.is_bifurcation()
+
+
+def test_no_bifurcation_detection() -> None:
+    """Test that points are NOT detected as bifurcations if unstable EVs don't change."""
+    branch = Branch()
+
+    sol1 = Solution()
+    sol1.nunstable_eigenvalues = 0
+    branch.add_solution_point(sol1)
+
+    sol2 = Solution()
+    sol2.nunstable_eigenvalues = 0
+    branch.add_solution_point(sol2)
+
+    assert not sol2.is_bifurcation()
+    assert sol2.neigenvalues_crossed == 0
+    assert sol2.bifurcation_type() == ""
+
+
 def test_bifurcation_diagram() -> None:
     bd = BifurcationDiagram()
     assert len(bd.branches) == 1  # Active branch created by default

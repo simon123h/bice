@@ -117,3 +117,23 @@ def test_problem_history() -> None:
     # actually update() is called at the BEGINNING of time_step()
     # So history.u(0) is the state before step() was called.
     np.testing.assert_allclose(prob.history.u(0), [1.0])
+
+
+def test_problem_continuation_no_false_bifurcations() -> None:
+    """Test that continuation doesn't find bifurcations on a stable linear branch."""
+    prob = Problem()
+    eq = SimpleLinearEquation(a=-1.0, b=0.0, shape=(1,))
+    prob.add_equation(eq)
+    prob.u = np.array([0.0])
+    eq.p = 0.0
+    prob.continuation_parameter = (eq, "p")
+    prob.settings.neigs = 1
+    # Very small tolerance to see if noise triggers it (though this test eq is perfect)
+    prob.settings.eigval_zero_tolerance = 1e-12
+
+    # Perform 5 steps
+    for i in range(5):
+        prob.continuation_step()
+        sol = prob.bifurcation_diagram.current_solution()
+        assert not sol.is_bifurcation(), f"False bifurcation at step {i+1}: type={sol.bifurcation_type()}"
+        assert sol.nunstable_eigenvalues == 0
