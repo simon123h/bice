@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -148,7 +150,7 @@ class Problem:
 
         Returns
         -------
-        List[Equation]
+        list[Equation]
             The list of equations.
         """
         if isinstance(self.eq, Equation):
@@ -223,7 +225,7 @@ class Problem:
         self.u = self.newton_solver.solve(self.rhs, self.u, self.jacobian)
 
     @profile
-    def solve_eigenproblem(self) -> tuple[np.ndarray, np.ndarray]:
+    def solve_eigenproblem(self) -> tuple[Array, Array]:
         """
         Calculate the eigenvalues and eigenvectors of the Jacobian.
 
@@ -232,7 +234,7 @@ class Problem:
 
         Returns
         -------
-        Tuple[np.ndarray, np.ndarray]
+        tuple[Array, Array]
             Tuple of (eigenvalues, eigenvectors).
         """
         return self.eigen_solver.solve(self.jacobian(self.u), self.mass_matrix(), k=self.settings.neigs)
@@ -412,7 +414,7 @@ class Problem:
         # if converged, return True
         return True
 
-    def locate_bifurcation_using_constraint(self, eigenvector: np.ndarray) -> None:
+    def locate_bifurcation_using_constraint(self, eigenvector: Array) -> None:
         """
         Locate the bifurcation of the given eigenvector.
 
@@ -425,7 +427,7 @@ class Problem:
         # TODO: does not yet work!
         # make sure it is real, if self.u is real
         if not np.iscomplexobj(self.u):
-            eigenvector = eigenvector.real
+            eigenvector = cast(Array, eigenvector.real)
         # create the bifurcation constraint and add it to the problem
         from bice.continuation import BifurcationConstraint
 
@@ -482,7 +484,8 @@ class Problem:
         if not np.iscomplexobj(self.u):
             eigenvector = eigenvector.real
         # perturb unknowns in direction of eigenvector
-        self.u = self.u + amplitude * np.linalg.norm(self.u) * eigenvector
+        u_new: Array = np.asanyarray(self.u + amplitude * np.linalg.norm(self.u) * eigenvector, dtype=self.u.dtype)
+        self.u = u_new
         # TODO: deflate the original solution and newton_solve?
         # create a new branch in the bifurcation diagram
         self.new_branch()
@@ -619,7 +622,7 @@ class Problem:
     @profile
     def plot(
         self,
-        sol_ax: Axes | np.ndarray | None = None,
+        sol_ax: Axes | Array | None = None,
         bifdiag_ax: Axes | None = None,
         eigvec_ax: Axes | None = None,
         eigval_ax: Axes | None = None,

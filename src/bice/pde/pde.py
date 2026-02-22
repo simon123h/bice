@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from bice.core.equation import Equation
-from bice.core.types import Array, Shape
+from bice.core.types import Array, RealArray, Shape
 
 
 class PartialDifferentialEquation(Equation):
@@ -27,7 +27,7 @@ class PartialDifferentialEquation(Equation):
         """
         super().__init__(shape)
         #: the spatial coordinates
-        self.x: list[np.ndarray] | np.ndarray | None
+        self.x: list[RealArray] | RealArray | None
         if len(self.shape) > 0:
             self.x = [np.linspace(0, 1, self.shape[-1])]
         else:

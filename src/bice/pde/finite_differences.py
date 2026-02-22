@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any, Union
-
 import findiff
 import numdifftools.fornberg as fornberg
 import numpy as np
 import scipy.sparse as sp
 
 from bice.core import profile
-from bice.core.types import Array, DataDict, Matrix, Shape
+from bice.core.types import Array, DataDict, Matrix, RealArray, Shape
 
 from .pde import PartialDifferentialEquation
 
@@ -41,7 +39,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         #: second order derivative operator (Laplacian)
         self.laplace: AffineOperator | Matrix | None = None
         #: the spatial coordinates
-        self.x: list[np.ndarray] | None = None
+        self.x: list[RealArray] | None = None
         if len(self.shape) > 0:
             self.x = [np.linspace(0, 1, self.shape[-1], endpoint=False)]
         #: the boundary conditions, if None, defaults to periodic BCs
@@ -119,7 +117,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         return self.ddx
 
     @profile
-    def build_FD_matrices_1d(self, approx_order: int = 2, x: np.ndarray | None = None) -> list[AffineOperator]:
+    def build_FD_matrices_1d(self, approx_order: int = 2, x: Array | None = None) -> list[AffineOperator]:
         """
         Build 1D finite difference differentiation matrices.
 
@@ -250,14 +248,23 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
                 x_new.append((x + x_old[i - 1]) / 2)
             x_new.append(x)
             i += 1
-        x_new_arr: np.ndarray = np.array(x_new)
+        x_new_arr: RealArray = np.asarray(x_new, dtype=np.float64)
+
+        def _interpolate(data: Array, old_grid: RealArray, new_grid: RealArray) -> Array:
+            """Interpolate real or complex data."""
+            if np.iscomplexobj(data):
+                res_re = np.interp(new_grid, old_grid, data.real)
+                res_im = np.interp(new_grid, old_grid, data.imag)
+                return np.asanyarray(res_re + 1j * res_im, dtype=data.dtype)
+            return np.asanyarray(np.interp(new_grid, old_grid, data), dtype=data.dtype)
+
         # interpolate unknowns to new grid points
         nvars = self.shape[0] if len(self.shape) > 1 else 1
         u_new: Array
         if nvars > 1:
-            u_new = np.array([np.interp(x_new_arr, x_old, self.u[n]) for n in range(nvars)])
+            u_new = np.array([_interpolate(self.u[n], x_old, x_new_arr) for n in range(nvars)])
         else:
-            u_new = np.atleast_1d(np.interp(x_new_arr, x_old, self.u))
+            u_new = np.atleast_1d(_interpolate(self.u, x_old, x_new_arr))
         # update shape, u and x
         self.reshape(u_new.shape)
         self.u = u_new
@@ -265,15 +272,15 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # interpolate history to new grid points
         for t, u_hist in enumerate(self.u_history):
             if nvars > 1:
-                self.u_history[t] = np.array([np.interp(x_new_arr, x_old, u_hist[n]) for n in range(nvars)])
+                self.u_history[t] = np.array([_interpolate(u_hist[n], x_old, x_new_arr) for n in range(nvars)])
             else:
-                self.u_history[t] = np.atleast_1d(np.interp(x_new_arr, x_old, u_hist))
+                self.u_history[t] = np.atleast_1d(_interpolate(u_hist, x_old, x_new_arr))
         # re-build the finite difference matrices
         self.build_FD_matrices()
         return (float(min(error_estimate)), float(max(error_estimate)))
 
     @profile
-    def refinement_error_estimate(self) -> np.ndarray:
+    def refinement_error_estimate(self) -> Array:
         """
         Estimate the error made in each grid point.
 
@@ -281,7 +288,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
 
         Returns
         -------
-        np.ndarray
+        Array
             The error estimate at each grid point.
         """
         # calculate integral of curvature:
@@ -291,7 +298,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         dx = np.diff(self.x[0])
         dx_vals = [max(dx[i], dx[i + 1]) for i in range(len(dx) - 1)]
         dx_padded = np.concatenate(([0.0], dx_vals, [0.0]))
-        err: np.ndarray = np.zeros_like(dx_padded)
+        err: Array = np.zeros_like(dx_padded)
         nvars = self.shape[0] if len(self.shape) > 1 else 1
         for n in range(nvars):
             u = self.u[n] if len(self.shape) > 1 else self.u

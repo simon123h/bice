@@ -4,7 +4,7 @@ To maintain a clean and consistent codebase, we enforce strict coding standards 
 
 ## Python Version
 
-We target **Python 3.11+**. Please avoid using features that are deprecated in these versions. We use `from __future__ import annotations` to support modern type hinting across all modules.
+We target **Python 3.12+**. Please avoid using features that are deprecated in these versions. We use `from __future__ import annotations` to support modern type hinting across all modules.
 
 ## Style and Formatting
 
@@ -79,7 +79,7 @@ We follow the **NumPy-style docstring convention**. Every public class and metho
 Example:
 
 ```python
-def solve(self, A: Matrix, M: Matrix | None = None) -> tuple[np.ndarray, np.ndarray]:
+def solve(self, A: Matrix, M: Matrix | None = None) -> tuple[Array, Array]:
     """
     Solve the eigenproblem A*x = v*x.
 
@@ -92,7 +92,7 @@ def solve(self, A: Matrix, M: Matrix | None = None) -> tuple[np.ndarray, np.ndar
 
     Returns
     -------
-    tuple[np.ndarray, np.ndarray]
+    tuple[Array, Array]
         A tuple containing (eigenvalues, eigenvectors).
     """
 ```

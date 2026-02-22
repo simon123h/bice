@@ -1,6 +1,6 @@
 "Bifurcation tracking classes for the bice package."
 
-from typing import Any, cast
+from typing import cast
 
 import numpy as np
 import scipy.sparse as sp

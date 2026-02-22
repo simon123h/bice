@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from .types import Axes, DataDict
+from .types import Array, Axes, DataDict, RealArray
 
 if TYPE_CHECKING:
     from bice.core.problem import Problem
@@ -249,27 +249,27 @@ class Branch:
         """
         self.solutions.remove(solution)
 
-    def parameter_vals(self) -> np.ndarray:
+    def parameter_vals(self) -> RealArray:
         """
         List of continuation parameter values along the branch.
 
         Returns
         -------
-        np.ndarray
+        RealArray
             Array of parameter values.
         """
-        return np.array([s.p for s in self.solutions])
+        return np.array([s.p for s in self.solutions], dtype=np.float64)
 
-    def norm_vals(self) -> np.ndarray:
+    def norm_vals(self) -> RealArray:
         """
         List of solution norm values along the branch.
 
         Returns
         -------
-        np.ndarray
+        RealArray
             Array of norm values.
         """
-        return np.array([s.norm for s in self.solutions])
+        return np.array([s.norm for s in self.solutions], dtype=np.float64)
 
     def bifurcations(self) -> list[Solution]:
         """
@@ -282,7 +282,7 @@ class Branch:
         """
         return [s for s in self.solutions if s.is_bifurcation()]
 
-    def data(self, only: str | None = None) -> tuple[np.ndarray, np.ndarray]:
+    def data(self, only: str | None = None) -> tuple[RealArray, RealArray]:
         """
         Return the list of parameters and norms of the branch.
 
@@ -293,10 +293,10 @@ class Branch:
 
         Returns
         -------
-        Tuple[np.ndarray, np.ndarray]
+        tuple[RealArray, RealArray]
             Tuple of (parameter values, norm values).
         """
-        condition: list[bool] | np.ndarray = np.array([False] * len(self.solutions))
+        condition: list[bool] | Array = np.array([False] * len(self.solutions))
         if only == "stable":
             condition = [not s.is_stable() for s in self.solutions]
         elif only == "unstable":
@@ -304,9 +304,10 @@ class Branch:
         elif only == "bifurcations":
             condition = [not s.is_bifurcation() for s in self.solutions]
         # mask lists where condition is met and return
-        pvals = np.ma.masked_where(condition, self.parameter_vals())
-        nvals = np.ma.masked_where(condition, self.norm_vals())
-        return (np.asanyarray(pvals), np.asanyarray(nvals))
+        cond_arr = np.asarray(condition, dtype=bool)
+        pvals = np.ma.masked_where(cond_arr, self.parameter_vals())
+        nvals = np.ma.masked_where(cond_arr, self.norm_vals())
+        return (np.asarray(pvals, dtype=np.float64), np.asarray(nvals, dtype=np.float64))
 
     def save(self, filename: str) -> None:
         """

@@ -7,7 +7,7 @@ name = "bice"
 version = "0.4.0"
 description = "Numerical continuation and bifurcation package"
 readme = "docs/pypi-description.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = {file = "LICENSE"}
 authors = [
   {name = "Simon Hartmann", email = "s.hartmann@wwu.de"}

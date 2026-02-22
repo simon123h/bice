@@ -9,7 +9,7 @@ import scipy.sparse as sp
 
 from bice.core.equation import Equation
 from bice.core.profiling import profile
-from bice.core.types import Array, Axes, DataDict, Matrix
+from bice.core.types import Array, Axes, DataDict, Matrix, RealArray
 
 # TODO: make this work for multiple variables, regarding ref_eq.shape
 
@@ -44,7 +44,7 @@ class TimePeriodicOrbitHandler(Equation):
         # which equation to treat?
         self.ref_eq = reference_equation
         # the list of considered timesteps (in normalized time t' = t / T)
-        self.dt = np.repeat(1.0 / Nt, Nt)
+        self.dt: RealArray = np.repeat(1.0 / Nt, Nt)
         # the vector of unknowns: unknowns of the reference equation for every timestep
         u1 = np.tile(self.ref_eq.u, Nt)
         # the period is also an unknown, append it to u
@@ -83,13 +83,13 @@ class TimePeriodicOrbitHandler(Equation):
         self.u[-1] = v
 
     @property
-    def t(self) -> Array:
+    def t(self) -> RealArray:
         """
         Return the temporal domain vector.
 
         Returns
         -------
-        Array
+        RealArray
             The accumulated time steps.
         """
         return np.cumsum(self.dt)
@@ -280,7 +280,7 @@ class TimePeriodicOrbitHandler(Equation):
         # return the monodromy matrix
         return mon_mat
 
-    def floquet_multipliers(self, k: int = 20, use_cache: bool = True) -> Array:
+    def floquet_multipliers(self, k: int = 20, use_cache: bool = True) -> RealArray:
         """
         Calculate the Floquet multipliers to obtain the stability of the orbit.
 
@@ -296,7 +296,7 @@ class TimePeriodicOrbitHandler(Equation):
 
         Returns
         -------
-        Array
+        RealArray
             The Floquet multipliers (eigenvalues).
         """
         # obtain the monodromy matrix and mass matrix

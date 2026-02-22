@@ -4,7 +4,7 @@ import numpy as np
 
 from bice.core.problem import Problem
 from bice.core.profiling import profile
-from bice.core.types import Array
+from bice.core.types import Array, RealArray
 
 
 class LyapunovExponentCalculator:
@@ -52,21 +52,22 @@ class LyapunovExponentCalculator:
         self.perturbations: list[Array] = []
         self.generate_perturbation_vectors()
         # cumulative sum of the exponents
-        self.__sum: np.ndarray = np.zeros(nexponents)
+        self.__sum: RealArray = np.zeros(nexponents)
 
     @property
-    def exponents(self) -> np.ndarray:
+    def exponents(self) -> RealArray:
         """
         Return the calculated Lyapunov exponents.
 
         Returns
         -------
-        np.ndarray
+        RealArray
             The average Lyapunov exponents.
         """
         if self.T == 0:
-            return np.zeros(self.nexponents)
-        return self.__sum / self.T
+            return np.zeros(self.nexponents, dtype=np.float64)
+        res = self.__sum / self.T
+        return np.asarray(res, dtype=np.float64)
 
     def generate_perturbation_vectors(self) -> None:
         """Generate a new set of orthonormal perturbation vectors."""
@@ -75,13 +76,13 @@ class LyapunovExponentCalculator:
         self.orthonormalize()
 
     @profile
-    def orthonormalize(self) -> np.ndarray:
+    def orthonormalize(self) -> RealArray:
         """
         Orthonormalize the perturbation vectors using Gram-Schmidt.
 
         Returns
         -------
-        np.ndarray
+        RealArray
             The norms of the vectors before normalization.
         """
         # construct orthogonal vectors using Gram-Schmidt-method

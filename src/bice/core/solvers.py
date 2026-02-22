@@ -73,7 +73,7 @@ class AbstractNewtonSolver:
         """
         return self._iteration_count
 
-    def norm(self, residuals: np.ndarray) -> float:
+    def norm(self, residuals: Array) -> float:
         """
         Return the norm used for checking the residuals for convergence.
 
@@ -225,7 +225,7 @@ class NewtonSolver(AbstractNewtonSolver):
             my_jac = None
         else:
 
-            def jac_wrapper(u: Array) -> np.ndarray:
+            def jac_wrapper(u: Array) -> Array:
                 # wrapper for the Jacobian
                 # sparse matrices are not supported by scipy's root method :-/
                 # convert to dense
@@ -340,13 +340,13 @@ class EigenSolver:
         #: value of the shift first
         self.shift = 0.0
         #: results of the latest eigenvalue computation
-        self.latest_eigenvalues: np.ndarray | None = None
+        self.latest_eigenvalues: Array | None = None
         #: results of the latest eigenvector computation
-        self.latest_eigenvectors: np.ndarray | None = None
+        self.latest_eigenvectors: Array | None = None
         #: convergence tolerance of the eigensolver
         self.tol = 1e-8
 
-    def solve(self, A: Matrix, M: Matrix | None = None, k: int | None = None) -> tuple[np.ndarray, np.ndarray]:
+    def solve(self, A: Matrix, M: Matrix | None = None, k: int | None = None) -> tuple[Array, Array]:
         """
         Solve the eigenproblem A*x = v*x for the eigenvalues v and the eigenvectors x.
 
@@ -368,7 +368,7 @@ class EigenSolver:
 
         Returns
         -------
-        Tuple[np.ndarray, np.ndarray]
+        tuple[Array, Array]
             A tuple containing (eigenvalues, eigenvectors).
         """
         if k is None:

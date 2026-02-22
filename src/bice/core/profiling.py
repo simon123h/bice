@@ -37,7 +37,7 @@ class MethodProfile:
 
         Returns
         -------
-        Dict[str, MethodProfile]
+        dict[str, MethodProfile]
             A dictionary mapping method names to MethodProfile objects.
         """
         # empty result dict

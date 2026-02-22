@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 import scipy.sparse as sp
 
@@ -76,7 +74,7 @@ class Equation:
 
         Returns
         -------
-        tuple
+        tuple[int, ...]
             The shape of the unknowns.
         """
         # if no shape is explicitly assigned, just return u.shape
@@ -300,13 +298,13 @@ class EquationGroup:
         return sum([eq.ndofs for eq in self.equations])
 
     @property
-    def shape(self) -> Shape:
+    def shape(self) -> tuple[int, ...]:
         """
         Return the shape of the unknowns.
 
         Returns
         -------
-        Shape
+        tuple[int, ...]
             The shape of the unknowns vector.
         """
         return (self.ndofs,)
@@ -538,7 +536,7 @@ class EquationGroup:
 
         Returns
         -------
-        List[Equation]
+        list[Equation]
             The list of equations.
         """
         res = []

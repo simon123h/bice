@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from bice.core.types import Array, Shape
+from bice.core.types import Array, RealArray, Shape
 
 from .pde import PartialDifferentialEquation
 
@@ -21,14 +21,14 @@ class PseudospectralEquation(PartialDifferentialEquation):
     def __init__(self, shape: Shape | None = None) -> None:
         super().__init__(shape)
         # the spatial coordinates
-        self.x: list[np.ndarray] | np.ndarray | None
+        self.x: list[RealArray] | RealArray | None
         if len(self.shape) > 0:
             self.x = [np.linspace(0, 1, self.shape[-1])]
         else:
             self.x = None
         #: the wavevector
-        self.k: list[np.ndarray] | None = None
-        self.ksquare: np.ndarray | None = None
+        self.k: list[Array] | None = None
+        self.ksquare: Array | None = None
 
     def build_kvectors(self, real_fft: bool = False) -> None:
         """

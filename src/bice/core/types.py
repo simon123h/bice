@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeAlias, Union
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import numpy.typing
@@ -12,22 +12,28 @@ if TYPE_CHECKING:
     import matplotlib.axes
 
 # common type for shapes
-Shape: TypeAlias = int | tuple[int, ...]
+type Shape = int | tuple[int, ...]
 
 # Common type for Arrays, e.g. the vector of unknowns
-Array: TypeAlias = numpy.typing.NDArray[np.float64 | np.complexfloating]
+type Array = numpy.typing.NDArray[np.float64 | np.complexfloating]
+
+# Type for purely real-valued arrays (e.g. grid points)
+type RealArray = numpy.typing.NDArray[np.float64]
+
+# Type for complex-valued arrays
+type ComplexArray = numpy.typing.NDArray[np.complexfloating]
 
 # Objects that can be coerced into an Array
-ArrayLike: TypeAlias = numpy.typing.ArrayLike
+type ArrayLike = numpy.typing.ArrayLike
 
 # Common type for dense and sparse matrices
-Matrix: TypeAlias = Union[np.ndarray, sp.spmatrix]
+type Matrix = np.ndarray | sp.spmatrix
 
 # Common type for matplotlib axes
 if TYPE_CHECKING:
-    Axes: TypeAlias = matplotlib.axes.Axes
+    type Axes = matplotlib.axes.Axes
 else:
-    Axes: TypeAlias = Any
+    type Axes = Any
 
 # Dictionary for serialized data
-DataDict: TypeAlias = dict[str, Any]
+type DataDict = dict[str, Any]
