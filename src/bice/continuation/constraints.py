@@ -137,7 +137,7 @@ class VolumeConstraint(ConstraintEquation):
 
     def jacobian(self, u: Array) -> sp.csr_matrix:
         """
-        Calculate the Jacobian of the volume constraint.
+        Calculate the analytical Jacobian of the volume constraint.
 
         Parameters
         ----------
@@ -149,9 +149,52 @@ class VolumeConstraint(ConstraintEquation):
         sp.csr_matrix
             The Jacobian matrix.
         """
-        # TODO: implement analytical / semi-analytical Jacobian
-        # convert FD Jacobian to sparse matrix
-        return sp.csr_matrix(super().jacobian(u))
+        N = u.size
+        # reference to the indices of the unknowns that we work on
+        self_idx = self.group.idx[self]
+        eq_idx = self.group.idx[self.ref_eq]
+
+        # optionally split only the part that is referenced by self.variable
+        if self.variable is not None:
+            eq_shape = self.ref_eq.shape[1:]
+            var_ndofs = np.prod(eq_shape)
+            start = eq_idx.start + self.variable * var_ndofs
+            eq_idx = slice(int(start), int(start + var_ndofs))
+
+        # generate empty matrix of residual contributions
+        J = sp.lil_matrix((N, N))
+
+        # employ the constraint equation
+        if self.fixed_volume is None:
+            # d R_vol / d u_i = 1 / nvars
+            nvars = eq_idx.stop - eq_idx.start
+            J[self_idx, eq_idx] = 1.0 / nvars
+        else:
+            # d R_vol / d u_i are the weights of the trapezoidal rule
+            x = [np.arange(self.ref_eq.shape[-1])]
+            if hasattr(self.ref_eq, "x") and getattr(self.ref_eq, "x") is not None:
+                x = getattr(self.ref_eq, "x")
+
+            # weights for 1D trapezoidal rule:
+            x_vals = x[0]
+            dx = np.diff(x_vals)
+            weights = np.zeros(len(x_vals))
+            weights[0] = 0.5 * dx[0]
+            weights[1:-1] = 0.5 * (dx[:-1] + dx[1:])
+            weights[-1] = 0.5 * dx[-1]
+            # TODO: handle multi-dimensional trapz weights if needed
+
+            # if we have multiple variables, and no specific variable is selected,
+            # trapz might be applied to each or all.
+            # for now, assume single variable or select specific variable
+            J[self_idx, eq_idx] = weights
+
+        # Add the contribution to the reference equation:
+        # res[eq_idx] = u[self_idx]
+        # d R_eq_i / d lambda = 1
+        J[eq_idx, self_idx] = 1.0
+
+        return J.tocsr()
 
 
 class TranslationConstraint(ConstraintEquation):
@@ -241,7 +284,7 @@ class TranslationConstraint(ConstraintEquation):
 
     def jacobian(self, u: Array) -> sp.csr_matrix:
         """
-        Calculate the Jacobian of the translation constraint.
+        Calculate the analytical Jacobian of the translation constraint.
 
         Parameters
         ----------
@@ -253,10 +296,60 @@ class TranslationConstraint(ConstraintEquation):
         sp.csr_matrix
             The Jacobian matrix.
         """
-        # contributions:
-        # - d constraint eq. / du
-        # - d bulk eq. / d u
-        # - d bulk eq. / d lagrange mul
-        # TODO: implement analytical / semi-analytical Jacobian
-        # convert FD Jacobian to sparse matrix
-        return sp.csr_matrix(super().jacobian(u))
+        N = u.size
+        # reference to the equation, shape and indices of the unknowns that we work on
+        eq = self.ref_eq
+        eq_shape = eq.shape
+        eq_idx = self.group.idx[eq]
+        self_idx = self.group.idx[self]
+
+        # optionally split only the part that is referenced by self.variable
+        if self.variable is not None:
+            eq_shape = self.ref_eq.shape[1:]
+            var_ndofs = np.prod(eq_shape)
+            start = eq_idx.start + self.variable * var_ndofs
+            eq_idx = slice(start, int(start + var_ndofs))
+
+        # obtain the unknowns
+        eq_u = u[eq_idx]
+        eq_u_old = self.group.u[eq_idx]
+        velocity = u[self_idx]
+
+        # obtain the differentiation matrix D
+        # eq_dudx = D(u) = Q * u + G
+        if hasattr(eq, "nabla") and eq.nabla is not None:
+            # for FiniteDifferencesEquation
+            if isinstance(eq.nabla, list):  # multi-dimensional case
+                D_aff = eq.nabla[self.direction]
+            else:  # 1d case
+                D_aff = eq.nabla
+            # extraction of the matrix part Q
+            from bice.pde.finite_differences import AffineOperator
+
+            if isinstance(D_aff, AffineOperator):
+                D = D_aff.Q
+                G = D_aff.G
+            else:
+                D = D_aff
+                G = 0
+        else:
+            # fallback to FD approximation if no analytical matrix exists
+            return sp.csr_matrix(super().jacobian(u))
+
+        # create a sparse matrix of the Jacobian contributions
+        J = sp.lil_matrix((N, N))
+
+        # d R_eq / d v = D(u) = Q * u + G
+        eq_dudx = D.dot(eq_u) + G
+        J[eq_idx, self_idx] = eq_dudx.reshape((-1, 1))
+
+        # d R_eq / d u = v * Q
+        J[eq_idx, eq_idx] = velocity[0] * D
+
+        # d R_trans / d u = (Q * u + G) + Q^T * (u - u_old)
+        row = eq_dudx + D.T.dot(eq_u - eq_u_old)
+        J[self_idx, eq_idx] = row
+
+        # d R_trans / d v = 0 (already zero)
+
+        return J.tocsr()
