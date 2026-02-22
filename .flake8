@@ -1,5 +1,0 @@
-[flake8]
-max-line-length = 140
-extend-ignore = E203,D300,E402
-docstring-convention = numpy
-exclude = .git,__pycache__,docs/source/conf.py,old,build,dist,.venv

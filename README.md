@@ -67,3 +67,21 @@ You will need to have the development dependencies installed:
 ```bash
 pip3 install -e ".[dev]"
 ```
+
+### Running Checks
+
+To ensure code quality, you can run the following commands locally:
+
+```bash
+# Linting and formatting
+ruff check .
+ruff format .
+
+# Type checking
+mypy src/bice
+
+# Tests
+pytest tests/
+```
+
+For more details, see [CONTRIBUTING.md](CONTRIBUTING.md).

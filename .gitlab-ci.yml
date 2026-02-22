@@ -26,10 +26,9 @@ lint:
   stage: lint
   script:
     - pip install -e ".[dev]"
-    - black --check .
-    - isort --check .
-    # - flake8 .
-    # - mypy src/bice
+    - ruff check .
+    - ruff format --check .
+    - mypy src/bice
   allow_failure: true
 
 test:
