@@ -12,6 +12,7 @@ Welcome to bice's documentation!
 
    source/bice
    architecture/index
+   development/index
 
 
 
