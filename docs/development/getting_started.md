@@ -4,7 +4,7 @@ This guide will walk you through setting up a local development environment for 
 
 ## Prerequisites
 
-- **Python 3.12 or higher**: The project targets modern Python versions.
+- **Python 3.11 or higher**: The project targets modern Python versions.
 - **Git**: For version control.
 
 ## Installation
