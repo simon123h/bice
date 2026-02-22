@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -15,7 +13,7 @@ from .equation import Equation, EquationGroup, EquationLike
 from .profiling import profile
 from .solution import BifurcationDiagram, Solution
 from .solvers import EigenSolver, NewtonKrylovSolver
-from .types import Array, Matrix
+from .types import Array, ArrayLike, Axes, DataDict, Matrix
 
 
 class Problem:
@@ -29,7 +27,7 @@ class Problem:
     Custom problems should be implemented as children of this class.
     """
 
-    eq: None | Equation | EquationGroup
+    eq: None | EquationLike
 
     # Constructor
     def __init__(self) -> None:
@@ -57,7 +55,7 @@ class Problem:
         #: The continuation parameter is defined by passing an object and the name of
         #: the object's attribute that corresponds to the continuation parameter as a
         #: tuple
-        self.continuation_parameter: tuple[Any, str] | None = None
+        self.continuation_parameter: tuple[object, str] | None = None
 
     @property
     def ndofs(self) -> int:
@@ -84,11 +82,11 @@ class Problem:
             The flattened vector of unknowns.
         """
         if self.eq is None:
-            return np.array([])
+            return np.array([], dtype=np.float64)
         return self.eq.u.ravel()
 
     @u.setter
-    def u(self, u) -> None:
+    def u(self, u: ArrayLike) -> None:
         """
         Set the unknowns of the problem.
 
@@ -98,7 +96,8 @@ class Problem:
             The vector of unknowns.
         """
         assert self.eq is not None
-        self.eq.u = u.reshape(self.eq.shape)
+        u_arr = np.asanyarray(u)
+        self.eq.u = u_arr.reshape(self.eq.shape)
 
     def add_equation(self, eq: EquationLike) -> None:
         """
@@ -178,7 +177,7 @@ class Problem:
         return self.eq.rhs(u.reshape(self.eq.shape)).ravel()
 
     @profile
-    def jacobian(self, u) -> Matrix:
+    def jacobian(self, u: ArrayLike) -> Matrix:
         """
         Calculate the Jacobian of the system J = d rhs(u) / du for the unknowns u.
 
@@ -194,7 +193,8 @@ class Problem:
         """
         assert self.eq is not None
         # adjust the shape and return the Jacobian of the (system of) equations
-        return self.eq.jacobian(u.reshape(self.eq.shape))
+        u_arr = np.asanyarray(u)
+        return self.eq.jacobian(u_arr.reshape(self.eq.shape))
 
     @profile
     def mass_matrix(self) -> Matrix:
@@ -316,7 +316,7 @@ class Problem:
         obj, attr_name = self.continuation_parameter
         return float(getattr(obj, attr_name))
 
-    def set_continuation_parameter(self, val) -> None:
+    def set_continuation_parameter(self, val: float | np.floating) -> None:
         """
         Set the value of the continuation parameter.
 
@@ -514,7 +514,7 @@ class Problem:
         return np.linalg.norm(self.u)
 
     @profile
-    def save(self, filename: str | None = None) -> dict:
+    def save(self, filename: str | None = None) -> DataDict:
         """
         Save the current solution to the file <filename>.
 
@@ -531,7 +531,7 @@ class Problem:
             The serialized data.
         """
         # dict of data to store
-        data: dict[str, Any] = {}
+        data: DataDict = {}
         # the number of equations
         equations = self.list_equations()
         data["Problem.nequations"] = len(equations)
@@ -557,7 +557,7 @@ class Problem:
         return data
 
     @profile
-    def load(self, data) -> None:
+    def load(self, data: DataDict | Solution | str) -> None:
         """
         Load the current solution from the given data.
 
@@ -571,23 +571,26 @@ class Problem:
         # if data is a Solution object:
         if isinstance(data, Solution):
             # get data from a solution object
-            data = data.data
+            data_dict: DataDict = data.data
         # if data is a string:
         elif isinstance(data, str):
             # load data dictionary from the file
-            data = np.load(data, allow_pickle=True)
+            data_dict = dict(np.load(data, allow_pickle=True))
+        else:
+            data_dict = data
+
         # clear the history
         self.history.clear()
         # load the time
-        self.time = float(data["Problem.time"])
+        self.time = float(data_dict["Problem.time"])
         # load the value of the continuation parameter
-        if self.continuation_parameter is not None and "Problem.p" in data:
-            self.set_continuation_parameter(data["Problem.p"])
+        if self.continuation_parameter is not None and "Problem.p" in data_dict:
+            self.set_continuation_parameter(data_dict["Problem.p"])
         # let the equations restore their data
         for eq in self.list_equations():
             # strip the name of the equation
             eq_name = type(eq).__name__ + "."
-            eq_data = {k.replace(eq_name, ""): v for k, v in data.items() if k.startswith(eq_name)}
+            eq_data = {k.replace(eq_name, ""): v for k, v in data_dict.items() if k.startswith(eq_name)}
             # pass it to the equation, unless the dict is empty
             if eq_data:
                 eq.load(eq_data)
@@ -616,10 +619,10 @@ class Problem:
     @profile
     def plot(
         self,
-        sol_ax=None,
-        bifdiag_ax=None,
-        eigvec_ax=None,
-        eigval_ax=None,
+        sol_ax: Axes | np.ndarray | None = None,
+        bifdiag_ax: Axes | None = None,
+        eigvec_ax: Axes | None = None,
+        eigval_ax: Axes | None = None,
     ) -> None:
         """
         Plot everything to the given axes.
@@ -647,6 +650,7 @@ class Problem:
             # flatten the array and pass it to the plot function as arguments
             self.plot(*sol_ax.flatten())
             return
+
         # plot the solution of the equation(s)
         if sol_ax is not None:
             # clear the axes
@@ -713,13 +717,13 @@ class Problem:
 
     def generate_bifurcation_diagram(
         self,
-        parameter_lims=(-1e9, 1e9),
-        norm_lims=(-1e9, 1e9),
-        max_recursion=4,
-        max_steps=1e9,
-        detect_circular_branches=True,
-        ax=None,
-        plotevery=30,
+        parameter_lims: tuple[float, float] = (-1e9, 1e9),
+        norm_lims: tuple[float, float] = (-1e9, 1e9),
+        max_recursion: int = 4,
+        max_steps: float = 1e9,
+        detect_circular_branches: bool = True,
+        ax: Axes | None = None,
+        plotevery: int = 30,
     ) -> None:
         """
         Automatically generate a full bifurcation diagram within the given bounds.

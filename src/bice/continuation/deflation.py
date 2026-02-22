@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import numpy as np
 import scipy.sparse as sp
 
-from bice.core.types import Array
+from bice.core.types import Array, Matrix
 
 
 class DeflationOperator:
@@ -31,7 +33,7 @@ class DeflationOperator:
         #: list of solutions, that will be suppressed by the deflation operator
         self.solutions: list[Array] = []
 
-    def operator(self, u: Array):
+    def operator(self, u: Array) -> float:
         """
         Obtain the value of the deflation operator for given u.
 
@@ -45,9 +47,11 @@ class DeflationOperator:
         float
             The value of the operator.
         """
-        return np.prod([np.dot(u_i - u, u_i - u) ** -self.p for u_i in self.solutions]) + self.shift
+        if not self.solutions:
+            return 1.0 + self.shift
+        return float(np.prod([np.dot(u_i - u, u_i - u) ** -self.p for u_i in self.solutions]) + self.shift)
 
-    def D_operator(self, u: Array):
+    def D_operator(self, u: Array) -> Array:
         """
         Calculate the Jacobian of deflation operator for given u.
 
@@ -61,10 +65,12 @@ class DeflationOperator:
         Array
             The gradient of the operator.
         """
+        if not self.solutions:
+            return np.zeros_like(u)
         op = self.operator(u)
-        return self.p * op * 2 * np.sum([(uk - u) / np.dot(uk - u, uk - u) for uk in self.solutions], axis=0)
+        return np.asanyarray(self.p * op * 2 * np.sum([(uk - u) / np.dot(uk - u, uk - u) for uk in self.solutions], axis=0))
 
-    def deflated_rhs(self, rhs):
+    def deflated_rhs(self, rhs: Callable[[Array], Array]) -> Callable[[Array], Array]:
         """
         Deflate the rhs of some equation.
 
@@ -81,14 +87,14 @@ class DeflationOperator:
             The deflated rhs function.
         """
 
-        def new_rhs(u):
+        def new_rhs(u: Array) -> Array:
             # multiply rhs with deflation operator
             return self.operator(u) * rhs(u)
 
         # return the function object
         return new_rhs
 
-    def deflated_jacobian(self, rhs, jacobian):
+    def deflated_jacobian(self, rhs: Callable[[Array], Array], jacobian: Callable[[Array], Matrix]) -> Callable[[Array], Matrix]:
         """
         Generate Jacobian of deflated rhs of some equation or problem.
 
@@ -105,7 +111,7 @@ class DeflationOperator:
             The deflated Jacobian function.
         """
 
-        def new_jac(u):
+        def new_jac(u: Array) -> Matrix:
             # obtain operator and operator derivative
             op = self.operator(u)
             D_op = self.D_operator(u)

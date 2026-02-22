@@ -8,7 +8,7 @@ import numpy as np
 import scipy.sparse as sp
 
 from .profiling import profile
-from .types import Array, Matrix, Shape
+from .types import Array, Axes, DataDict, Matrix, Shape
 
 
 class Equation:
@@ -43,7 +43,7 @@ class Equation:
         # we keep our own __shape variable, so that the shape is not unintentionally
         # lost when the user changes u. If stored shape is undefined, we'll simply
         # fallback to u.shape
-        self.__shape = self.u.shape
+        self.__shape: tuple[int, ...] = self.u.shape
         #: a history of the unknowns, needed e.g. for implicit schemes
         self.u_history: list[Array] = []
         #: Reference to a group of equations that this equation belongs to.
@@ -70,7 +70,7 @@ class Equation:
         return int(np.prod(self.shape))
 
     @property
-    def shape(self) -> tuple:
+    def shape(self) -> tuple[int, ...]:
         """
         Return the shape of the equation's unknowns: self.u.shape.
 
@@ -95,7 +95,7 @@ class Equation:
             The new shape of the unknowns.
         """
         # resize the unknowns
-        self.u = np.resize(self.u, shape)
+        self.u = np.asarray(np.resize(self.u, shape), dtype=self.u.dtype)
         # update the internal shape variable
         self.__shape = self.u.shape
         # if the equation belongs to a group of equations, redo it's mapping of the
@@ -187,15 +187,16 @@ class Equation:
         # default case: assume the identity matrix I (--> du/dt = rhs(u))
         return sp.eye(self.ndofs)
 
-    def adapt(self) -> Any:
+    def adapt(self) -> tuple[float, float] | None:
         """
         Adapt the equation to the solution (mesh refinement or similar).
 
         May be overridden for specific types of equations,
         do not forget to adapt Equation.u_history as well!
         """
+        return None
 
-    def save(self) -> dict[str, Any]:
+    def save(self) -> DataDict:
         """
         Save everything that is relevant for this equation to a dict.
 
@@ -209,7 +210,7 @@ class Equation:
         """
         return {"u": self.u}
 
-    def load(self, data: dict[str, Any]) -> None:
+    def load(self, data: DataDict) -> None:
         """
         Restore unknowns / parameters / etc. from the given dictionary.
 
@@ -224,7 +225,7 @@ class Equation:
         """
         self.u = data["u"]
 
-    def plot(self, ax: Any) -> None:
+    def plot(self, ax: Axes) -> None:
         """
         Plot the solution into a matplotlib axes object.
 

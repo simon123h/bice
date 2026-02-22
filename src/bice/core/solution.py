@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from .types import Axes, DataDict
+
 if TYPE_CHECKING:
     from bice.core.problem import Problem
 
@@ -37,11 +39,11 @@ class Solution:
         #       do we need to save every solution? maybe save bifurcations only
         #: The current problem state as a dictionary of data (equation's unknowns and
         #: parameters)
-        self.data = problem.save() if problem is not None else {}
+        self.data: DataDict = problem.save() if problem is not None else {}
         #: value of the continuation parameter
-        self.p = problem.get_continuation_parameter() if problem is not None else 0
+        self.p: float = float(problem.get_continuation_parameter()) if problem is not None else 0.0
         #: value of the solution norm
-        self.norm = problem.norm() if problem is not None else 0
+        self.norm: float = float(problem.norm()) if problem is not None else 0.0
         #: number of true positive eigenvalues
         self.nunstable_eigenvalues: int | None = None
         #: number of true positive and imaginary eigenvalues
@@ -269,7 +271,7 @@ class Branch:
         """
         return np.array([s.norm for s in self.solutions])
 
-    def bifurcations(self) -> list:
+    def bifurcations(self) -> list[Solution]:
         """
         List all bifurcation points on the branch.
 
@@ -294,7 +296,7 @@ class Branch:
         Tuple[np.ndarray, np.ndarray]
             Tuple of (parameter values, norm values).
         """
-        condition: bool | list[bool] = False
+        condition: list[bool] | np.ndarray = np.array([False] * len(self.solutions))
         if only == "stable":
             condition = [not s.is_stable() for s in self.solutions]
         elif only == "unstable":
@@ -304,7 +306,7 @@ class Branch:
         # mask lists where condition is met and return
         pvals = np.ma.masked_where(condition, self.parameter_vals())
         nvals = np.ma.masked_where(condition, self.norm_vals())
-        return (pvals, nvals)
+        return (np.asanyarray(pvals), np.asanyarray(nvals))
 
     def save(self, filename: str) -> None:
         """
@@ -316,7 +318,7 @@ class Branch:
             The filename to save to.
         """
         # dict of data to store
-        data = {}
+        data: DataDict = {}
         data["solution_data"] = [s.data for s in self.solutions]
         data["norm"] = [s.norm for s in self.solutions]
         data["p"] = [s.p for s in self.solutions]
@@ -350,9 +352,9 @@ class BifurcationDiagram:
         #: name of the norm
         self.norm_name = "norm"
         #: x-limits of the diagram
-        self.xlim = None
+        self.xlim: tuple[float, float] | None = None
         #: y-limits of the diagram
-        self.ylim = None
+        self.ylim: tuple[float, float] | None = None
 
     def new_branch(self, active: bool = True) -> Branch:
         """
@@ -415,7 +417,7 @@ class BifurcationDiagram:
         """
         self.branches = [b for b in self.branches if b.id != branch_id]
 
-    def plot(self, ax) -> None:
+    def plot(self, ax: Axes) -> None:
         """
         Plot the bifurcation diagram.
 
@@ -442,7 +444,7 @@ class BifurcationDiagram:
                 s = bif.bifurcation_type()
                 ax.annotate(" " + s, (bif.p, bif.norm))
         ax.plot(np.nan, np.nan, "*", color="C2", label="bifurcations")
-        ax.set_xlabel(self.parameter_name)
+        ax.set_xlabel(self.parameter_name if self.parameter_name else "parameter")
         ax.set_ylabel(self.norm_name)
         ax.legend()
 

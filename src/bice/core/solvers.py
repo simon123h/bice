@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, cast
+from typing import Any
 
 import numpy as np
 import scipy.linalg
@@ -11,7 +11,7 @@ import scipy.optimize
 import scipy.sparse as sp
 
 from .profiling import profile
-from .types import Matrix
+from .types import Array, Matrix
 
 
 class AbstractNewtonSolver:
@@ -38,10 +38,10 @@ class AbstractNewtonSolver:
 
     def solve(
         self,
-        f: Callable[[np.ndarray], np.ndarray],
-        u0: np.ndarray,
-        jac: Callable[[np.ndarray], Matrix] | None = None,
-    ) -> np.ndarray:
+        f: Callable[[Array], Array],
+        u0: Array,
+        jac: Callable[[Array], Matrix] | None = None,
+    ) -> Array:
         """
         Solve the system f(u) = 0 with the initial guess u0 and the Jacobian jac(u).
 
@@ -118,10 +118,10 @@ class MyNewtonSolver(AbstractNewtonSolver):
     @profile
     def solve(
         self,
-        f: Callable[[np.ndarray], np.ndarray],
-        u0: np.ndarray,
-        jac: Callable[[np.ndarray], Matrix],
-    ) -> np.ndarray:
+        f: Callable[[Array], Array],
+        u0: Array,
+        jac: Callable[[Array], Matrix],
+    ) -> Array:
         """
         Solve the system using a custom Newton iteration.
 
@@ -190,10 +190,10 @@ class NewtonSolver(AbstractNewtonSolver):
     @profile
     def solve(
         self,
-        f: Callable[[np.ndarray], np.ndarray],
-        u0: np.ndarray,
-        jac: Callable[[np.ndarray], Matrix] | None = None,
-    ) -> np.ndarray:
+        f: Callable[[Array], Array],
+        u0: Array,
+        jac: Callable[[Array], Matrix] | None = None,
+    ) -> Array:
         """
         Solve using scipy.optimize.root.
 
@@ -225,15 +225,15 @@ class NewtonSolver(AbstractNewtonSolver):
             my_jac = None
         else:
 
-            def jac_wrapper(u):
+            def jac_wrapper(u: Array) -> np.ndarray:
                 # wrapper for the Jacobian
                 # sparse matrices are not supported by scipy's root method :-/
                 # convert to dense
                 assert jac is not None
                 j = jac(u)
-                if sp.issparse(j):
-                    return j.toarray()
-                return j
+                if isinstance(j, sp.spmatrix):
+                    return np.asarray(j.toarray())
+                return np.asarray(j)
 
             my_jac = jac_wrapper
         # solve!
@@ -251,7 +251,7 @@ class NewtonSolver(AbstractNewtonSolver):
                 "iterations, error:",
                 err,
             )
-        return cast(np.ndarray, opt_result.x)
+        return np.asanyarray(opt_result.x)
 
 
 class NewtonKrylovSolver(AbstractNewtonSolver):
@@ -272,10 +272,10 @@ class NewtonKrylovSolver(AbstractNewtonSolver):
     @profile
     def solve(
         self,
-        f: Callable[[np.ndarray], np.ndarray],
-        u0: np.ndarray,
-        jac: Callable[[np.ndarray], Matrix] | None = None,
-    ) -> np.ndarray:
+        f: Callable[[Array], Array],
+        u0: Array,
+        jac: Callable[[Array], Matrix] | None = None,
+    ) -> Array:
         """
         Solve using Krylov subspace method.
 
@@ -323,7 +323,7 @@ class NewtonKrylovSolver(AbstractNewtonSolver):
                 err,
             )
         # return the result vector
-        return cast(np.ndarray, opt_result.x)
+        return np.asanyarray(opt_result.x)
 
 
 class EigenSolver:

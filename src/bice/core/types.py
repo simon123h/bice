@@ -1,17 +1,33 @@
 """Common type aliases used throughout the package."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, TypeAlias, Union
+
 import numpy as np
 import numpy.typing
 import scipy.sparse as sp
 
+if TYPE_CHECKING:
+    import matplotlib.axes
+
 # common type for shapes
-Shape = int | tuple[int, ...]
+Shape: TypeAlias = int | tuple[int, ...]
 
 # Common type for Arrays, e.g. the vector of unknowns
-Array = numpy.typing.NDArray[np.float64 | np.complexfloating]
+Array: TypeAlias = numpy.typing.NDArray[np.float64 | np.complexfloating]
 
 # Objects that can be coerced into an Array
-ArrayLike = numpy.typing.ArrayLike
+ArrayLike: TypeAlias = numpy.typing.ArrayLike
 
 # Common type for dense and sparse matrices
-Matrix = np.ndarray | sp.spmatrix
+Matrix: TypeAlias = Union[np.ndarray, sp.spmatrix]
+
+# Common type for matplotlib axes
+if TYPE_CHECKING:
+    Axes: TypeAlias = matplotlib.axes.Axes
+else:
+    Axes: TypeAlias = Any
+
+# Dictionary for serialized data
+DataDict: TypeAlias = dict[str, Any]

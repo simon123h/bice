@@ -1,12 +1,12 @@
 "Bifurcation tracking classes for the bice package."
 
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import scipy.sparse as sp
 
 from bice.core.equation import Equation
-from bice.core.types import Array, Matrix
+from bice.core.types import Array, Axes, Matrix
 
 
 class BifurcationConstraint(Equation):
@@ -18,7 +18,7 @@ class BifurcationConstraint(Equation):
     a null vector).
     """
 
-    def __init__(self, phi: np.ndarray, free_parameter: tuple[Any, str]):
+    def __init__(self, phi: Array, free_parameter: tuple[object, str]):
         """
         Initialize the BifurcationConstraint.
 
@@ -33,15 +33,17 @@ class BifurcationConstraint(Equation):
         # the constraint equation couples to some other equations of the problem
         self.is_coupled = True
         # copy and normalize the null-eigenvector phi
-        phi = phi.copy() / np.linalg.norm(phi)
+        phi = cast(Array, phi.copy() / np.linalg.norm(phi))
         #: reference to the free parameter
         self.free_parameter = free_parameter
         # get the value of the free parameter
-        param_obj, param_name = tuple(self.free_parameter)
+        param_obj, param_name = self.free_parameter
         parameter_value = getattr(param_obj, param_name)
         # the unknowns are the null-eigenvector and the value of the free parameter,
         # so we have N + 1 degrees of freedom, where N is the #dofs of the problem
-        self.u = np.concatenate((phi, np.array([parameter_value])))
+        u_new = cast(Array, np.concatenate((phi, [parameter_value])))
+        self.reshape(u_new.shape)
+        self.u[:] = u_new
 
         # the constraint can disable itself with this attribute,
         # so that only the original (unextended) system is obtained,
@@ -182,7 +184,7 @@ class BifurcationConstraint(Equation):
             Always 0 as it couples to no time-derivatives.
         """
         # couples to no time-derivatives
-        return 0
+        return 0.0
 
     def original_jacobian(self, u: Array) -> Array:
         """
@@ -208,7 +210,7 @@ class BifurcationConstraint(Equation):
         self_idx = self.group.idx[self]
         # remove those columns/rows of the Jacobian that belong to self,
         # so we are left with the original (unextended) Jacobian
-        return np.delete(np.delete(Gu, self_idx, axis=0), self_idx, axis=1)
+        return np.asanyarray(np.delete(np.delete(Gu, self_idx, axis=0), self_idx, axis=1))
 
     def actions_before_evaluation(self, u: Array) -> None:
         """
@@ -223,7 +225,7 @@ class BifurcationConstraint(Equation):
         """
         # TODO: these methods are currently not called from anywhere in the code!
         # write the free parameter back from the given unknowns
-        param_obj, param_name = tuple(self.free_parameter)
+        param_obj, param_name = self.free_parameter
         setattr(param_obj, param_name, u[-1])
 
     def actions_after_newton_solve(self) -> None:
@@ -234,10 +236,10 @@ class BifurcationConstraint(Equation):
         """
         # TODO: these methods are currently not called from anywhere in the code!
         # write the free parameter back from the unknowns
-        param_obj, param_name = tuple(self.free_parameter)
+        param_obj, param_name = self.free_parameter
         setattr(param_obj, param_name, self.u[-1])
 
-    def plot(self, ax) -> None:
+    def plot(self, ax: Axes) -> None:
         """
         Plot the constraint state (no-op).
 

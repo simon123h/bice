@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import scipy.integrate
+from scipy.integrate import BDF as ScipyBDF
 
 from .time_steppers import TimeStepper
 
@@ -96,7 +97,7 @@ class BDF(TimeStepper):
         #: maximum allowed time step size
         self.dt_max = dt_max
         # internal storage for the scipy BDF solver instance
-        self.bdf = None
+        self.bdf: ScipyBDF | None = None
         self.factory_reset()
 
     def step(self, problem: Problem) -> None:
@@ -109,13 +110,12 @@ class BDF(TimeStepper):
             The problem instance to step in time.
         """
         # perform the step
-        # cast to Any because scipy.integrate.BDF attributes are not always correctly typed by mypy
-        bdf = cast(Any, self.bdf)
-        bdf.step()
+        assert self.bdf is not None
+        self.bdf.step()
         # assign the new variables
-        self.dt = bdf.step_size
-        self.problem.time = bdf.t
-        self.problem.u = bdf.y
+        self.dt = float(self.bdf.step_size)
+        self.problem.time = float(self.bdf.t)
+        self.problem.u = self.bdf.y
 
     def factory_reset(self) -> None:
         """

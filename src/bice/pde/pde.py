@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import cast
-
 import numpy as np
 
 from bice.core.equation import Equation
@@ -29,7 +27,7 @@ class PartialDifferentialEquation(Equation):
         """
         super().__init__(shape)
         #: the spatial coordinates
-        self.x: list[np.ndarray] | None
+        self.x: list[np.ndarray] | np.ndarray | None
         if len(self.shape) > 0:
             self.x = [np.linspace(0, 1, self.shape[-1])]
         else:
@@ -45,7 +43,8 @@ class PartialDifferentialEquation(Equation):
         int
             The spatial dimension.
         """
-        assert self.x is not None
+        if self.x is None:
+            return 0
         if isinstance(self.x, np.ndarray):
             return self.x.ndim
         return len(self.x)
@@ -65,10 +64,9 @@ class PartialDifferentialEquation(Equation):
             The time derivative vector.
         """
         # if u is not given, use self.u
-        if u is None:
-            u = self.u
+        u_in = self.u if u is None else u
         # typically, the mass matrix determines which part of rhs(u) go into du/dt
-        return cast(Array, self.mass_matrix().dot(self.rhs(u)))
+        return np.asanyarray(self.mass_matrix().dot(self.rhs(u_in)))
 
     def du_dx(self, u: Array | None = None, direction: int = 0) -> Array:
         """

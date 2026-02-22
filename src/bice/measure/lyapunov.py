@@ -4,6 +4,7 @@ import numpy as np
 
 from bice.core.problem import Problem
 from bice.core.profiling import profile
+from bice.core.types import Array
 
 
 class LyapunovExponentCalculator:
@@ -48,10 +49,10 @@ class LyapunovExponentCalculator:
         #: cumulative variable for the total integration time
         self.T = 0.0
         # storage for the perturbation vectors and the reference trajectory
-        self.perturbations: list = []
+        self.perturbations: list[Array] = []
         self.generate_perturbation_vectors()
         # cumulative sum of the exponents
-        self.__sum = np.zeros(nexponents)
+        self.__sum: np.ndarray = np.zeros(nexponents)
 
     @property
     def exponents(self) -> np.ndarray:

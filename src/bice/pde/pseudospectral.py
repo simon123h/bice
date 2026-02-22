@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from bice.core.types import Shape
+from bice.core.types import Array, Shape
 
 from .pde import PartialDifferentialEquation
 
@@ -21,7 +21,7 @@ class PseudospectralEquation(PartialDifferentialEquation):
     def __init__(self, shape: Shape | None = None) -> None:
         super().__init__(shape)
         # the spatial coordinates
-        self.x: list[np.ndarray] | None
+        self.x: list[np.ndarray] | np.ndarray | None
         if len(self.shape) > 0:
             self.x = [np.linspace(0, 1, self.shape[-1])]
         else:

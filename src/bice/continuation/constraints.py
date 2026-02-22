@@ -8,7 +8,7 @@ import numpy as np
 import scipy.sparse as sp
 
 from bice.core.equation import Equation
-from bice.core.types import Array, Shape
+from bice.core.types import Array, Axes, Shape
 
 if TYPE_CHECKING:
     from bice.pde import PartialDifferentialEquation
@@ -45,9 +45,9 @@ class ConstraintEquation(Equation):
             Always 0 as constraints usually couple to no time-derivatives.
         """
         # constraint usually couples to no time-derivatives
-        return 0
+        return 0.0
 
-    def plot(self, ax) -> None:
+    def plot(self, ax: Axes) -> None:
         """
         Plot the constraint state (no-op).
 

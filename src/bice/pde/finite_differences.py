@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, Union
 
 import findiff
 import numdifftools.fornberg as fornberg
@@ -10,7 +10,7 @@ import numpy as np
 import scipy.sparse as sp
 
 from bice.core import profile
-from bice.core.types import Array, Matrix, Shape
+from bice.core.types import Array, DataDict, Matrix, Shape
 
 from .pde import PartialDifferentialEquation
 
@@ -34,11 +34,12 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         """
         super().__init__(shape)
         #: List of differential matrices: ddx[order] for d^order / dx^order operator
-        self.ddx: list[Any] = []
+        #  Outer list is derivative order, inner list is spatial dimension
+        self.ddx: list[list[AffineOperator | Matrix]] = []
         #: first order derivative operator
         self.nabla: AffineOperator | list[Matrix] | None = None
         #: second order derivative operator (Laplacian)
-        self.laplace: AffineOperator | list[Matrix] | None = None
+        self.laplace: AffineOperator | Matrix | None = None
         #: the spatial coordinates
         self.x: list[np.ndarray] | None = None
         if len(self.shape) > 0:
@@ -56,7 +57,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         self.max_dx = 2
 
     @profile
-    def build_FD_matrices(self, approx_order: int = 2):
+    def build_FD_matrices(self, approx_order: int = 2) -> list[list[AffineOperator | Matrix]]:
         """
         Build finite difference differentiation matrices.
 
@@ -82,8 +83,10 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # check for spatial dimension:
         if self.spatial_dimension == 1:
             # 1d case: proceed with x-vector
-            x = self.x[0] if isinstance(self.x, list) else self.x
-            return self.build_FD_matrices_1d(x=x, approx_order=approx_order)
+            grid_x = self.x[0] if isinstance(self.x, list) else (self.x if self.x is not None else np.array([]))
+            ops_1d = self.build_FD_matrices_1d(x=grid_x, approx_order=approx_order)
+            self.ddx = [[op] for op in ops_1d]
+            return self.ddx
         # else, higher-than-1d case:
         # construct FD matrices from 1d FD matrices for each spatial dimension
         # TODO: support higher than 2 dimensions
@@ -110,13 +113,13 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         D2x_2d = sp.kron(Iy, D2x_1d)
         D2y_2d = sp.kron(D2y_1d, Ix)
         # store operators in class member variables
-        self.ddx = [[Ix, Iy], [Dx_2d, Dy_2d], [D2x_2d, D2y_2d]]
-        self.nabla = [Dx_2d, Dy_2d]  # nabla operator
-        self.laplace = D2x_2d + D2y_2d  # laplace operator
+        self.ddx = [[sp.csr_matrix(Ix), sp.csr_matrix(Iy)], [sp.csr_matrix(Dx_2d), sp.csr_matrix(Dy_2d)], [sp.csr_matrix(D2x_2d + D2y_2d)]]
+        self.nabla = [sp.csr_matrix(Dx_2d), sp.csr_matrix(Dy_2d)]  # nabla operator
+        self.laplace = sp.csr_matrix(D2x_2d + D2y_2d)  # laplace operator
         return self.ddx
 
     @profile
-    def build_FD_matrices_1d(self, approx_order=2, x=None) -> list[AffineOperator]:
+    def build_FD_matrices_1d(self, approx_order: int = 2, x: np.ndarray | None = None) -> list[AffineOperator]:
         """
         Build 1D finite difference differentiation matrices.
 
@@ -138,7 +141,9 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         ao = 2 * (approx_order // 2)  # has to be an even number
         # maximum derivative order of operators to build
         max_order = 2
-        N = len(x)
+        # Use provided x or default to self.x[0]
+        grid_x = x if x is not None else (self.x[0] if self.x is not None else np.array([]))
+        N = len(grid_x)
         # check if boundary conditions are set, otherwise set default
         if self.bc is None:
             self.bc = PeriodicBC()
@@ -153,18 +158,18 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
                 "before building the FD matrices in the Equation object.",
             )
         # build boundary condition operators given the grid points and approximation order
-        self.bc.update(x, approx_order=ao)
+        self.bc.update(grid_x, approx_order=ao)
         # boundary conditions implement an affine operator (Q*u + G) with a matrix Q and
         # a constant G, that maps the unknowns u to a 'boundary padded vector' with ghost points
         # at the boundaries.
         # pad x vector with x-values of ghost nodes
-        x_pad = self.bc.pad_x(x)
+        x_pad = self.bc.pad_x(grid_x)
         # the number of ghost points
         Ngp = len(x_pad) - N
 
         # list of differentiation operators up to desired order d^n / dx^n
         # NOTE: ddx matrices are of shape N x (N+Ngp), because they work on boundary padded vectors
-        self.ddx = []
+        self.ddx_1d: list[AffineOperator] = []
         # higher order operators
         for order in range(0, max_order + 1):
             if order == 0:
@@ -180,15 +185,15 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
             opQ = op.dot(self.bc.Q)
             opG = op.dot(np.zeros(N + Ngp) + self.bc.G)
             # store as new affine operator Op(u) = ddx*(Q*u + G) = opQ*u + opG
-            self.ddx.append(AffineOperator(opQ, opG))
+            self.ddx_1d.append(AffineOperator(opQ, opG))
 
         # special names for some operators:
         # nabla operator: d / dx
-        self.nabla = self.ddx[1]
+        self.nabla = self.ddx_1d[1]
         # laplace operator: d^2 / dx^2
-        self.laplace = self.ddx[2]
+        self.laplace = self.ddx_1d[2]
         # return the resulting list of FD matrices
-        return self.ddx
+        return self.ddx_1d
 
     def jacobian(self, u: Array) -> Matrix:
         """
@@ -207,9 +212,8 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # FD Jacobians are typically sparse, so we convert to a sparse matrix
         return sp.csr_matrix(super().jacobian(u))
 
-    # TODO: support higher dimensions than 1d
     @profile
-    def adapt(self) -> None:
+    def adapt(self) -> tuple[float, float] | None:
         """
         Perform adaption of the grid to the solution.
 
@@ -218,7 +222,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         """
         # mesh adaption is only supported for 1d
         if self.spatial_dimension > 1:
-            return
+            return None
         # calculate error estimate
         error_estimate = self.refinement_error_estimate()
         # adapt the mesh
@@ -266,6 +270,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
                 self.u_history[t] = np.atleast_1d(np.interp(x_new_arr, x_old, u_hist))
         # re-build the finite difference matrices
         self.build_FD_matrices()
+        return (float(min(error_estimate)), float(max(error_estimate)))
 
     @profile
     def refinement_error_estimate(self) -> np.ndarray:
@@ -282,11 +287,11 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # calculate integral of curvature:
         # error = | \int d^2 u / dx^2 * test(x) dx |
         # NOTE: overwrite this method, if different weights of the curvatures are needed
-        err = 0
         assert self.x is not None
         dx = np.diff(self.x[0])
         dx_vals = [max(dx[i], dx[i + 1]) for i in range(len(dx) - 1)]
-        dx_padded = np.concatenate(cast(Any, ([0], dx_vals, [0])))
+        dx_padded = np.concatenate(([0.0], dx_vals, [0.0]))
+        err: np.ndarray = np.zeros_like(dx_padded)
         nvars = self.shape[0] if len(self.shape) > 1 else 1
         for n in range(nvars):
             u = self.u[n] if len(self.shape) > 1 else self.u
@@ -295,9 +300,9 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
             if isinstance(self.laplace, AffineOperator):
                 curv = self.laplace(u)
             else:
-                curv = self.laplace[0].dot(u)
-            err += np.abs(curv * dx_padded)
-        return cast(np.ndarray, err)
+                curv = self.laplace.dot(u)
+            err = err + np.abs(curv * dx_padded)
+        return np.asarray(err)
 
     def du_dx(self, u: Array | None = None, direction: int = 0) -> Array:
         """
@@ -318,12 +323,13 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         if u is None:
             u = self.u
         assert self.nabla is not None
-        if self.spatial_dimension == 1:  # 1d case
-            assert isinstance(self.nabla, AffineOperator)
-            return cast(Array, self.nabla(u))
-        return cast(Array, cast(list, self.nabla)[direction].dot(u))
+        if isinstance(self.nabla, AffineOperator):
+            return np.asanyarray(self.nabla(u))
+        if isinstance(self.nabla, list):
+            return np.asanyarray(self.nabla[direction].dot(u))
+        raise TypeError(f"nabla has unexpected type: {type(self.nabla)}")
 
-    def save(self) -> dict:
+    def save(self) -> DataDict:
         """
         Save the state of the equation, including the x-values.
 
@@ -336,7 +342,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         data.update({"x": self.x})
         return data
 
-    def load(self, data: dict) -> None:
+    def load(self, data: DataDict) -> None:
         """
         Load the state of the equation, including the x-values.
 
@@ -368,9 +374,9 @@ class AffineOperator:
             The constant (affine) part.
         """
         #: linear part
-        self.Q = Q
+        self.Q: Matrix = Q
         #: constant (affine) part
-        self.G = G
+        self.G: float | Array = G
 
     def __call__(self, u: Array | None = None, g: float = 1.0) -> Matrix | Array:
         """
@@ -397,7 +403,7 @@ class AffineOperator:
         if u.ndim > 1:
             return self.Q.dot(u) + sp.coo_matrix(g * np.resize(self.G, u.shape))
         # else, u is a vector, simply perform the Q*u + G
-        return self.Q.dot(u) + g * self.G
+        return np.asanyarray(self.Q.dot(u) + g * self.G)
 
     def dot(self, u: Array) -> Array:
         """
@@ -415,7 +421,7 @@ class AffineOperator:
         Array
             The result of the operator application.
         """
-        return self.__call__(u)
+        return np.asanyarray(self.__call__(u))
 
     def is_linear(self) -> bool:
         """
@@ -476,7 +482,7 @@ class FDBoundaryConditions:
             The padded vector.
         """
         assert self.Q is not None
-        return cast(Array, self.Q.dot(u) + self.G)
+        return np.asanyarray(self.Q.dot(u) + self.G)
 
     def pad_x(self, x: Array) -> Array:
         """
@@ -494,7 +500,7 @@ class FDBoundaryConditions:
         """
         dxl = x[1] - x[0]
         dxr = x[-1] - x[-2]
-        return np.concatenate(cast(Any, ([x[0] - dxl], x, [x[-1] + dxr])))
+        return np.concatenate(([x[0] - dxl], x, [x[-1] + dxr]))
 
 
 class PeriodicBC(FDBoundaryConditions):
@@ -547,12 +553,12 @@ class PeriodicBC(FDBoundaryConditions):
             self.boundary_dx = x[1] - x[0]
         dx_lr = np.array([self.boundary_dx])
         # build the full list of dx's for the periodic domain
-        dx = np.concatenate(cast(Any, (dx_lr, np.diff(x), dx_lr)))
+        dx = np.concatenate((dx_lr, np.diff(x), dx_lr))
         # construct the left and right ghost nodes (number of ghost points = self.order)
         x_l = [x[0] - sum(dx[-n - 1 :]) for n in range(self.order)][::-1]
         x_r = [x[-1] + sum(dx[: n + 1]) for n in range(self.order)]
         # concatenate for full padded x vector
-        return np.concatenate(cast(Any, (x_l, x, x_r)))
+        return np.concatenate((x_l, x, x_r))
 
 
 class RobinBC(FDBoundaryConditions):

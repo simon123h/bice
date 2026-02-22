@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import cast
-
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.linalg
@@ -11,7 +9,7 @@ import scipy.sparse as sp
 
 from bice.core.equation import Equation
 from bice.core.profiling import profile
-from bice.core.types import Array, Matrix
+from bice.core.types import Array, Axes, DataDict, Matrix
 
 # TODO: make this work for multiple variables, regarding ref_eq.shape
 
@@ -70,7 +68,7 @@ class TimePeriodicOrbitHandler(Equation):
         float
             The period length.
         """
-        return cast(float, self.u[-1])
+        return float(self.u[-1])
 
     @T.setter
     def T(self, v: float) -> None:
@@ -311,13 +309,17 @@ class TimePeriodicOrbitHandler(Equation):
         # if N is very small, fallback to dense matrices
         if N < 100:
             # make sure both are dense
-            if sp.issparse(A):
-                A = A.todense()
-            if sp.issparse(M):
-                M = M.todense()
+            if isinstance(A, sp.spmatrix):
+                A_dense = A.todense()
+            else:
+                A_dense = A
+            if isinstance(M, sp.spmatrix):
+                M_dense = M.todense()
+            else:
+                M_dense = M
             # calculate eigenvalues and return
-            eigval, _ = scipy.linalg.eig(A, M)
-            return cast(Array, eigval[:k])
+            eigval, _ = scipy.linalg.eig(A_dense, M_dense)
+            return np.asanyarray(eigval[:k])
         else:
             # make sure both are sparse
             if not sp.issparse(A):
@@ -326,11 +328,11 @@ class TimePeriodicOrbitHandler(Equation):
                 M = sp.csr_matrix(M)
             # calculate eigenvalues and return
             eigval, _ = sp.linalg.eigs(A, k=k, M=M, sigma=1)
-            return cast(Array, eigval)
+            return np.asanyarray(eigval)
 
     # TODO: test this
     # TODO: ddt does currently not support non-uniform time, make uniform?
-    def adapt(self) -> tuple:
+    def adapt(self) -> tuple[float, float]:
         """
         Adapt the time mesh to the solution.
 
@@ -391,9 +393,9 @@ class TimePeriodicOrbitHandler(Equation):
         # invalidate the cached Jacobians
         self._jacobian_cache = []
         # return min/max error estimates
-        return (min(error_estimate), max(error_estimate))
+        return (float(min(error_estimate)), float(max(error_estimate)))
 
-    def save(self) -> dict:
+    def save(self) -> DataDict:
         """
         Save the state of the equation, including the dt-values.
 
@@ -406,7 +408,7 @@ class TimePeriodicOrbitHandler(Equation):
         data.update({"dt": self.dt})
         return data
 
-    def load(self, data) -> None:
+    def load(self, data: DataDict) -> None:
         """
         Load the state of the equation, including the dt-values.
 
@@ -423,7 +425,7 @@ class TimePeriodicOrbitHandler(Equation):
 
         super().load(data)
 
-    def plot(self, ax) -> None:
+    def plot(self, ax: Axes) -> None:
         """
         Plot the solutions for different timesteps.
 

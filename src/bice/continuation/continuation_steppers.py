@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import numpy as np
 import scipy.sparse as sp
@@ -239,7 +239,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
             # else, retry with a smaller step size
             self.ds /= 2
             print(f"Newton solver did not converge, trying again with ds = {self.ds:.3e}")
-            return cast(None, self.step(problem))
+            self.step(problem)
 
         # adapt step size
         if self.adapt_stepsize:
@@ -273,6 +273,6 @@ class PseudoArclengthContinuation(ContinuationStepper):
             A = sp.csr_matrix(A)
         # use either a solver for sparse matrices...
         if sp.issparse(A):
-            return cast(Array, sp.linalg.spsolve(sp.csr_matrix(A), b))
+            return np.asanyarray(sp.linalg.spsolve(sp.csr_matrix(A), b))
         # ...or simply the one for full rank matrices
-        return cast(Array, np.linalg.solve(A, b))
+        return np.asanyarray(np.linalg.solve(A, b))
