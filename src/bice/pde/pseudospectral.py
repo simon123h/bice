@@ -1,3 +1,4 @@
+"Pseudospectral discretization for Partial Differential Equations."
 
 import numpy as np
 
@@ -8,6 +9,8 @@ from .pde import PartialDifferentialEquation
 
 class PseudospectralEquation(PartialDifferentialEquation):
     """
+    Base class for PDEs using a pseudospectral scheme.
+
     The PseudospectralEquation is a subclass of the PartialDifferentialEquation
     and provides some useful routines that are needed for implementing
     PDEs with a pseudospectral scheme.
@@ -26,8 +29,9 @@ class PseudospectralEquation(PartialDifferentialEquation):
 
     def build_kvectors(self, real_fft: bool = False) -> None:
         """
-        Build the k-vectors for the Fourier space
-        set real=True, if real input to the FFT can be assumed (rfft)
+        Build the k-vectors for the Fourier space.
+
+        Set real=True, if real input to the FFT can be assumed (rfft)
         (the k-vectors will be smaller and rfft is more performant than fft).
         """
         assert self.x is not None
