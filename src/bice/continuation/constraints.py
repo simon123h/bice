@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 import scipy.sparse as sp
@@ -71,7 +71,7 @@ class VolumeConstraint(ConstraintEquation):
     multiplier that can be interpreted as an influx into the system.
     """
 
-    def __init__(self, reference_equation: Equation, variable: Optional[int] = None) -> None:
+    def __init__(self, reference_equation: Equation, variable: int | None = None) -> None:
         """
         Initialize the VolumeConstraint.
 
@@ -91,7 +91,7 @@ class VolumeConstraint(ConstraintEquation):
         #: multiplier)
         self.u = np.zeros(1)
         #: This parameter allows for prescribing a fixed volume (unless it is None)
-        self.fixed_volume: Optional[float] = None
+        self.fixed_volume: float | None = None
 
     def rhs(self, u: Array) -> Array:
         """
@@ -168,7 +168,7 @@ class TranslationConstraint(ConstraintEquation):
     def __init__(
         self,
         reference_equation: PartialDifferentialEquation,
-        variable: Optional[int] = None,
+        variable: int | None = None,
         direction: int = 0,
     ) -> None:
         """

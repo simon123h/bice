@@ -1,5 +1,5 @@
 r"""
-Bratu–Gelfand problem
+Bratu–Gelfand problem.
 
 (in parts stolen from scikit-fem's ex23.py, originally using pacopy)
 

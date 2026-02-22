@@ -54,13 +54,13 @@ class VolumeConstraint(ConstraintEquation):
         # reference to the equation, shape and indices of the unknowns that we work on
         eq = self.ref_eq
         eq_idx = self.group.idx[eq]
-        self_idx = self.group.idx[self]
+        self.group.idx[self]
         # split it into the parts that are referenced by the first two variables
         var_ndofs = np.prod(self.ref_eq.shape[1:])
-        eq_idx1 = slice(eq_idx.start + 0 * var_ndofs, eq_idx.start + 1 * var_ndofs)
-        eq_idx2 = slice(eq_idx.start + 1 * var_ndofs, eq_idx.start + 2 * var_ndofs)
+        slice(eq_idx.start + 0 * var_ndofs, eq_idx.start + 1 * var_ndofs)
+        slice(eq_idx.start + 1 * var_ndofs, eq_idx.start + 2 * var_ndofs)
         # obtain the unknowns
-        eq_u = u[eq_idx]
+        u[eq_idx]
         N = eq.ndofs
         # eq_u_old = self.group.u[eq_idx]
         # influx = u[self_idx][0]

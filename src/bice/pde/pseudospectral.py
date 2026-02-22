@@ -29,7 +29,7 @@ class PseudospectralEquation(PartialDifferentialEquation):
         """
         Build the k-vectors for the Fourier space
         set real=True, if real input to the FFT can be assumed (rfft)
-        (the k-vectors will be smaller and rfft is more performant than fft)
+        (the k-vectors will be smaller and rfft is more performant than fft).
         """
         assert self.x is not None
         if len(self.x) == 1:

@@ -5,9 +5,7 @@ from bice.core.equation import Equation, EquationGroup
 
 
 class SimpleEquation(Equation):
-    """
-    A simple equation: rhs(u) = u * multiplier
-    """
+    """A simple equation: rhs(u) = u * multiplier."""
 
     def __init__(self, shape, multiplier=1.0):
         super().__init__(shape)
@@ -25,7 +23,7 @@ class SimpleEquation(Equation):
 class CoupledEquation(Equation):
     """
     An equation that depends on another equation.
-    rhs(u_this) = u_this - u_other
+    rhs(u_this) = u_this - u_other.
     """
 
     def __init__(self, shape, other_eq):

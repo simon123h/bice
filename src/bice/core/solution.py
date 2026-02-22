@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -20,7 +20,7 @@ class Solution:
     # static variable counting the total number of Solutions
     _solution_count = 0
 
-    def __init__(self, problem: Optional[Problem] = None) -> None:
+    def __init__(self, problem: Problem | None = None) -> None:
         """
         Initialize the Solution.
 
@@ -43,16 +43,16 @@ class Solution:
         #: value of the solution norm
         self.norm = problem.norm() if problem is not None else 0
         #: number of true positive eigenvalues
-        self.nunstable_eigenvalues: Optional[int] = None
+        self.nunstable_eigenvalues: int | None = None
         #: number of true positive and imaginary eigenvalues
-        self.nunstable_imaginary_eigenvalues: Optional[int] = None
+        self.nunstable_imaginary_eigenvalues: int | None = None
         #: optional reference to the corresponding branch
-        self.branch: Optional[Branch] = None
+        self.branch: Branch | None = None
         # cache for the bifurcation type
-        self._bifurcation_type: Optional[str] = None
+        self._bifurcation_type: str | None = None
 
     @property
-    def neigenvalues_crossed(self) -> Optional[int]:
+    def neigenvalues_crossed(self) -> int | None:
         """
         Return how many eigenvalues have crossed the imaginary axis.
 
@@ -77,7 +77,7 @@ class Solution:
         return self.nunstable_eigenvalues - bps[index].nunstable_eigenvalues
 
     @property
-    def nimaginary_eigenvalues_crossed(self) -> Optional[int]:
+    def nimaginary_eigenvalues_crossed(self) -> int | None:
         """
         Return how many eigenvalues have crossed the imaginary axis.
 
@@ -101,7 +101,7 @@ class Solution:
         # return the difference in unstable eigenvalues to the previous solution
         return self.nunstable_imaginary_eigenvalues - bps[index].nunstable_imaginary_eigenvalues
 
-    def is_stable(self) -> Optional[bool]:
+    def is_stable(self) -> bool | None:
         """
         Check if the solution is stable.
 
@@ -172,7 +172,7 @@ class Solution:
         # return type
         return self._bifurcation_type
 
-    def get_neighboring_solution(self, distance: int) -> Optional[Solution]:
+    def get_neighboring_solution(self, distance: int) -> Solution | None:
         """
         Get access to the neighboring solution in the branch.
 
@@ -198,9 +198,7 @@ class Solution:
 
 
 class Branch:
-    """
-    Stores a list of solution objects from a parameter continuation.
-    """
+    """Stores a list of solution objects from a parameter continuation."""
 
     # static variable counting the number of Branch instances
     _branch_count = 0
@@ -276,7 +274,7 @@ class Branch:
         """
         return [s for s in self.solutions if s.is_bifurcation()]
 
-    def data(self, only: Optional[str] = None) -> Tuple[np.ndarray, np.ndarray]:
+    def data(self, only: str | None = None) -> tuple[np.ndarray, np.ndarray]:
         """
         Return the list of parameters and norms of the branch.
 
@@ -336,7 +334,7 @@ class BifurcationDiagram:
         #: storage for the currently active branch
         self.active_branch: Branch = self.new_branch()
         #: name of the continuation parameter
-        self.parameter_name: Optional[str] = None
+        self.parameter_name: str | None = None
         #: name of the norm
         self.norm_name = "norm"
         #: x-limits of the diagram
@@ -375,7 +373,7 @@ class BifurcationDiagram:
         """
         return self.active_branch.solutions[-1]
 
-    def get_branch_by_ID(self, branch_id: int) -> Optional[Branch]:
+    def get_branch_by_ID(self, branch_id: int) -> Branch | None:
         """
         Return a branch by its ID.
 

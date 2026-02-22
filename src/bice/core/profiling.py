@@ -106,9 +106,7 @@ class MethodProfile:
 
 
 class Profiler:
-    """
-    Static class for accessing/controlling the profiling of the code.
-    """
+    """Static class for accessing/controlling the profiling of the code."""
 
     __start_time: Optional[float] = None
     __root_profile: MethodProfile = MethodProfile("")

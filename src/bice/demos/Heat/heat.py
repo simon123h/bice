@@ -16,7 +16,7 @@ class HeatEquation(FiniteDifferencesEquation):
     r"""
     Finite difference implementation of the 1-dimensional Heat-Equation
     equation, a linear PDE
-    \partial t u &= -k \Delta u
+    \partial t u &= -k \Delta u.
     """
 
     def __init__(self, N, L):

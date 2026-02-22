@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 import findiff
 import numdifftools.fornberg as fornberg
 import numpy as np
@@ -23,7 +21,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
     boundary conditions. Uses the 'findiff' package for matrix generation.
     """
 
-    def __init__(self, shape: Optional[Shape] = None) -> None:
+    def __init__(self, shape: Shape | None = None) -> None:
         """
         Initialize the FiniteDifferencesEquation.
 
@@ -36,15 +34,15 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         #: List of differential matrices: ddx[order] for d^order / dx^order operator
         self.ddx: list = []
         #: first order derivative operator
-        self.nabla: Optional[Union[AffineOperator, list]] = None
+        self.nabla: Union[AffineOperator, list] | None = None
         #: second order derivative operator (Laplacian)
-        self.laplace: Optional[Union[AffineOperator, list]] = None
+        self.laplace: Union[AffineOperator, list] | None = None
         #: the spatial coordinates
-        self.x: Optional[list] = None
+        self.x: list | None = None
         if len(self.shape) > 0:
             self.x = [np.linspace(0, 1, self.shape[-1], endpoint=False)]
         #: the boundary conditions, if None, defaults to periodic BCs
-        self.bc: Optional[FDBoundaryConditions] = None
+        self.bc: FDBoundaryConditions | None = None
         # mesh adaption settings
         #: mesh adaption: maximum error tolerance
         self.max_refinement_error = 1e-0
@@ -365,7 +363,7 @@ class AffineOperator:
         #: constant (affine) part
         self.G = G
 
-    def __call__(self, u: Optional[Array] = None, g: float = 1.0) -> Union[Matrix, Array]:
+    def __call__(self, u: Array | None = None, g: float = 1.0) -> Union[Matrix, Array]:
         """
         Apply the operator to a vector/tensor u.
 
@@ -433,7 +431,7 @@ class FDBoundaryConditions:
         """Initialize the boundary conditions."""
         # linear part: ((N+Ngp) x N)-matrix)
         #: linear part of the boundary operator
-        self.Q: Optional[Matrix] = None
+        self.Q: Matrix | None = None
         #: constant part of the boundary operator
         self.G: Union[float, Array] = 0
 
@@ -491,9 +489,7 @@ class FDBoundaryConditions:
 
 
 class PeriodicBC(FDBoundaryConditions):
-    """
-    Periodic boundary conditions for finite difference schemes.
-    """
+    """Periodic boundary conditions for finite difference schemes."""
 
     def __init__(self):
         """Initialize the periodic boundary conditions."""
@@ -501,7 +497,7 @@ class PeriodicBC(FDBoundaryConditions):
         #: how many ghost nodes at each boundary?
         self.order = 1
         #: the virtual distance between the left and right boundary node
-        self.boundary_dx: Optional[float] = None
+        self.boundary_dx: float | None = None
 
     def update(self, x: Array, approx_order: int) -> None:
         """
@@ -551,9 +547,7 @@ class PeriodicBC(FDBoundaryConditions):
 
 
 class RobinBC(FDBoundaryConditions):
-    """
-    Robin boundary conditions of the form a*u(x_b) + b*u'(x_b) = c.
-    """
+    """Robin boundary conditions of the form a*u(x_b) + b*u'(x_b) = c."""
 
     def __init__(self, a=(0, 0), b=(1, 1), c=(0, 0)):
         """
