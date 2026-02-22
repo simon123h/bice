@@ -1,3 +1,5 @@
+"""Runge-Kutta time-stepping schemes."""
+
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -10,11 +12,21 @@ if TYPE_CHECKING:
 
 class RungeKutta4(TimeStepper):
     """
-    Classical Runge-Kutta-4 scheme
+    Classical fourth-order Runge-Kutta (RK4) scheme.
+
+    A popular fourth-order method for the numerical solution of ordinary
+    differential equations.
     """
 
-    # perform timestep
     def step(self, problem: "Problem") -> None:
+        """
+        Perform a single RK4 step.
+
+        Parameters
+        ----------
+        problem
+            The problem instance to step in time.
+        """
         k1 = problem.rhs(problem.u)
         problem.time += self.dt / 2.0
         k2 = problem.rhs(problem.u + self.dt / 2 * k1)
@@ -24,16 +36,13 @@ class RungeKutta4(TimeStepper):
         problem.u += self.dt / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
-# Runge-Kutta-Fehlberg-4-5 scheme with adaptive step size
 class RungeKuttaFehlberg45(TimeStepper):
     """
-    Runge-Kutta-Fehlberg(45) scheme with adaptive step size.
-    Local truncation error is estimated by comparison of
-    RK4 and RK5 schemes and determines the optimal step size.
-    """
+    Runge-Kutta-Fehlberg (RKF45) scheme with adaptive step size.
 
-    # Coefficients borrowed from:
-    # https://github.com/LorranSutter/DiscreteMethods/blob/master/discreteMethods.py
+    Local truncation error is estimated by comparison of RK4 and RK5 schemes,
+    which is then used to determine the optimal step size for the next step.
+    """
 
     # Coefficients related to the independent variable of the evaluations
     _a2 = 2.500000000000000e-01  # 1/4
@@ -75,16 +84,38 @@ class RungeKuttaFehlberg45(TimeStepper):
     _c5 = -2.000000000000000e-01  # -1/5
 
     def __init__(self, dt: float = 1e-2, error_tolerance: float = 1e-3) -> None:
+        """
+        Initialize the RKF45 time-stepper.
+
+        Parameters
+        ----------
+        dt
+            The initial time step size.
+        error_tolerance
+            The local truncation error tolerance for adaptive stepping.
+        """
         super().__init__(dt)
-        # Local truncation error tolerance
+        #: Local truncation error tolerance
         self.error_tolerance = error_tolerance
-        # Maximum number of iterations when steps are rejected
+        #: Maximum number of iterations when steps are rejected
         self.max_rejections = 30
-        # counter for the number of rejections in current step
+        #: counter for the number of rejections in current step
         self.rejection_count = 0
 
-    # perform timestep and adapt step size
     def step(self, problem: "Problem") -> None:
+        """
+        Perform a single RKF45 step with adaptive step size.
+
+        Parameters
+        ----------
+        problem
+            The problem instance to step in time.
+
+        Raises
+        ------
+        Exception
+            If the maximum number of rejected steps is exceeded.
+        """
         # Store evaluation values
         t = problem.time
         k1 = self.dt * problem.rhs(problem.u)
@@ -114,7 +145,7 @@ class RungeKuttaFehlberg45(TimeStepper):
             + self._b65 * k5
         )
 
-        # Calulate local truncation error
+        # Calculate local truncation error
         eps = (
             np.linalg.norm(
                 self._r1 * k1

@@ -1,3 +1,5 @@
+"""Backward Differentiation Formula (BDF) time-stepping schemes."""
+
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -11,14 +13,37 @@ if TYPE_CHECKING:
 
 class BDF2(TimeStepper):
     """
-    'Backward Differentiation Formula' scheme of order 2
+    Second-order Backward Differentiation Formula (BDF2) scheme.
+
+    An implicit method for the numerical solution of ordinary differential
+    equations. It is particularly well-suited for stiff systems.
     """
 
     def __init__(self, dt: float = 1e-3) -> None:
+        """
+        Initialize the BDF2 time-stepper.
+
+        Parameters
+        ----------
+        dt
+            The time step size.
+        """
         super().__init__(dt)
+        #: the order of the scheme
         self.order = 2
 
     def step(self, problem: "Problem") -> None:
+        """
+        Perform a single BDF2 step.
+
+        Uses the problem's history to retrieve previous solutions for the
+        multi-step formula.
+
+        Parameters
+        ----------
+        problem
+            The problem instance to step in time.
+        """
         # advance in time
         problem.time += self.dt
 
@@ -42,23 +67,45 @@ class BDF2(TimeStepper):
 
 class BDF(TimeStepper):
     """
-    'Backward Differentiation Formula' scheme of variable order
-    using scipy.integrate
+    Variable-order Backward Differentiation Formula (BDF) scheme.
+
+    A wrapper around `scipy.integrate.BDF` for adaptive time-stepping
+    with variable order.
     """
 
-    def __init__(self, problem: "Problem", dt_max=np.inf) -> None:
+    def __init__(self, problem: "Problem", dt_max: float = np.inf) -> None:
+        """
+        Initialize the adaptive BDF time-stepper.
+
+        Parameters
+        ----------
+        problem
+            The problem instance to solve.
+        dt_max
+            Maximum allowed time step size.
+        """
         super().__init__()
-        # reference to the problem
+        #: reference to the problem
         self.problem = problem
-        #: relative tolerance, see scipy.integrate.BDF
+        #: relative tolerance for the solver
         self.rtol = 1e-5
-        #: absolute tolerance, see scipy.integrate.BDF
+        #: absolute tolerance for the solver
         self.atol = 1e-8
-        #: maximum time step size
+        #: maximum allowed time step size
         self.dt_max = dt_max
+        # internal storage for the scipy BDF solver instance
+        self.bdf = None
         self.factory_reset()
 
     def step(self, problem: "Problem") -> None:
+        """
+        Perform a single adaptive BDF step.
+
+        Parameters
+        ----------
+        problem
+            The problem instance to step in time.
+        """
         # perform the step
         self.bdf.step()
         # assign the new variables
@@ -67,6 +114,12 @@ class BDF(TimeStepper):
         self.problem.u = self.bdf.y
 
     def factory_reset(self) -> None:
+        """
+        Reset the underlying scipy BDF solver instance.
+
+        Useful when the problem state changes significantly.
+        """
+
         # create wrapper for the right-hand side
         def f(t, u):
             self.problem.time = t
