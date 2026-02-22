@@ -107,9 +107,9 @@ class Problem:
         eq
             The equation to add.
         """
-        if self.eq is self.list_equations() or self.eq is eq:
-            # if the given equation equals self.eq, warn
-            print("Error: Equation is already part of the problem!")
+        if self.eq is eq or (isinstance(self.eq, EquationGroup) and eq in self.eq.equations):
+            # if the given equation is already part of the problem, raise error
+            raise ValueError("Equation is already part of the problem!")
         elif isinstance(self.eq, Equation):
             # if there is just a single equation, create a system of equations
             self.eq = EquationGroup([self.eq, eq])
@@ -137,8 +137,8 @@ class Problem:
             # if there is a group of equations, remove the equation from it
             self.eq.remove_equation(eq)
         else:
-            # else, eq could not be removed, warn
-            print("Equation was not removed, since it is not part of the problem!")
+            # else, eq could not be removed, raise error
+            raise ValueError("Equation was not removed, since it is not part of the problem!")
         # TODO: clear history?
 
     def list_equations(self) -> list[Equation]:

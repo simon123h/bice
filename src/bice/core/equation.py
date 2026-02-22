@@ -360,12 +360,10 @@ class EquationGroup:
         """
         # check if eq already in self.equations
         if eq in self.equations:
-            print("Error: Equation is already part of this group!")
-            return
+            raise ValueError("Equation is already part of this group!")
         # check if eq already in other group
         if hasattr(eq, "group") and not isinstance(eq.group, DummyEquationGroup):
-            print("Error: Equation is already part of another group of equations!Remove equation from other group first!")
-            return
+            raise ValueError("Equation is already part of another group of equations! Remove equation from other group first!")
         # append to list of equations
         self.equations.append(eq)
         # assign this group as the equation's group
@@ -384,8 +382,7 @@ class EquationGroup:
         """
         # check if eq in self.equations
         if eq not in self.equations:
-            print("Error: Equation is not part of this group!")
-            return
+            raise ValueError("Equation is not part of this group!")
         # remove from the list of equations
         self.equations.remove(eq)
         # remove the equations association with the group, replace it with dummy group
