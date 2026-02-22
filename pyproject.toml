@@ -32,10 +32,7 @@ dependencies = [
 dev = [
     "pytest",
     "pytest-cov",
-    "black",
-    "isort",
-    "flake8",
-    "flake8-docstrings",
+    "ruff",
     "mypy",
     "types-setuptools",
     "myst-parser",
@@ -48,13 +45,36 @@ dev = [
 where = ["src"]
 include = ["bice*"]
 
-[tool.isort]
-profile = "black"
-line_length = 88
+[tool.ruff]
+# Same as Black.
+line-length = 140
+target-version = "py38"
 
-[tool.black]
-line-length = 88
-target-version = ['py38']
+[tool.ruff.lint]
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+# Also enable:
+# - I: isort
+# - D: pydocstyle (docstrings)
+# - UP: pyupgrade (modern Python upgrades)
+# - NPY: NumPy-specific rules
+select = ["E", "F", "I", "D", "UP", "NPY"]
+ignore = [
+    "E203", # Whitespace before ':'
+    "D300", # Use triple double quotes
+    "E402", # Module level import not at top of file
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.isort]
+known-first-party = ["bice"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
 
 [tool.pytest.ini_options]
 minversion = "6.0"

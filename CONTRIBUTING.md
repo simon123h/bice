@@ -26,8 +26,9 @@ To contribute code or documentation:
 
 1. **Fork the repository** and create a new branch for your work.
 2. **Follow the coding style**:
-   - Use `black` for code formatting.
-   - Use `isort` for import sorting.
+   - Use `ruff check .` for linting and import sorting.
+   - Use `ruff format .` for code formatting.
+   - Use `mypy src/bice` for static type checking.
    - Follow NumPy-style docstrings for all functions and classes.
 3. **Add tests**: Ensure that your changes are covered by unit or integration tests in the `tests/` directory.
 4. **Run tests locally**:
@@ -53,6 +54,17 @@ To set up a local development environment:
    ```bash
    cd docs
    make html
+   ```
+4. Linting and Formatting:
+   ```bash
+   # Run linter and import sorter
+   ruff check .
+   # Automatically fix some linting issues
+   ruff check --fix .
+   # Format code
+   ruff format .
+   # Run type checker
+   mypy src/bice
    ```
 
 ## Quality Standards
