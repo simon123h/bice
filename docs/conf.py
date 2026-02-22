@@ -19,11 +19,11 @@ sys.path.insert(0, os.path.abspath("../src"))
 # -- Project information -----------------------------------------------------
 
 project = "bice"
-copyright = "2025, Simon Hartmann"
+copyright = "2026, Simon Hartmann"
 author = "Simon Hartmann"
 
 # The full version, including alpha/beta/rc tags
-release = "0.2"
+release = "0.4.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -35,6 +35,8 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx_rtd_theme",
+    "myst_parser",
+    "sphinxcontrib.mermaid",
     # 'numpydoc'
 ]
 
