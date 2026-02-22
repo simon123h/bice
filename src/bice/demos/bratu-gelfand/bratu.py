@@ -17,6 +17,7 @@ from skfem import ElementLineP1, InteriorBasis, MeshLine, asm
 from skfem.models.poisson import laplace, mass
 
 from bice import Equation, Problem
+from bice.core.types import Array
 
 # figures won't steal window focus if the right backend is chosen
 matplotlib.use("Tkagg")
@@ -37,10 +38,10 @@ class Bratu1dEquation(Equation):
         # parameter
         self.lmbda = 0
 
-    def rhs(self, u):
+    def rhs(self, u: Array) -> Array:
         res = self.lap @ u - self.lmbda * self.mass @ np.exp(u)
         res[self.D] = u[self.D]
-        return res
+        return np.asanyarray(res)
 
     # def jacobian(self, u):
     #     jac = self.lap - self.lmbda * dia_matrix((self.mass @ np.exp(u), 0),
@@ -53,16 +54,16 @@ class Bratu1dEquation(Equation):
 
 
 class Bratu1d(Problem):
-    def __init__(self, N):
+    def __init__(self, N: int) -> None:
         super().__init__()
         self.bratu = Bratu1dEquation(N)
         self.add_equation(self.bratu)
         self.continuation_parameter = (self.bratu, "lmbda")
 
-    def norm(self):
+    def norm(self) -> float:
         eq = self.bratu
         u = eq.u
-        return np.sqrt(u.T @ (eq.mass @ u))
+        return float(np.sqrt(u.T @ (eq.mass @ u)))
 
 
 # construct the problem

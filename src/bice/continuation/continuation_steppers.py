@@ -8,7 +8,7 @@ import numpy as np
 import scipy.sparse as sp
 
 from bice.core.profiling import profile
-from bice.core.types import Array
+from bice.core.types import Array, Matrix
 
 if TYPE_CHECKING:
     from bice.core.problem import Problem
@@ -250,7 +250,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
                 # increase step size
                 self.ds = min(abs(self.ds) * self.ds_increase_factor, self.ds_max) * np.sign(self.ds)
 
-    def _linear_solve(self, A, b: Array, use_sparse_matrices: bool = False) -> Array:
+    def _linear_solve(self, A: Matrix, b: Array, use_sparse_matrices: bool = False) -> Array:
         """
         Solve the linear system A*x = b for x and return x.
 

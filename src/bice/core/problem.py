@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import cast
+from typing import Any, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -500,7 +500,7 @@ class Problem:
         # clear the history of unknowns because it would otherwise be invalid
         self.history.clear()
 
-    def norm(self) -> np.floating:
+    def norm(self) -> float:
         """
         Return the default norm of the solution.
 
@@ -514,7 +514,7 @@ class Problem:
         # TODO: @simon: if we want to calculate more than one measure,
         #       we could just return an array here, and do the choosing what
         #       to plot in the problem-specific plot function, right?
-        return np.linalg.norm(self.u)
+        return float(np.linalg.norm(self.u))
 
     @profile
     def save(self, filename: str | None = None) -> DataDict:
@@ -603,7 +603,7 @@ class Problem:
         for eq in self.list_equations():
             eq.adapt()
 
-    def log(self, *args, **kwargs) -> None:
+    def log(self, *args: Any, **kwargs: Any) -> None:
         """
         Wrap print() for log messages.
 

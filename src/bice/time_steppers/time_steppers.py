@@ -1,6 +1,12 @@
 """Base classes for time-stepping algorithms."""
 
-from typing import TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+import numpy as np
+
+from bice.core.types import Array, Matrix
 
 if TYPE_CHECKING:
     from bice.core.problem import Problem
@@ -25,7 +31,7 @@ class TimeStepper:
         #: the time step size
         self.dt = dt
 
-    def step(self, problem: "Problem") -> None:
+    def step(self, problem: Problem) -> None:
         """
         Perform a single time step on a problem.
 
@@ -50,7 +56,7 @@ class Euler(TimeStepper):
     with a given initial value.
     """
 
-    def step(self, problem: "Problem") -> None:
+    def step(self, problem: Problem) -> None:
         """
         Perform a single explicit Euler step.
 
@@ -71,7 +77,7 @@ class ImplicitEuler(TimeStepper):
     offering better stability for stiff systems compared to the explicit Euler method.
     """
 
-    def step(self, problem: "Problem") -> None:
+    def step(self, problem: Problem) -> None:
         """
         Perform a single implicit Euler step.
 
@@ -87,13 +93,13 @@ class ImplicitEuler(TimeStepper):
         # obtain the mass matrix
         M = problem.mass_matrix()
 
-        def f(u):
+        def f(u: Array) -> Array:
             # assemble the system
-            return problem.rhs(u) - M.dot(u - problem.u) / self.dt
+            return cast(Array, np.asanyarray(problem.rhs(u) - M.dot(u - problem.u) / self.dt))
 
-        def J(u):
+        def J(u: Array) -> Matrix:
             # Jacobian of the system
-            return problem.jacobian(u) - M / self.dt
+            return cast(Matrix, np.asanyarray(problem.jacobian(u) - M / self.dt))
 
         # solve it with a Newton solver
         # TODO: detect if Newton solver failed and reject step

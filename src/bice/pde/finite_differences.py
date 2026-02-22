@@ -449,13 +449,13 @@ class FDBoundaryConditions:
     Applied using an affine transformation u_pad = Q*u + G.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the boundary conditions."""
         # linear part: ((N+Ngp) x N)-matrix)
         #: linear part of the boundary operator
         self.Q: Matrix | None = None
         #: constant part of the boundary operator
-        self.G: float | Array = 0
+        self.G: float | Array = 0.0
 
     def update(self, x: Array, approx_order: int) -> None:
         """
@@ -472,7 +472,7 @@ class FDBoundaryConditions:
         N = len(x)
         ao = approx_order
         self.Q = sp.eye(N + 2, N, k=-ao)
-        self.G = 0
+        self.G = 0.0
 
     def pad(self, u: Array) -> Array:
         """
@@ -513,7 +513,7 @@ class FDBoundaryConditions:
 class PeriodicBC(FDBoundaryConditions):
     """Periodic boundary conditions for finite difference schemes."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the periodic boundary conditions."""
         super().__init__()
         #: how many ghost nodes at each boundary?
@@ -571,7 +571,12 @@ class PeriodicBC(FDBoundaryConditions):
 class RobinBC(FDBoundaryConditions):
     """Robin boundary conditions of the form a*u(x_b) + b*u'(x_b) = c."""
 
-    def __init__(self, a=(0, 0), b=(1, 1), c=(0, 0)):
+    def __init__(
+        self,
+        a: tuple[float, float] = (0.0, 0.0),
+        b: tuple[float, float] = (1.0, 1.0),
+        c: tuple[float, float] = (0.0, 0.0),
+    ) -> None:
         """
         Initialize Robin boundary conditions.
 
@@ -625,7 +630,7 @@ class RobinBC(FDBoundaryConditions):
         self.G[-1] = cr / (ar + br * sr[-1]) if cr != 0 else 0
 
 
-def DirichletBC(vals=(0, 0)) -> RobinBC:
+def DirichletBC(vals: tuple[float, float] = (0.0, 0.0)) -> RobinBC:
     """
     Create Dirichlet boundary conditions: u(left) = vals[0], u(right) = vals[1].
 
@@ -639,10 +644,10 @@ def DirichletBC(vals=(0, 0)) -> RobinBC:
     RobinBC
         The configured boundary conditions.
     """
-    return RobinBC(a=(1, 1), b=(0, 0), c=vals)
+    return RobinBC(a=(1.0, 1.0), b=(0.0, 0.0), c=vals)
 
 
-def NeumannBC(vals=(0, 0)) -> RobinBC:
+def NeumannBC(vals: tuple[float, float] = (0.0, 0.0)) -> RobinBC:
     """
     Create Neumann boundary conditions: u'(left) = vals[0], u'(right) = vals[1].
 
@@ -656,7 +661,7 @@ def NeumannBC(vals=(0, 0)) -> RobinBC:
     RobinBC
         The configured boundary conditions.
     """
-    return RobinBC(a=(0, 0), b=(1, 1), c=vals)
+    return RobinBC(a=(0.0, 0.0), b=(1.0, 1.0), c=vals)
 
 
 class NoBoundaryConditions(FDBoundaryConditions):

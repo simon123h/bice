@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import scipy.integrate
 from scipy.integrate import BDF as ScipyBDF
+
+from bice.core.types import Array, Matrix
 
 from .time_steppers import TimeStepper
 
@@ -56,13 +58,13 @@ class BDF2(TimeStepper):
         # obtain the problem's mass matrix
         M = problem.mass_matrix()
 
-        def f(u):
+        def f(u: Array) -> Array:
             # assemble the system
-            return self.dt * problem.rhs(u) - M.dot(3 * u - 4 * u_1 + u_2)
+            return cast(Array, np.asanyarray(self.dt * problem.rhs(u) - M.dot(3 * u - 4 * u_1 + u_2)))
 
-        def J(u):
+        def J(u: Array) -> Matrix:
             # Jacobian of the system
-            return self.dt * problem.jacobian(u) - 3 * M
+            return cast(Matrix, np.asanyarray(self.dt * problem.jacobian(u) - 3 * M))
 
         # solve it with a Newton solver
         problem.u = problem.newton_solver.solve(f, problem.u, J)
@@ -125,14 +127,14 @@ class BDF(TimeStepper):
         """
 
         # create wrapper for the right-hand side
-        def f(t, u):
+        def f(t: float, u: Array) -> Array:
             self.problem.time = t
-            return self.problem.rhs(u)
+            return np.asanyarray(self.problem.rhs(u))
 
         # create wrapper for the jacobian
-        def jac(t, u):
+        def jac(t: float, u: Array) -> Matrix:
             self.problem.time = t
-            return self.problem.jacobian(u)
+            return np.asanyarray(self.problem.jacobian(u))
 
         # create instance of scipy.integrate.BDF
         self.bdf = scipy.integrate.BDF(
