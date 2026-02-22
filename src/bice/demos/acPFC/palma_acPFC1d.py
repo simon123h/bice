@@ -19,7 +19,7 @@ class acPFCEquation(PseudospectralEquation):
     Pseudospectral implementation of the 1-dimensional semi-active coupled Phase Field Crystal Equation, a nonlinear PDE
     \partial_t psi_1 &= \Delta((r + (q_1^2 + \Delta)^2)\psi_1 + (\psi_1 + \bar\phi_1)^3 + c\psi_2) - v0\nabla P
     \partial_t psi_2 &= \Delta((r + (q_2^2 + \Delta)^2)\psi_2 + (\psi_2 + \bar\phi_2)^3 + c\psi_1)
-    \partial_t P &= = C_1\Delta P - D_r C_1 P - v0\nabla\psi_1
+    \partial_t P &= = C_1\Delta P - D_r C_1 P - v0\nabla\psi_1.
     """
 
     def __init__(self, N, L):

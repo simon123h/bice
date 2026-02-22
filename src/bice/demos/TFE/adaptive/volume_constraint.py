@@ -32,7 +32,7 @@ class VolumeConstraint(ConstraintEquation):
         # split it into the parts that are referenced by the first two variables
         var_ndofs = np.prod(self.ref_eq.shape[1:])
         eq_idx1 = slice(eq_idx.start + 0 * var_ndofs, eq_idx.start + 1 * var_ndofs)
-        eq_idx2 = slice(eq_idx.start + 1 * var_ndofs, eq_idx.start + 2 * var_ndofs)
+        slice(eq_idx.start + 1 * var_ndofs, eq_idx.start + 2 * var_ndofs)
         # employ the constraint equation
         # calculate the difference in volumes between current
         # and previous unknowns of the reference equation

@@ -16,7 +16,7 @@ class ThinFilmEquation(PseudospectralEquation):
     equation
     dh/dt = d/dx (h^3 d/dx ( - d^2/dx^2 h - Pi(h) ))
     with the disjoining pressure:
-    Pi(h) = 1/h^3 - 1/h^6
+    Pi(h) = 1/h^3 - 1/h^6.
     """
 
     def __init__(self, N, L):

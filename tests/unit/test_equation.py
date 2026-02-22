@@ -45,9 +45,7 @@ def test_equation_jacobian_fd():
 
 
 def test_equation_shape():
-    """
-    Test shape handling.
-    """
+    """Test shape handling."""
     eq = Equation(shape=(10, 2))
     assert eq.shape == (10, 2)
     assert eq.ndofs == 20

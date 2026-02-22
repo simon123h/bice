@@ -1,3 +1,1 @@
-"""
-bice demos
-"""
+"""bice demos."""

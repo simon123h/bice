@@ -12,7 +12,7 @@ class SwiftHohenbergEquation(FiniteDifferencesEquation):
     r"""
     Finite difference implementation of the 1-dimensional Swift-Hohenberg Equation
     equation, a nonlinear PDE
-    \partial t h &= (r - (kc^2 + \Delta)^2)h + v * h^2 - g * h^3
+    \partial t h &= (r - (kc^2 + \Delta)^2)h + v * h^2 - g * h^3.
     """
 
     def __init__(self, N, L):
@@ -44,13 +44,11 @@ class TestSwiftHohenbergEquation(unittest.TestCase):
     - create a FiniteDifferencesEquation
     - create a Problem
     - perform time simulation
-    - perform parameter continuation
+    - perform parameter continuation.
     """
 
     def test_SHE(self):
-        """
-        Run the test for the Swift-Hohenberg equation.
-        """
+        """Run the test for the Swift-Hohenberg equation."""
         # create problem
         self.problem = Problem()
         self.she = SwiftHohenbergEquation(N=128, L=240)

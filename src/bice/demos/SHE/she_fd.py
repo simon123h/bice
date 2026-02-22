@@ -18,7 +18,7 @@ class SwiftHohenbergEquation(FiniteDifferencesEquation):
     r"""
     Finite difference implementation of the 1-dimensional Swift-Hohenberg Equation
     equation, a nonlinear PDE
-    \partial t h &= (r - (kc^2 + \Delta)^2)h + v * h^2 - g * h^3
+    \partial t h &= (r - (kc^2 + \Delta)^2)h + v * h^2 - g * h^3.
     """
 
     def __init__(self, N, L):

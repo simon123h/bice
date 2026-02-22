@@ -18,7 +18,7 @@ class NikolaevskiyEquation(FiniteDifferencesEquation):
     r"""
     Finite difference implementation of the 2-dimensional Nikolaevskiy Equation
     equation, a nonlinear PDE
-    \partial t h &= -\Delta (r - (1+\Delta)^2) h - 1/2 (\nabla h)^2
+    \partial t h &= -\Delta (r - (1+\Delta)^2) h - 1/2 (\nabla h)^2.
     """
 
     def __init__(self, Nx, Ny):

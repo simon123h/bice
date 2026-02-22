@@ -15,9 +15,7 @@ from bice.pde.finite_differences import FiniteDifferencesEquation, PeriodicBC
 
 
 class activePFCEquation(FiniteDifferencesEquation):
-    r"""
-    Finite difference implementation of the 1-dimensional semiactive coupled PFC equation
-    """
+    r"""Finite difference implementation of the 1-dimensional semiactive coupled PFC equation."""
 
     def __init__(self, N, L):
         super().__init__(shape=(3, N))

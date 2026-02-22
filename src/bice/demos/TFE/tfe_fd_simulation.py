@@ -23,7 +23,7 @@ class ThinFilmEquation(FiniteDifferencesEquation):
     with the variation of the free energy:
     dF/dh = -d^2/dx^2 h - Pi(h)
     and the disjoining pressure:
-    Pi(h) = 1/h^3 - 1/h^6
+    Pi(h) = 1/h^3 - 1/h^6.
     """
 
     def __init__(self, N, L):
@@ -35,7 +35,7 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         self.x = [np.linspace(-L / 2, L / 2, N, endpoint=False)]
         # initial condition
         h0 = 6
-        a = 3 / 20.0 / (h0 - 1)
+        3 / 20.0 / (h0 - 1)
         x = self.x[0]
         self.u[0] = 2 + np.sin(4 * np.pi * x / L)
         # self.u[0] = np.maximum(-a*x**2 + h0, 1)

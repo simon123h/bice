@@ -10,7 +10,7 @@ def simple_quadratic(u):
 
 
 def simple_quadratic_jacobian(u):
-    """J(u) = 2u"""
+    """J(u) = 2u."""
     # Return as 2D array/matrix as expected by solvers usually?
     # Solvers expect J(u) * du = -f(u)
     # If u is scalar, J is scalar.
@@ -23,7 +23,7 @@ def system_2d(u):
     """
     f1 = x^2 + y^2 - 1 (circle radius 1)
     f2 = x - y (line x=y)
-    Solutions: x=y=1/sqrt(2) approx 0.707
+    Solutions: x=y=1/sqrt(2) approx 0.707.
     """
     x, y = u
     return np.array([x**2 + y**2 - 1, x - y])
@@ -40,8 +40,11 @@ def test_mynewtonsolver_scalar():
     u0 = np.array([1.0])  # Guess close to 2
 
     # Adapt functions to handle array inputs
-    f = lambda u: simple_quadratic(u)
-    jac = lambda u: simple_quadratic_jacobian(u)
+    def f(u):
+        return simple_quadratic(u)
+
+    def jac(u):
+        return simple_quadratic_jacobian(u)
 
     sol = solver.solve(f, u0, jac)
 
@@ -60,7 +63,7 @@ def test_mynewtonsolver_system():
 
 
 def test_newtonsolver_scipy_wrapper():
-    """Test the wrapper around scipy.optimize.root"""
+    """Test the wrapper around scipy.optimize.root."""
     solver = NewtonSolver()
     solver.method = "hybr"  # Default
 
@@ -84,8 +87,11 @@ def test_mynewtonsolver_no_convergence():
     # x^2 - 4 = 0 with bad guess or few steps
     u0 = np.array([1000.0])
 
-    f = lambda u: simple_quadratic(u)
-    jac = lambda u: simple_quadratic_jacobian(u)
+    def f(u):
+        return simple_quadratic(u)
+
+    def jac(u):
+        return simple_quadratic_jacobian(u)
 
     with pytest.raises(np.linalg.LinAlgError):
         solver.solve(f, u0, jac)

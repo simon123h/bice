@@ -68,9 +68,7 @@ class LyapunovExponentCalculator:
         return self.__sum / self.T
 
     def generate_perturbation_vectors(self) -> None:
-        """
-        Generate a new set of orthonormal perturbation vectors.
-        """
+        """Generate a new set of orthonormal perturbation vectors."""
         self.perturbations = [np.random.rand(self.problem.ndofs) for _ in range(self.nexponents)]
         self.orthonormalize()
 

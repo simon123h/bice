@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Union
+from typing import Union
 
 import numpy as np
 import scipy.sparse as sp
@@ -29,7 +29,7 @@ class Equation:
     the unknowns 'u'.
     """
 
-    def __init__(self, shape: Optional[Shape] = None) -> None:
+    def __init__(self, shape: Shape | None = None) -> None:
         """
         Initialize the equation.
 
@@ -266,7 +266,7 @@ class EquationGroup:
     serves as a subequation to another one.
     """
 
-    def __init__(self, equations: Optional[List[EquationLike]] = None):
+    def __init__(self, equations: list[EquationLike] | None = None):
         """
         Initialize the EquationGroup.
 
@@ -276,11 +276,11 @@ class EquationGroup:
             A list of equations or equation groups to include.
         """
         #: the list of sub-equations (or even sub-groups-of-equations)
-        self.equations: List[EquationLike] = []
+        self.equations: list[EquationLike] = []
         #: The indices of the equation's unknowns to the group's unknowns and vice versa
         self.idx: Dict[EquationLike, slice] = {}
         #: optional reference to a parent EquationGroup
-        self.group: Optional[EquationGroup] = None
+        self.group: EquationGroup | None = None
         # optionally add the given equations
         if equations is not None:
             for eq in equations:
@@ -534,7 +534,7 @@ class EquationGroup:
         # all entries assembled, return
         return M
 
-    def list_equations(self) -> List[Equation]:
+    def list_equations(self) -> list[Equation]:
         """
         Return a flattened list of all equations in the group and sub-groups.
 

@@ -15,7 +15,7 @@ class CahnHilliardEquation(FiniteDifferencesEquation):
     r"""
     Finite difference implementation of the 2-dimensional Cahn-Hilliard Equation
     equation, a nonlinear PDE
-    \partial t c &= \Delta (c^3 + a * c - \kappa * \Delta c)
+    \partial t c &= \Delta (c^3 + a * c - \kappa * \Delta c).
     """
 
     def __init__(self, N, L):

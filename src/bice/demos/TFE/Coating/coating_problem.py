@@ -12,9 +12,7 @@ from bice.pde.finite_differences import (
 
 
 class CoatingEquation(FiniteDifferencesEquation):
-    r"""
-    Finite differences implementation of the 1-dimensional coating problem
-    """
+    r"""Finite differences implementation of the 1-dimensional coating problem."""
 
     def __init__(self, N, L):
         super().__init__(shape=(N,))
