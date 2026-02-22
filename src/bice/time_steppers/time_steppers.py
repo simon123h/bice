@@ -1,3 +1,5 @@
+"""Base classes for time-stepping algorithms."""
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -7,43 +9,82 @@ if TYPE_CHECKING:
 class TimeStepper:
     """
     Abstract base class for all time-steppers.
+
     Specifies attributes and methods that all time-steppers should have.
     """
 
-    # constructor
     def __init__(self, dt: float = 1e-2) -> None:
+        """
+        Initialize the time-stepper.
+
+        Parameters
+        ----------
+        dt
+            The time step size.
+        """
         #: the time step size
         self.dt = dt
 
-    # # calculate the time derivative of the unknowns for a given problem
-    # def get_dudt(self, problem, u):
-    #     raise NotImplementedError(
-    #         "Method 'get_dudt' not implemented for this time-stepper!")
-
-    # perform a timestep on a problem
     def step(self, problem: "Problem") -> None:
+        """
+        Perform a single time step on a problem.
+
+        Parameters
+        ----------
+        problem
+            The problem instance to step in time.
+
+        Raises
+        ------
+        NotImplementedError
+            This is an abstract base class.
+        """
         raise NotImplementedError(
-            "'TimeStepper' is an abstract base class - do not use for actual time-stepping!"
+            "'TimeStepper' is an abstract base class - do not use for actual "
+            "time-stepping!"
         )
 
 
 class Euler(TimeStepper):
     """
-    Explicit Euler scheme
+    Explicit Euler (Forward Euler) scheme.
+
+    A first-order numerical procedure for solving ordinary differential equations
+    with a given initial value.
     """
 
-    # perform timestep
     def step(self, problem: "Problem") -> None:
+        """
+        Perform a single explicit Euler step.
+
+        Parameters
+        ----------
+        problem
+            The problem instance to step in time.
+        """
         problem.u += self.dt * problem.rhs(problem.u)
         problem.time += self.dt
 
 
 class ImplicitEuler(TimeStepper):
     """
-    Implicit Euler scheme
+    Implicit Euler (Backward Euler) scheme.
+
+    A first-order implicit method for solving ordinary differential equations,
+    offering better stability for stiff systems compared to the explicit Euler method.
     """
 
     def step(self, problem: "Problem") -> None:
+        """
+        Perform a single implicit Euler step.
+
+        Uses the problem's Newton solver to find the solution at the next time level.
+
+        Parameters
+        ----------
+        problem
+            The problem instance to step in time.
+        """
         # advance in time
         problem.time += self.dt
         # obtain the mass matrix

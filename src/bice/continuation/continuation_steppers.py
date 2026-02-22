@@ -1,6 +1,6 @@
 """Parameter continuation stepping strategies."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import scipy.sparse as sp
@@ -19,7 +19,6 @@ class ContinuationStepper:
     Specifies attributes and methods that all continuation-steppers should have.
     """
 
-    # constructor
     def __init__(self, ds: float = 1e-3) -> None:
         """
         Initialize the ContinuationStepper.
@@ -62,7 +61,12 @@ class ContinuationStepper:
 
 
 class NaturalContinuation(ContinuationStepper):
-    """Natural parameter continuation stepper."""
+    """
+    Natural parameter continuation stepper.
+
+    The simplest continuation method, where the parameter is incremented
+    by a fixed step size, and the new solution is found using Newton's method.
+    """
 
     def step(self, problem: "Problem") -> None:
         """
@@ -83,7 +87,12 @@ class NaturalContinuation(ContinuationStepper):
 
 
 class PseudoArclengthContinuation(ContinuationStepper):
-    """Pseudo-arclength parameter continuation stepper."""
+    """
+    Pseudo-arclength parameter continuation stepper.
+
+    A robust continuation method that can follow solution branches through
+    limit points (folds) by adding an arclength constraint to the system.
+    """
 
     def __init__(self, ds: float = 1e-3) -> None:
         """
@@ -105,7 +114,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
         #: step size is adapted if we over/undershoot this number
         self.ndesired_newton_steps = 3
         #: the actual number of newton iterations taken in the last continuation step
-        self.nnewton_iter_taken = None
+        self.nnewton_iter_taken: Optional[int] = None
         #: ds decreases by this factor when less than desired_newton_steps are performed
         self.ds_decrease_factor = 0.5
         #: ds increases by this factor when more than desired_newton_steps are performed
@@ -132,6 +141,11 @@ class PseudoArclengthContinuation(ContinuationStepper):
         ----------
         problem
             The problem to step.
+
+        Raises
+        ------
+        np.linalg.LinAlgError
+            If the Newton solver fails to converge even after step size reduction.
         """
         p = problem.get_continuation_parameter()
         u = problem.u
@@ -253,7 +267,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
                     abs(self.ds) * self.ds_increase_factor, self.ds_max
                 ) * np.sign(self.ds)
 
-    def _linear_solve(self, A, b: Array, use_sparse_matrices: bool = False):
+    def _linear_solve(self, A, b: Array, use_sparse_matrices: bool = False) -> Array:
         """
         Solve the linear system A*x = b for x and return x.
 

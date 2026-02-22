@@ -1,5 +1,10 @@
 """
-This is bice.
+BICE: Bifurcation Continuation Engine.
+
+A numerical path continuation and bifurcation analysis package written in Python.
+It provides tools for tracking branches of solutions to nonlinear algebraic
+equations, identifying bifurcation points, and performing time-stepping for
+evolutionary PDEs.
 """
 
 from . import time_steppers

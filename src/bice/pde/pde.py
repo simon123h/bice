@@ -1,3 +1,5 @@
+"""Base classes for partial differential equations (PDEs)."""
+
 from typing import Optional
 
 import numpy as np
@@ -8,15 +10,23 @@ from bice.core.types import Array, Shape
 
 class PartialDifferentialEquation(Equation):
     """
-    The PseudospectralEquation is a subclass of the general Equation
-    and serves as an abstract parent class to more specific classes that offer spatially discretized
-    implementations for partial differential equations, e.g. the PseudospectralEquation or the
-    FiniteDifferencesEquation.
+    Abstract base class for spatially discretized equations.
+
+    Serves as a parent class for more specific implementations such as
+    pseudospectral or finite difference schemes.
     """
 
     def __init__(self, shape: Optional[Shape] = None) -> None:
+        """
+        Initialize the PDE.
+
+        Parameters
+        ----------
+        shape
+            The shape of the unknowns.
+        """
         super().__init__(shape)
-        # the spatial coordinates
+        #: the spatial coordinates
         if len(self.shape) > 0:
             self.x = [np.linspace(0, 1, self.shape[-1])]
         else:
@@ -24,14 +34,33 @@ class PartialDifferentialEquation(Equation):
 
     @property
     def spatial_dimension(self) -> int:
-        """Returns the spatial dimension of the domain self.x"""
+        """
+        Return the spatial dimension of the domain.
+
+        Returns
+        -------
+        int
+            The spatial dimension.
+        """
         assert self.x is not None
         if isinstance(self.x, np.ndarray):
             return self.x.ndim
         return len(self.x)
 
     def du_dt(self, u: Optional[Array] = None) -> Array:
-        """calculate the time derivative du/dt of the unknowns"""
+        """
+        Calculate the time derivative du/dt of the unknowns.
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns. If None, the current state `self.u` is used.
+
+        Returns
+        -------
+        Array
+            The time derivative vector.
+        """
         # if u is not given, use self.u
         if u is None:
             u = self.u
@@ -39,9 +68,25 @@ class PartialDifferentialEquation(Equation):
         return self.mass_matrix().dot(self.rhs(u))
 
     def du_dx(self, u: Optional[Array] = None, direction: int = 0) -> Array:
-        """ "
-        Calculate the spatial derivative du/dx in a given spatial direction.
-        (abstract, needs to be specified for child classes)
+        """
+        Calculate the spatial derivative du/dx in a given direction.
+
+        Parameters
+        ----------
+        u
+            The vector of unknowns.
+        direction
+            The index of the spatial direction (e.g., 0 for x, 1 for y).
+
+        Returns
+        -------
+        Array
+            The spatial derivative vector.
+
+        Raises
+        ------
+        NotImplementedError
+            This is an abstract method.
         """
         raise NotImplementedError(
             "No spatial derivative (du_dx) implemented for this equation!"
