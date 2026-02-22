@@ -11,6 +11,7 @@ Welcome to bice's documentation!
    :caption: Contents:
 
    source/bice
+   architecture/index
 
 
 

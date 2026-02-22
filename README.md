@@ -56,14 +56,14 @@ Click here for the
 The documentation can also be generated locally with the commands
 
 ```bash
-cd doc
+cd docs
 make html
 ```
 
-The documentation can then be found in the folder `doc`.
+The documentation can then be found in the folder `docs`.
 
-You will need to have `Sphinx` and `sphinx_rtd_theme` installed:
+You will need to have the development dependencies installed:
 
 ```bash
-pip3 install Sphinx sphinx_rtd_theme
+pip3 install -e ".[dev]"
 ```
