@@ -3,6 +3,7 @@
 import time
 from collections.abc import Callable
 from functools import wraps
+from typing import Any
 
 
 class MethodProfile:
@@ -168,7 +169,7 @@ def profile(method: Callable) -> Callable:
     """
 
     @wraps(method)
-    def do_profile(*args, **kw):
+    def do_profile(*args: Any, **kw: Any) -> Any:
         # if profiling is turned off: do nothing but execute the method
         if not Profiler.is_active():
             return method(*args, **kw)

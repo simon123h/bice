@@ -1,5 +1,7 @@
 "The core Problem class and helper classes."
 
+from __future__ import annotations
+
 from typing import Any
 
 import matplotlib.pyplot as plt
@@ -787,7 +789,7 @@ class Problem:
             if ax is not None and plotevery is not None and (n - 1) % plotevery == 0:
                 self.plot(ax)
                 plt.show(block=False)
-                plt.pause(0.0001)  # type: ignore
+                plt.pause(0.0001)
         # return if no more recursion is allowed
         if max_recursion < 1:
             return

@@ -48,7 +48,7 @@ class VolumeConstraint(ConstraintEquation):
             ]
         )
         # res[self_idx] = np.array([
-        #     np.trapz(u[eq_idx1] + u[eq_idx2] -
+        #     np.trapezoid(u[eq_idx1] + u[eq_idx2] -
         #              self.group.u[eq_idx1] - self.group.u[eq_idx2], x),
         # ])
         # Add the constraint to the reference equation: unknown influx is the Langrange multiplier

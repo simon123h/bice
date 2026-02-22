@@ -1,6 +1,8 @@
 """Parameter continuation stepping strategies."""
 
-from typing import TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import scipy.sparse as sp
@@ -31,7 +33,7 @@ class ContinuationStepper:
         #: continuation step size
         self.ds = ds
 
-    def step(self, problem: "Problem") -> None:
+    def step(self, problem: Problem) -> None:
         """
         Perform a continuation step on a problem.
 
@@ -65,7 +67,7 @@ class NaturalContinuation(ContinuationStepper):
     by a fixed step size, and the new solution is found using Newton's method.
     """
 
-    def step(self, problem: "Problem") -> None:
+    def step(self, problem: Problem) -> None:
         """
         Perform a natural continuation step on a problem.
 
@@ -127,7 +129,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
         self.fd_epsilon = 1e-10
 
     @profile
-    def step(self, problem: "Problem") -> None:
+    def step(self, problem: Problem) -> None:
         """
         Perform a pseudo-arclength continuation step on a problem.
 
@@ -159,7 +161,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
                 p - problem.history.continuation_parameter(-1),
             )
             # normalize tangent and adjust sign with respect to continuation direction
-            tangent /= np.linalg.norm(tangent) * np.sign(problem.history.step_size(-1))
+            tangent = tangent / (np.linalg.norm(tangent) * np.sign(problem.history.step_size(-1)))
         else:
             # else, we need to calculate the tangent from extended Jacobian in
             # (u, parameter)-space
@@ -181,9 +183,9 @@ class PseudoArclengthContinuation(ContinuationStepper):
             jac = sp.vstack((jac, zero.reshape((1, N + 1))))
             # compute tangent by solving (jac)*tangent=0 and normalize
             tangent = self._linear_solve(jac, zero, problem.settings.use_sparse_matrices)
-            tangent /= np.linalg.norm(tangent)
+            tangent = tangent / np.linalg.norm(tangent)
             # make sure that the tangent points in positive parameter direction
-            tangent *= np.sign(tangent[-1])
+            tangent = tangent * np.sign(tangent[-1])
         # make initial guess: u -> u + ds * tangent
         u = u + self.ds * tangent[:N]
         p = p + self.ds * tangent[N]
@@ -218,7 +220,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
             # solvers?
             # update counter and check for convergence
             count += 1
-            converged = np.linalg.norm(du_ext) < self.convergence_tolerance
+            converged = bool(np.linalg.norm(du_ext) < self.convergence_tolerance)
 
         # update number of steps taken
         self.nnewton_iter_taken = count
@@ -237,7 +239,7 @@ class PseudoArclengthContinuation(ContinuationStepper):
             # else, retry with a smaller step size
             self.ds /= 2
             print(f"Newton solver did not converge, trying again with ds = {self.ds:.3e}")
-            return self.step(problem)
+            return cast(None, self.step(problem))
 
         # adapt step size
         if self.adapt_stepsize:
@@ -271,6 +273,6 @@ class PseudoArclengthContinuation(ContinuationStepper):
             A = sp.csr_matrix(A)
         # use either a solver for sparse matrices...
         if sp.issparse(A):
-            return sp.linalg.spsolve(sp.csr_matrix(A), b)
+            return cast(Array, sp.linalg.spsolve(sp.csr_matrix(A), b))
         # ...or simply the one for full rank matrices
-        return np.linalg.solve(A, b)
+        return cast(Array, np.linalg.solve(A, b))

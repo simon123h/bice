@@ -219,4 +219,4 @@ class AdaptiveSubstrateProblem(Problem):
 
     # def norm(self):
     #     h, z = self.tfe.u
-    #     return np.trapz(h, self.tfe.x[0])
+    #     return np.trapezoid(h, self.tfe.x[0])

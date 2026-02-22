@@ -33,7 +33,7 @@ class RungeKutta4(TimeStepper):
         k3 = problem.rhs(problem.u + self.dt / 2 * k2)
         problem.time += self.dt / 2.0
         k4 = problem.rhs(problem.u + self.dt * k3)
-        problem.u += self.dt / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
+        problem.u = problem.u + self.dt / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
 class RungeKuttaFehlberg45(TimeStepper):
@@ -143,7 +143,7 @@ class RungeKuttaFehlberg45(TimeStepper):
         if eps <= self.error_tolerance:
             # update problem variables
             problem.time = t + dt_old
-            problem.u += self._c1 * k1 + self._c3 * k3 + self._c4 * k4 + self._c5 * k5
+            problem.u = problem.u + self._c1 * k1 + self._c3 * k3 + self._c4 * k4 + self._c5 * k5
             # reset rejection count
             self.rejection_count = 0
         elif self.rejection_count < self.max_rejections:

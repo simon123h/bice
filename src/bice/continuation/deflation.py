@@ -1,5 +1,7 @@
 """Deflation operator for detecting disconnected branches."""
 
+from __future__ import annotations
+
 import numpy as np
 import scipy.sparse as sp
 
@@ -27,7 +29,7 @@ class DeflationOperator:
         #: small constant in the deflation operator, for numerical stability
         self.shift = 0.5
         #: list of solutions, that will be suppressed by the deflation operator
-        self.solutions = []
+        self.solutions: list[Array] = []
 
     def operator(self, u: Array):
         """

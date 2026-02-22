@@ -1,5 +1,10 @@
 """Solver implementations (Newton, Eigenvalues)."""
 
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import Any, cast
+
 import numpy as np
 import scipy.linalg
 import scipy.optimize
@@ -29,9 +34,14 @@ class AbstractNewtonSolver:
         #: details
         self.verbosity = 0
         # internal storage for the number of iterations taken during last solve
-        self._iteration_count = None
+        self._iteration_count: int | None = None
 
-    def solve(self, f, u0, jac):
+    def solve(
+        self,
+        f: Callable[[np.ndarray], np.ndarray],
+        u0: np.ndarray,
+        jac: Callable[[np.ndarray], Matrix] | None = None,
+    ) -> np.ndarray:
         """
         Solve the system f(u) = 0 with the initial guess u0 and the Jacobian jac(u).
 
@@ -79,7 +89,7 @@ class AbstractNewtonSolver:
         """
         return float(np.max(residuals))
 
-    def throw_no_convergence_error(self, res=None):
+    def throw_no_convergence_error(self, res: float | None = None) -> None:
         """
         Throw an error when the solver failed to converge.
 
@@ -93,23 +103,25 @@ class AbstractNewtonSolver:
         np.linalg.LinAlgError
             Always raised to indicate non-convergence.
         """
-        if res is None:
-            res = ""
-        else:
-            res = f" Max. residuals: {res:.2e}"
-        if self.niterations is None:
-            it = ""
-        else:
-            it = f" after {self.niterations} iterations"
+        msg = ""
+        if res is not None:
+            msg += f" Max. residuals: {res:.2e}"
+        if self.niterations is not None:
+            msg += f" after {self.niterations} iterations"
         name = type(self).__name__
-        raise np.linalg.LinAlgError(name + " did not converge" + it + "!" + res)
+        raise np.linalg.LinAlgError(f"{name} did not converge!{msg}")
 
 
 class MyNewtonSolver(AbstractNewtonSolver):
     """Reference implementation of a simple 'text book' Newton solver."""
 
     @profile
-    def solve(self, f, u0, jac):
+    def solve(
+        self,
+        f: Callable[[np.ndarray], np.ndarray],
+        u0: np.ndarray,
+        jac: Callable[[np.ndarray], Matrix],
+    ) -> np.ndarray:
         """
         Solve the system using a custom Newton iteration.
 
@@ -128,7 +140,7 @@ class MyNewtonSolver(AbstractNewtonSolver):
         """
         self._iteration_count = 0
         u = u0
-        err = 0
+        err: float = 0.0
         while self._iteration_count < self.max_iterations:
             # do a classical Newton step
             J = jac(u)
@@ -155,6 +167,7 @@ class MyNewtonSolver(AbstractNewtonSolver):
                 return u
         # if we didn't converge, throw an error
         self.throw_no_convergence_error(err)
+        return u
 
 
 class NewtonSolver(AbstractNewtonSolver):
@@ -175,7 +188,12 @@ class NewtonSolver(AbstractNewtonSolver):
         self.method = "hybr"
 
     @profile
-    def solve(self, f, u0, jac=None):
+    def solve(
+        self,
+        f: Callable[[np.ndarray], np.ndarray],
+        u0: np.ndarray,
+        jac: Callable[[np.ndarray], Matrix] | None = None,
+    ) -> np.ndarray:
         """
         Solve using scipy.optimize.root.
 
@@ -233,8 +251,7 @@ class NewtonSolver(AbstractNewtonSolver):
                 "iterations, error:",
                 err,
             )
-        # return the result vector
-        return opt_result.x
+        return cast(np.ndarray, opt_result.x)
 
 
 class NewtonKrylovSolver(AbstractNewtonSolver):
@@ -245,7 +262,7 @@ class NewtonKrylovSolver(AbstractNewtonSolver):
     is solved instead of J*a = b, because M*J is likely closer to the identity.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the NewtonKrylovSolver."""
         super().__init__()
         #: Let the Krylov method approximate the Jacobian or use the one provided by
@@ -253,7 +270,12 @@ class NewtonKrylovSolver(AbstractNewtonSolver):
         self.approximate_jacobian = True
 
     @profile
-    def solve(self, f, u0, jac=None):
+    def solve(
+        self,
+        f: Callable[[np.ndarray], np.ndarray],
+        u0: np.ndarray,
+        jac: Callable[[np.ndarray], Matrix] | None = None,
+    ) -> np.ndarray:
         """
         Solve using Krylov subspace method.
 
@@ -271,7 +293,7 @@ class NewtonKrylovSolver(AbstractNewtonSolver):
         The solution vector.
         """
         # some options
-        options = {
+        options: dict[str, Any] = {
             "disp": self.verbosity > 1,  # print the results of each step?
             "maxiter": self.max_iterations,
             "fatol": self.convergence_tolerance,
@@ -280,8 +302,9 @@ class NewtonKrylovSolver(AbstractNewtonSolver):
         # increases performance of the krylov method
         if jac is not None and not self.approximate_jacobian:
             # compute incomplete LU decomposition of Jacobian
-            J_ilu = sp.linalg.spilu(sp.csc_matrix(jac(u0)))
-            M = sp.linalg.LinearOperator(shape=jac.shape, matvec=J_ilu.solve)
+            J = jac(u0)
+            J_ilu = sp.linalg.spilu(sp.csc_matrix(J))
+            M = sp.linalg.LinearOperator(shape=J.shape, matvec=J_ilu.solve)
             options.update({"jac_options": {"inner_M": M}})
 
         # solve!
@@ -300,7 +323,7 @@ class NewtonKrylovSolver(AbstractNewtonSolver):
                 err,
             )
         # return the result vector
-        return opt_result.x
+        return cast(np.ndarray, opt_result.x)
 
 
 class EigenSolver:
@@ -317,9 +340,9 @@ class EigenSolver:
         #: value of the shift first
         self.shift = 0.0
         #: results of the latest eigenvalue computation
-        self.latest_eigenvalues = None
+        self.latest_eigenvalues: np.ndarray | None = None
         #: results of the latest eigenvector computation
-        self.latest_eigenvectors = None
+        self.latest_eigenvectors: np.ndarray | None = None
         #: convergence tolerance of the eigensolver
         self.tol = 1e-8
 
