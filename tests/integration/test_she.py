@@ -37,13 +37,13 @@ class SwiftHohenbergEquation(FiniteDifferencesEquation):
         # laplace is now a Matrix or AffineOperator
         laplace = self.laplace
         assert laplace is not None
-        
+
         # for construction, we want the matrix part
         if isinstance(laplace, AffineOperator):
             L_mat = laplace.Q
         else:
             L_mat = laplace
-            
+
         self.linear_op = -2 * self.kc**2 * L_mat - L_mat.dot(L_mat)
 
     # definition of the SHE (right-hand side)
@@ -51,7 +51,6 @@ class SwiftHohenbergEquation(FiniteDifferencesEquation):
     def rhs(self, u: Array) -> Array:
         """Calculate the right-hand side."""
         return np.asarray(self.linear_op.dot(u) + (self.r - self.kc**4) * u + self.v * u**2 - self.g * u**3)
-
 
 
 class TestSwiftHohenbergEquation(unittest.TestCase):

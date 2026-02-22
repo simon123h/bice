@@ -135,5 +135,5 @@ def test_problem_continuation_no_false_bifurcations() -> None:
     for i in range(5):
         prob.continuation_step()
         sol = prob.bifurcation_diagram.current_solution()
-        assert not sol.is_bifurcation(), f"False bifurcation at step {i+1}: type={sol.bifurcation_type()}"
+        assert not sol.is_bifurcation(), f"False bifurcation at step {i + 1}: type={sol.bifurcation_type()}"
         assert sol.nunstable_eigenvalues == 0
