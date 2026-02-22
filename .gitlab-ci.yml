@@ -62,3 +62,39 @@ deploy_pypi:
     - if: $CI_COMMIT_TAG =~ /^v/
   dependencies:
     - build
+
+deploy_gitlab_registry:
+  stage: deploy
+  script:
+    - pip install twine
+    - |
+      TWINE_PASSWORD=${CI_JOB_TOKEN} \
+      TWINE_USERNAME=gitlab-ci-token \
+      python3 -m twine upload \
+        --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi \
+        dist/*
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
+  dependencies:
+    - build
+
+release:
+  stage: deploy
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  before_script:
+    - "" # override global before_script
+  script:
+    - echo "Creating release for $CI_COMMIT_TAG"
+  release:
+    name: "Release $CI_COMMIT_TAG"
+    description: "Created using the release-cli"
+    tag_name: "$CI_COMMIT_TAG"
+    ref: "$CI_COMMIT_SHA"
+    assets:
+      links:
+        - name: "Package Registry"
+          url: "${CI_PROJECT_URL}/-/packages"
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
+  dependencies:
+    - build
