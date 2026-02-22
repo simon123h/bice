@@ -6,9 +6,10 @@ Welcome to the **bice** development guide. This section provides information for
 :maxdepth: 2
 
 getting_started
-coding_standards
-testing
-documentation
+   coding_standards
+   testing
+   documentation
+   release_process
 ```
 
 ## Overview
