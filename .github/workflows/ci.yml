@@ -34,7 +34,7 @@ jobs:
     - name: Type check
       run: nox -s type_check
     - name: Test
-      run: nox -s test-${{ matrix.python-version }}
+      run: nox -s test
 
   build:
     name: Build distributions

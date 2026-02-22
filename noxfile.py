@@ -7,7 +7,7 @@ nox.options.sessions = ["lint", "type_check", "test"]
 nox.options.reuse_existing_virtualenvs = True
 
 
-@nox.session(python=["3.11", "3.12", "3.13"])
+@nox.session
 def test(session):
     """Run tests with pytest."""
     session.install("-e", ".[dev]")
