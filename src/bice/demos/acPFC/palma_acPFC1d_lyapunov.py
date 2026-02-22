@@ -63,9 +63,7 @@ while problem.time < T:
 
 # calculate Lyapunov exponents
 problem.time_stepper = time_steppers.BDF2(dt=0.01)
-lyapunov = LyapunovExponentCalculator(
-    problem, nexponents=1, epsilon=1e-6, nintegration_steps=1
-)
+lyapunov = LyapunovExponentCalculator(problem, nexponents=1, epsilon=1e-6, nintegration_steps=1)
 
 last10 = []
 largest = []

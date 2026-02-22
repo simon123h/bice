@@ -79,11 +79,7 @@ class MethodProfile:
             # if nested: generate tree view for name
             if nested:
                 corn = "└" if last else "├"
-                name = (
-                    ("│ " * indentation)
-                    + ("" + corn + "─" if indentation > 0 else "")
-                    + self.name
-                )
+                name = ("│ " * indentation) + ("" + corn + "─" if indentation > 0 else "") + self.name
             else:
                 name = self.name
             # pretty print the stats
@@ -101,9 +97,7 @@ class MethodProfile:
             else:
                 profiles = self.flattened_data()
             # sort the nested profiles by total execution time
-            profiles = sorted(
-                profiles.values(), key=lambda item: item.execution_time, reverse=True
-            )
+            profiles = sorted(profiles.values(), key=lambda item: item.execution_time, reverse=True)
             # print their summary recursively
             for i, p in enumerate(profiles):
                 is_last = i == len(profiles) - 1
@@ -152,11 +146,7 @@ class Profiler:
         total_time = time.time() - Profiler.__start_time
         # print the header
         print("Profiler results:")
-        print(
-            "{:<70} {:>11} {:>11} {:>8}".format(
-                "method name", "total", "relative", "#calls"
-            )
-        )
+        print("{:<70} {:>11} {:>11} {:>8}".format("method name", "total", "relative", "#calls"))
         print("-" * 103)
         # print the stats of each call recursively, starting with the root call
         Profiler.__root_profile.print_stats(total_time, nested=nested)

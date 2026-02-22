@@ -23,7 +23,6 @@ matplotlib.use("Tkagg")
 
 
 class Bratu1dEquation(Equation):
-
     def __init__(self, n: int):
         super().__init__()
         # construct FEM basis
@@ -75,9 +74,7 @@ problem.continuation_stepper.ds = 1
 
 # compute bifurcation diagram
 fig, ax = plt.subplots(2, 1)
-problem.generate_bifurcation_diagram(
-    norm_lims=(0, 6), max_recursion=0, ax=ax, plotevery=10
-)
+problem.generate_bifurcation_diagram(norm_lims=(0, 6), max_recursion=0, ax=ax, plotevery=10)
 
 
 fig.savefig("my_bifdiag.png")

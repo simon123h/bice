@@ -20,7 +20,6 @@ matplotlib.use("Tkagg")
 
 
 class PitchforkEquation(Equation):
-
     def __init__(self):
         super().__init__()
         self.u = np.zeros(1)
@@ -53,9 +52,7 @@ problem.continuation_stepper.ds = 1e-1
 
 # compute bifurcation diagram
 fig, ax = plt.subplots(2, 1)
-problem.generate_bifurcation_diagram(
-    parameter_lims=(-1, 1), norm_lims=(0, 2), max_recursion=0, ax=ax, plotevery=1
-)
+problem.generate_bifurcation_diagram(parameter_lims=(-1, 1), norm_lims=(0, 2), max_recursion=0, ax=ax, plotevery=1)
 
 
 fig.savefig(Path(__file__).with_suffix(".png"))

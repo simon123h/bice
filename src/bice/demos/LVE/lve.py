@@ -32,7 +32,6 @@ class LotkaVolterraEquations(Equation):
 
 # The Lotka-Volterra equations (predator prey model)
 class LotkaVolterra(Problem):
-
     def __init__(self):
         super().__init__()
         # create and add the equation

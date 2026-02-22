@@ -88,10 +88,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # construct FD matrices from 1d FD matrices for each spatial dimension
         # TODO: support higher than 2 dimensions
         if self.spatial_dimension > 2:
-            raise NotImplementedError(
-                "Finite difference operators for spatial dimensions"
-                "higher than 1d are not yet supported."
-            )
+            raise NotImplementedError("Finite difference operators for spatial dimensions higher than 1d are not yet supported.")
         # 2d case:
         ops1d = []
         for x in self.x:
@@ -101,8 +98,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
             for op in op1d:
                 if not op.is_linear():
                     raise NotImplementedError(
-                        "Inhomogeneous boundary conditions are unfortunately"
-                        "not supported spatial dimensions higher than 1d."
+                        "Inhomogeneous boundary conditions are unfortunately not supported spatial dimensions higher than 1d."
                     )
             # drop inhomogeneous part of affine operators (is zero for homogeneous BCs)
             ops1d.append([op.Q for op in op1d])
@@ -264,9 +260,7 @@ class FiniteDifferencesEquation(PartialDifferentialEquation):
         # interpolate history to new grid points
         for t, u in enumerate(self.u_history):
             if nvars > 1:
-                self.u_history[t] = np.array(
-                    [np.interp(x_new, x_old, u[n]) for n in range(nvars)]
-                )
+                self.u_history[t] = np.array([np.interp(x_new, x_old, u[n]) for n in range(nvars)])
             else:
                 self.u_history[t] = np.interp(x_new, x_old, u)
         # re-build the finite difference matrices

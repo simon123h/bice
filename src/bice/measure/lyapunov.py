@@ -71,9 +71,7 @@ class LyapunovExponentCalculator:
         """
         Generate a new set of orthonormal perturbation vectors.
         """
-        self.perturbations = [
-            np.random.rand(self.problem.ndofs) for _ in range(self.nexponents)
-        ]
+        self.perturbations = [np.random.rand(self.problem.ndofs) for _ in range(self.nexponents)]
         self.orthonormalize()
 
     @profile

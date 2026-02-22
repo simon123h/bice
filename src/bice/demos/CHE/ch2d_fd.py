@@ -50,7 +50,6 @@ class CahnHilliardEquation(FiniteDifferencesEquation):
 
 
 class CahnHilliardProblem(Problem):
-
     def __init__(self, N, L):
         super().__init__()
         # Add the Cahn-Hilliard equation to the problem

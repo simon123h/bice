@@ -43,9 +43,7 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         # h equation
         eq1 = -self.laplace(h + xi) - djp
         # xi equation
-        eq2 = (
-            -self.laplace(h + xi) - self.sigma * self.laplace(xi) + 10**self.kappa * xi
-        )
+        eq2 = -self.laplace(h + xi) - self.sigma * self.laplace(xi) + 10**self.kappa * xi
         return np.array([eq1, eq2])
 
     # definition of the equation, using finite element method
@@ -55,11 +53,7 @@ class ThinFilmEquation(FiniteDifferencesEquation):
         deq1_dh = -self.laplace() - sp.diags(ddjp_dh)
         deq2_dh = -self.laplace()
         deq1_dxi = -self.laplace()
-        deq2_dxi = (
-            -self.laplace()
-            - self.sigma * self.laplace()
-            + sp.diags(10**self.kappa + xi * 0)
-        )
+        deq2_dxi = -self.laplace() - self.sigma * self.laplace() + sp.diags(10**self.kappa + xi * 0)
         return sp.bmat([[deq1_dh, deq1_dxi], [deq2_dh, deq2_dxi]])
 
     def plot(self, ax):
@@ -73,7 +67,6 @@ class ThinFilmEquation(FiniteDifferencesEquation):
 
 
 class ThinFilm(Problem):
-
     def __init__(self, N, L):
         super().__init__()
         # Add the Thin-Film equation to the problem

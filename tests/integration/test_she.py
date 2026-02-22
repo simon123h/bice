@@ -35,12 +35,7 @@ class SwiftHohenbergEquation(FiniteDifferencesEquation):
     # definition of the SHE (right-hand side)
     @profile
     def rhs(self, u):
-        return (
-            self.linear_op.dot(u)
-            + (self.r - self.kc**4) * u
-            + self.v * u**2
-            - self.g * u**3
-        )
+        return self.linear_op.dot(u) + (self.r - self.kc**4) * u + self.v * u**2 - self.g * u**3
 
 
 class TestSwiftHohenbergEquation(unittest.TestCase):

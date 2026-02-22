@@ -16,7 +16,6 @@ from bice.pde.finite_differences import (
 
 
 class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
-
     def __init__(self, N, L):
         super().__init__(shape=(2, N))
         # parameters
@@ -137,29 +136,15 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
         ddFdh_dh = -self.laplace_h() - ddjp_dh
         ddFdh_dz = -self.laplace_h() - ddjp_dz
         ddFdz_dh = -self.laplace_h()
-        ddFdz_dz = (
-            -self.laplace_h()
-            - self.laplace_h(diags(gamma_bl + z * dgamma_bl_dz))
-            + diags(ddfbrush_dz)
-        )
+        ddFdz_dz = -self.laplace_h() - self.laplace_h(diags(gamma_bl + z * dgamma_bl_dz)) + diags(ddfbrush_dz)
         # absorption term derivative
         dM_absorb_dh = self.M * (ddFdh_dh - ddFdz_dh)
         dM_absorb_dz = self.M * (ddFdh_dz - ddFdz_dz)
         # derivatives of dynamic equations
-        ddhdt_dh = (
-            self.nabla_F(
-                dQhh_dh * diags(self.nabla0(dFdh)) + Qhh * self.nabla0(ddFdh_dh), q
-            )
-            - dM_absorb_dh
-        )
+        ddhdt_dh = self.nabla_F(dQhh_dh * diags(self.nabla0(dFdh)) + Qhh * self.nabla0(ddFdh_dh), q) - dM_absorb_dh
         ddhdt_dz = self.nabla_F(Qhh * self.nabla0(ddFdh_dz), q) - dM_absorb_dz
         ddzdt_dh = self.nabla_F(Qzz * self.nabla0(ddFdz_dh), 0) + dM_absorb_dh
-        ddzdt_dz = (
-            self.nabla_F(
-                dQzz_dz * diags(self.nabla0(dFdz)) + Qzz * self.nabla0(ddFdz_dz), 0
-            )
-            + dM_absorb_dz
-        )
+        ddzdt_dz = self.nabla_F(dQzz_dz * diags(self.nabla0(dFdz)) + Qzz * self.nabla0(ddFdz_dz), 0) + dM_absorb_dz
         # combine and return
         an_jac = sp.bmat([[ddhdt_dh, ddhdt_dz], [ddzdt_dh, ddzdt_dz]]).toarray()
         fd_jac = super().jacobian(u).toarray()
@@ -197,7 +182,6 @@ class AdaptiveSubstrateEquation(FiniteDifferencesEquation):
 
 
 class AdaptiveSubstrateProblem(Problem):
-
     def __init__(self, N, L):
         super().__init__()
         # Add the Thin-Film equation to the problem

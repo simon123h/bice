@@ -76,19 +76,12 @@ class CoatingEquation(FiniteDifferencesEquation):
         # disjoining pressure
         h3 = h**3
         djp = 5 / 3 * (self.theta * self.h_p) ** 2 * (self.h_p**3 / h3**2 - 1.0 / h3)
-        ddjpdh = (
-            5
-            / 3
-            * (self.theta * self.h_p) ** 2
-            * diags(3.0 / h**4 - 6.0 * self.h_p**3 / h**7)
-        )
+        ddjpdh = 5 / 3 * (self.theta * self.h_p) ** 2 * diags(3.0 / h**4 - 6.0 * self.h_p**3 / h**7)
         # free energy variation
         dFdh = -self.laplace_h(h) - djp
         ddFdhdh = -self.laplace_h() - ddjpdh
         # d(Qh^3*nabla*dFdh)/dh
-        flux = diags(3 * h**2 * self.nabla0.dot(dFdh)) + diags(h3) * self.nabla0.dot(
-            ddFdhdh
-        )
+        flux = diags(3 * h**2 * self.nabla0.dot(dFdh)) + diags(h3) * self.nabla0.dot(ddFdhdh)
         # dynamics equation, boundary condition is a constant --> scale with zero
         jac = self.nabla_F(flux, 0)
         jac -= self.U * self.nabla_h()
@@ -113,7 +106,6 @@ class CoatingEquation(FiniteDifferencesEquation):
 
 
 class CoatingProblem(Problem):
-
     def __init__(self, N, L):
         super().__init__()
         # Add the Thin-Film equation to the problem

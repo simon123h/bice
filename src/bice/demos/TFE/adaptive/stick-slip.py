@@ -35,11 +35,7 @@ if not os.path.exists("initial_state.npz"):
             problem.plot(ax)
             fig.savefig(f"out/img/{plotID:05d}.svg")
             plotID += 1
-        print(
-            "step #:{:6d},  time:{:9.2e},  dt:{:9.2e},  norm:{:9.2e}".format(
-                n, problem.time, problem.time_stepper.dt, problem.norm()
-            )
-        )
+        print("step #:{:6d},  time:{:9.2e},  dt:{:9.2e},  norm:{:9.2e}".format(n, problem.time, problem.time_stepper.dt, problem.norm()))
         n += 1
         # perform timestep
         problem.time_step()

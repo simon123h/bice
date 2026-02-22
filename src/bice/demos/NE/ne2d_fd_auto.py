@@ -79,9 +79,7 @@ class NikolaevskiyEquation(FiniteDifferencesEquation):
         x, y = np.meshgrid(self.x[0], self.x[1])
         Lx = self.L0 * self.m
         Ly = Lx * self.ratio
-        pcol = ax.pcolor(
-            x * Lx, y * Ly, self.u.reshape(x.shape), cmap="coolwarm", rasterized=True
-        )
+        pcol = ax.pcolor(x * Lx, y * Ly, self.u.reshape(x.shape), cmap="coolwarm", rasterized=True)
         pcol.set_edgecolor("face")
         # put velocity labels into plot
         ax.text(
@@ -99,7 +97,6 @@ class NikolaevskiyEquation(FiniteDifferencesEquation):
 
 
 class NikolaevskiyProblem(Problem):
-
     def __init__(self, Nx, Ny):
         super().__init__()
         # Add the Nikolaevskiy equation to the problem

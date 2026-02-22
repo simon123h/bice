@@ -58,7 +58,6 @@ class HeatEquation(FiniteDifferencesEquation):
 
 
 class HeatProblem(Problem):
-
     def __init__(self, N, L):
         super().__init__()
         # Add the Swift-Hohenberg equation to the problem

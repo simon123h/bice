@@ -54,22 +54,10 @@ class acPFCEquation(PseudospectralEquation):
             self.u = np.loadtxt("initial_state_2D.npz").reshape(self.shape)
         else:
             for i in range(particles1):
-                u1 = 2.7 * np.exp(
-                    -(
-                        (self.x[0] - Lx * np.random.random()) ** 2
-                        + (self.x[1] - Ly * np.random.random()) ** 2
-                    )
-                    / 5
-                )
+                u1 = 2.7 * np.exp(-((self.x[0] - Lx * np.random.random()) ** 2 + (self.x[1] - Ly * np.random.random()) ** 2) / 5)
 
             for i in range(particles2):
-                u2 = 2.7 * np.exp(
-                    -(
-                        (self.x[0] - Lx * np.random.random()) ** 2
-                        + (self.x[1] - Ly * np.random.random()) ** 2
-                    )
-                    / 5
-                )
+                u2 = 2.7 * np.exp(-((self.x[0] - Lx * np.random.random()) ** 2 + (self.x[1] - Ly * np.random.random()) ** 2) / 5)
             u3 = np.random.random((Ny, Nx)) - 0.5
             u4 = np.random.random((Ny, Nx)) - 0.5
             self.u = np.array([u1, u2, u3, u4])
@@ -78,26 +66,12 @@ class acPFCEquation(PseudospectralEquation):
         u_k = np.fft.rfft(u)
         psi1_k3 = np.fft.rfft((u[0] + self.phi01) ** 3)
         psi2_k3 = np.fft.rfft((u[1] + self.phi02) ** 3)
-        r1 = -self.ksquare * (
-            (self.r + (self.q1**2 - self.ksquare) ** 2) * u_k[0]
-            + psi1_k3
-            + self.c * u_k[1]
-        ) - 1j * self.v0 * (self.k[0] * u_k[2] + self.k[1] * u_k[3])
-        r2 = -self.ksquare * (
-            (self.r + (self.q2**2 - self.ksquare) ** 2) * u_k[1]
-            + psi2_k3
-            + self.c * u_k[0]
+        r1 = -self.ksquare * ((self.r + (self.q1**2 - self.ksquare) ** 2) * u_k[0] + psi1_k3 + self.c * u_k[1]) - 1j * self.v0 * (
+            self.k[0] * u_k[2] + self.k[1] * u_k[3]
         )
-        r3 = (
-            -self.C1 * self.ksquare * u_k[2]
-            - self.Dr * self.C1 * u_k[2]
-            - 1j * self.v0 * self.k[0] * u_k[0]
-        )
-        r4 = (
-            -self.C1 * self.ksquare * u_k[2]
-            - self.Dr * self.C1 * u_k[2]
-            - 1j * self.v0 * self.k[1] * u_k[0]
-        )
+        r2 = -self.ksquare * ((self.r + (self.q2**2 - self.ksquare) ** 2) * u_k[1] + psi2_k3 + self.c * u_k[0])
+        r3 = -self.C1 * self.ksquare * u_k[2] - self.Dr * self.C1 * u_k[2] - 1j * self.v0 * self.k[0] * u_k[0]
+        r4 = -self.C1 * self.ksquare * u_k[2] - self.Dr * self.C1 * u_k[2] - 1j * self.v0 * self.k[1] * u_k[0]
 
         res = np.array([r1, r2, r3, r4])
         res = np.fft.irfft(res)
@@ -109,7 +83,6 @@ class acPFCEquation(PseudospectralEquation):
 
 
 class acPFCProblem(Problem):
-
     def __init__(self, Nx, Lx, Ny, Ly, particles1=10, particles2=10):
         super().__init__()
         # add the acPFC equation to the problem
@@ -237,9 +210,7 @@ if __name__ == "__main__":
 
     u0s = us[:, 0, 0]
     print(u0s.shape)
-    maxs = u0s[1:-1][
-        np.where(np.logical_and(u0s[1:-1] > u0s[:-2], u0s[1:-1] > u0s[2:]))
-    ]
+    maxs = u0s[1:-1][np.where(np.logical_and(u0s[1:-1] > u0s[:-2], u0s[1:-1] > u0s[2:]))]
 
     ax_return.plot(maxs[:-1], maxs[1:], "k.")
     ax_u0.plot(times, u0s)

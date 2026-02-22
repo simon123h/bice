@@ -60,24 +60,11 @@ class acPFCEquation(PseudospectralEquation):
         psi1_k3 = np.fft.rfft((u[0] + self.phi01) ** 3)
         psi2_k3 = np.fft.rfft((u[1] + self.phi02) ** 3)
         r1 = (
-            -self.ksquare
-            * (
-                (self.r + (self.q1**2 - self.ksquare) ** 2) * u_k[0]
-                + psi1_k3
-                + self.c * u_k[1]
-            )
+            -self.ksquare * ((self.r + (self.q1**2 - self.ksquare) ** 2) * u_k[0] + psi1_k3 + self.c * u_k[1])
             - 1j * self.v0 * self.k[0] * u_k[2]
         )
-        r2 = -self.ksquare * (
-            (self.r + (self.q2**2 - self.ksquare) ** 2) * u_k[1]
-            + psi2_k3
-            + self.c * u_k[0]
-        )
-        r3 = (
-            -self.C1 * self.ksquare * u_k[2]
-            - self.Dr * self.C1 * u_k[2]
-            - 1j * self.v0 * self.k[0] * u_k[0]
-        )
+        r2 = -self.ksquare * ((self.r + (self.q2**2 - self.ksquare) ** 2) * u_k[1] + psi2_k3 + self.c * u_k[0])
+        r3 = -self.C1 * self.ksquare * u_k[2] - self.Dr * self.C1 * u_k[2] - 1j * self.v0 * self.k[0] * u_k[0]
 
         res = np.array([r1, r2, r3])
         res = np.fft.irfft(res)
@@ -91,7 +78,6 @@ class acPFCEquation(PseudospectralEquation):
 
 
 class acPFCProblem(Problem):
-
     def __init__(self, N, L):
         super().__init__()
         # add the acPFC equation to the problem
@@ -202,9 +188,7 @@ if __name__ == "__main__":
 
     u0s = us[:, 0, 0]
     print(u0s.shape)
-    maxs = u0s[1:-1][
-        np.where(np.logical_and(u0s[1:-1] > u0s[:-2], u0s[1:-1] > u0s[2:]))
-    ]
+    maxs = u0s[1:-1][np.where(np.logical_and(u0s[1:-1] > u0s[:-2], u0s[1:-1] > u0s[2:]))]
 
     ax_return.plot(maxs[:-1], maxs[1:], "k.")
     ax_u0.plot(times, u0s)

@@ -43,10 +43,7 @@ class DeflationOperator:
         float
             The value of the operator.
         """
-        return (
-            np.prod([np.dot(u_i - u, u_i - u) ** -self.p for u_i in self.solutions])
-            + self.shift
-        )
+        return np.prod([np.dot(u_i - u, u_i - u) ** -self.p for u_i in self.solutions]) + self.shift
 
     def D_operator(self, u: Array):
         """
@@ -63,14 +60,7 @@ class DeflationOperator:
             The gradient of the operator.
         """
         op = self.operator(u)
-        return (
-            self.p
-            * op
-            * 2
-            * np.sum(
-                [(uk - u) / np.dot(uk - u, uk - u) for uk in self.solutions], axis=0
-            )
-        )
+        return self.p * op * 2 * np.sum([(uk - u) / np.dot(uk - u, uk - u) for uk in self.solutions], axis=0)
 
     def deflated_rhs(self, rhs):
         """

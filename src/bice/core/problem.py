@@ -233,9 +233,7 @@ class Problem:
         Tuple[np.ndarray, np.ndarray]
             Tuple of (eigenvalues, eigenvectors).
         """
-        return self.eigen_solver.solve(
-            self.jacobian(self.u), self.mass_matrix(), k=self.settings.neigs
-        )
+        return self.eigen_solver.solve(self.jacobian(self.u), self.mass_matrix(), k=self.settings.neigs)
 
     @profile
     def time_step(self) -> None:
@@ -277,16 +275,8 @@ class Problem:
             eigenvalues, _ = self.solve_eigenproblem()
             # count number of positive eigenvalues
             tol = self.settings.eigval_zero_tolerance
-            sol.nunstable_eigenvalues = len(
-                [ev for ev in eigenvalues if np.real(ev) > tol]
-            )
-            sol.nunstable_imaginary_eigenvalues = len(
-                [
-                    ev
-                    for ev in eigenvalues
-                    if np.real(ev) > tol and abs(np.imag(ev)) > tol
-                ]
-            )
+            sol.nunstable_eigenvalues = len([ev for ev in eigenvalues if np.real(ev) > tol])
+            sol.nunstable_imaginary_eigenvalues = len([ev for ev in eigenvalues if np.real(ev) > tol and abs(np.imag(ev)) > tol])
         # optionally locate bifurcations
         if self.settings.always_locate_bifurcations and sol.is_bifurcation():
             u_old = self.u.copy()
@@ -302,9 +292,7 @@ class Problem:
                 # adapt the number of unstable eigenvalues from the point that
                 # overshot the bifurcation
                 new_sol.nunstable_eigenvalues = sol.nunstable_eigenvalues
-                new_sol.nunstable_imaginary_eigenvalues = (
-                    sol.nunstable_imaginary_eigenvalues
-                )
+                new_sol.nunstable_imaginary_eigenvalues = sol.nunstable_imaginary_eigenvalues
                 # TODO: add the original solution point back to the branch?
             # reset the state to the original solution, assures continuation in
             # right direction
@@ -439,9 +427,7 @@ class Problem:
         # create the bifurcation constraint and add it to the problem
         from bice.continuation import BifurcationConstraint
 
-        bifurcation_constraint = BifurcationConstraint(
-            eigenvector, self.continuation_parameter
-        )
+        bifurcation_constraint = BifurcationConstraint(eigenvector, self.continuation_parameter)
         self.add_equation(bifurcation_constraint)
         # perform a newton solve
         self.newton_solve()
@@ -477,9 +463,7 @@ class Problem:
         else:
             converged = True
         if not converged:
-            print(
-                "Failed to converge onto a bifurcation point! Branch switching aborted."
-            )
+            print("Failed to converge onto a bifurcation point! Branch switching aborted.")
             return False
         # recover eigenvalues and -vectors from the eigensolver
         eigenvalues = self.eigen_solver.latest_eigenvalues
@@ -552,10 +536,7 @@ class Problem:
         # the problem's time
         data["Problem.time"] = self.time
         # store the value of the continuation parameter
-        if (
-            self.continuation_parameter is not None
-            and self.get_continuation_parameter() is not None
-        ):
+        if self.continuation_parameter is not None and self.get_continuation_parameter() is not None:
             data["Problem.p"] = self.get_continuation_parameter()
         # The problem's unknowns won't need to be stored, since unknowns are
         # individually saved by the respective equations.
@@ -604,11 +585,7 @@ class Problem:
         for eq in self.list_equations():
             # strip the name of the equation
             eq_name = type(eq).__name__ + "."
-            eq_data = {
-                k.replace(eq_name, ""): v
-                for k, v in data.items()
-                if k.startswith(eq_name)
-            }
+            eq_data = {k.replace(eq_name, ""): v for k, v in data.items() if k.startswith(eq_name)}
             # pass it to the equation, unless the dict is empty
             if eq_data:
                 eq.load(eq_data)
@@ -695,22 +672,15 @@ class Problem:
             # plot the eigenvalues, if any
             if self.eigen_solver.latest_eigenvalues is not None:
                 ev_re = np.real(self.eigen_solver.latest_eigenvalues)
-                ev_re_n = np.ma.masked_where(
-                    ev_re > self.settings.eigval_zero_tolerance, ev_re
-                )
-                ev_re_p = np.ma.masked_where(
-                    ev_re <= self.settings.eigval_zero_tolerance, ev_re
-                )
+                ev_re_n = np.ma.masked_where(ev_re > self.settings.eigval_zero_tolerance, ev_re)
+                ev_re_p = np.ma.masked_where(ev_re <= self.settings.eigval_zero_tolerance, ev_re)
                 ev_is_imag = np.ma.masked_where(
-                    np.abs(np.imag(self.eigen_solver.latest_eigenvalues))
-                    <= self.settings.eigval_zero_tolerance,
+                    np.abs(np.imag(self.eigen_solver.latest_eigenvalues)) <= self.settings.eigval_zero_tolerance,
                     ev_re,
                 )
                 eigval_ax.plot(ev_re_n, "o", color="C0", label="Re < 0")
                 eigval_ax.plot(ev_re_p, "o", color="C1", label="Re > 0")
-                eigval_ax.plot(
-                    ev_is_imag, "x", color="black", label="complex", alpha=0.6
-                )
+                eigval_ax.plot(ev_is_imag, "x", color="black", label="complex", alpha=0.6)
                 eigval_ax.axhline(0, color="gray")
                 eigval_ax.legend()
                 eigval_ax.set_ylabel("eigenvalues")
@@ -801,11 +771,7 @@ class Problem:
             # if we are close to the intial solution, the branch is likely a circle,
             # then abort
             distance = np.linalg.norm(self.u - u0) / np.linalg.norm(self.u)
-            if (
-                n > 20
-                and distance < self.continuation_stepper.ds
-                and detect_circular_branches
-            ):
+            if n > 20 and distance < self.continuation_stepper.ds and detect_circular_branches:
                 print(
                     "Branch has likely reached it's starting point again. Exiting this "
                     "branch.\n"
@@ -814,11 +780,7 @@ class Problem:
                 break
             # print status
             sol = self.bifurcation_diagram.current_solution()
-            print(
-                f"Branch #{branch.id}, Step #{n}, "
-                f"ds={self.continuation_stepper.ds:.2e}, "
-                f"#+EVs: {sol.nunstable_eigenvalues}"
-            )
+            print(f"Branch #{branch.id}, Step #{n}, ds={self.continuation_stepper.ds:.2e}, #+EVs: {sol.nunstable_eigenvalues}")
             if sol.is_bifurcation():
                 print(f"Bifurcation found! #Null-EVs: {sol.neigenvalues_crossed}")
             # plot every few steps
@@ -894,9 +856,7 @@ class ProblemHistory:
             self.clear()
             self.type = history_type
         # check the minimum length of the history in each equation
-        eq_hist_length = min(
-            [len(eq.u_history) for eq in self.problem.list_equations()]
-        )
+        eq_hist_length = min([len(eq.u_history) for eq in self.problem.list_equations()])
         # make sure that the equation's history length matches the parameter history's
         # length
         self.__t = self.__t[:eq_hist_length]
@@ -929,9 +889,7 @@ class ProblemHistory:
         """
         # check length of history
         if t >= self.length:
-            raise IndexError(
-                f"Unknowns u[t=-{t}] requested, but history length is {self.length}"
-            )
+            raise IndexError(f"Unknowns u[t=-{t}] requested, but history length is {self.length}")
         # backup the unknowns
         u_old = self.problem.u
         # set the equation's unknowns from history
@@ -962,9 +920,7 @@ class ProblemHistory:
         t = abs(t)
         # check length of history
         if t >= self.length:
-            raise IndexError(
-                f"Unknowns u[t=-{t}] requested, but history length is {self.length}"
-            )
+            raise IndexError(f"Unknowns u[t=-{t}] requested, but history length is {self.length}")
         # return the value
         return self.__t[t]
 
@@ -1003,9 +959,7 @@ class ProblemHistory:
         t = abs(t)
         # check length of history
         if t >= self.length:
-            raise IndexError(
-                f"Unknowns u[t=-{t}] requested, but history length is {self.length}"
-            )
+            raise IndexError(f"Unknowns u[t=-{t}] requested, but history length is {self.length}")
         # return the value
         return self.__dt[t]
 

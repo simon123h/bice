@@ -4,6 +4,7 @@ Finite difference implementation of the 1-dimensional Swift-Hohenberg Equation (
 This code does nothing with the equation, it only provides the implementation and
 is imported by other codes, so we don't have to write the SHE from scratch for every demo.
 """
+
 import numpy as np
 import scipy.sparse as sp
 from scipy.sparse import diags
@@ -39,23 +40,15 @@ class SwiftHohenbergEquation(FiniteDifferencesEquation):
 
     # definition of the SHE (right-hand side)
     def rhs(self, u):
-        return (
-            self.linear_op.dot(u)
-            + (self.r - self.kc**4) * u
-            + self.v * u**2
-            - self.g * u**3
-        )
+        return self.linear_op.dot(u) + (self.r - self.kc**4) * u + self.v * u**2 - self.g * u**3
 
     # definition of the Jacobian
     @profile
     def jacobian(self, u):
-        return self.linear_op + diags(
-            self.r - self.kc**4 + self.v * 2 * u - self.g * 3 * u**2
-        )
+        return self.linear_op + diags(self.r - self.kc**4 + self.v * 2 * u - self.g * 3 * u**2)
 
 
 class SwiftHohenbergProblem(Problem):
-
     def __init__(self, N, L):
         super().__init__()
         # Add the Swift-Hohenberg equation to the problem
@@ -68,7 +61,6 @@ class SwiftHohenbergProblem(Problem):
 
 
 class TranslationConstraint(ConstraintEquation):
-
     def __init__(self, reference_equation):
         # call parent constructor
         super().__init__(shape=(1,))
