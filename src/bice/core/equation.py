@@ -265,7 +265,7 @@ class EquationGroup:
     serves as a subequation to another one.
     """
 
-    def __init__(self, equations: list[EquationLike] | None = None):
+    def __init__(self, equations: list[EquationLike] | None = None, auto_add: bool = True):
         """
         Initialize the EquationGroup.
 
@@ -273,6 +273,8 @@ class EquationGroup:
         ----------
         equations
             A list of equations or equation groups to include.
+        auto_add
+            Whether to automatically add the given equations.
         """
         #: the list of sub-equations (or even sub-groups-of-equations)
         self.equations: list[EquationLike] = []
@@ -281,7 +283,7 @@ class EquationGroup:
         #: optional reference to a parent EquationGroup
         self.group: EquationGroup | None = None
         # optionally add the given equations
-        if equations is not None:
+        if equations is not None and auto_add:
             for eq in equations:
                 self.add_equation(eq)
 
@@ -386,7 +388,11 @@ class EquationGroup:
             raise ValueError("Equation is not part of this group!")
         # remove from the list of equations
         self.equations.remove(eq)
-        # remove the equations association with the group, replace it with dummy group
+        # remove the equations association with the group
+        eq.group = None
+        # restore dummy group
+        from .equation import DummyEquationGroup
+
         eq.group = DummyEquationGroup(eq)
         # redo the mapping from equation's to group's unknowns
         self.map_unknowns()
@@ -587,7 +593,12 @@ class DummyEquationGroup(EquationGroup):
         equation
             The equation to contain.
         """
-        super().__init__([equation])
+        # initialize without auto-adding
+        super().__init__([equation], auto_add=False)
+        # manually add the equation
+        self.equations = [equation]
+        equation.group = self
+        self.map_unknowns()
 
 
 # common type for Equations/EquationGroups

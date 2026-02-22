@@ -122,19 +122,27 @@ class VolumeConstraint(ConstraintEquation):
         if self.fixed_volume is None:
             # calculate the difference in volumes between current
             # and previous unknowns of the reference equation
-            res[self_idx] = np.mean(u[eq_idx] - self.group.u[eq_idx])
+            # we use the first entry in u_history as the reference state
+            u_old = self.ref_eq.u_history[0].ravel() if self.ref_eq.u_history else self.group.u[eq_idx]
+            res[self_idx] = np.mean(u[eq_idx] - u_old)
         else:
             # parametric constraint: calculate the difference between current
             # volume and the prescribed fixed_volume parameter
             x = [np.arange(self.ref_eq.shape[-1])]
             if hasattr(self.ref_eq, "x") and getattr(self.ref_eq, "x") is not None:
                 x = getattr(self.ref_eq, "x")
-            # use modern numpy.trapezoid if available, else fallback to np.trapz
-            trapezoid = getattr(np, "trapezoid", getattr(np, "trapz"))
-            res[self_idx] = trapezoid(u[eq_idx], x) - self.fixed_volume
+
+            # Use np.trapezoid (NumPy 2.0+) or fallback to np.trapz
+            trapezoid = getattr(np, "trapezoid", getattr(np, "trapz", None))
+            if trapezoid is None:
+                raise AttributeError("Neither np.trapezoid nor np.trapz found.")
+
+            # ensure x is passed correctly to trapezoid (expects 1d array for each axis or just 1d)
+            x_vals = x[0] if isinstance(x, list) else x
+            res[self_idx] = trapezoid(u[eq_idx], x_vals) - self.fixed_volume
         # Add the constraint to the reference equation: unknown influx is the
         # Langrange multiplier
-        res[eq_idx] = u[self_idx]
+        res[eq_idx] += u[self_idx]
         return res
 
     def jacobian(self, u: Array) -> sp.csr_matrix:

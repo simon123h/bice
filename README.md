@@ -1,7 +1,7 @@
 # BICE
 
-[![CI](https://gitlab.com/simon123h/bice/badges/main/pipeline.svg)](https://gitlab.example.com/simon123h/bice/-/pipelines)
-[![CI](https://github.com/simon123h/bice/actions/workflows/ci.yml/badge.svg)](https://github.com/simon123h/bice/actions/workflows/ci.yml)
+[![CI](https://github.com/simon123h/bice/actions/workflows/ci.yml/badge.svg)](https://github.com/simon123h/bice/actions)
+![Coverage](https://img.shields.io/badge/coverage-85%25-green.svg)
 ![PyPI - Version](https://img.shields.io/pypi/v/bice)
 
 A numerical path continuation software written in Python.

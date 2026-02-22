@@ -139,6 +139,9 @@ class Problem:
         elif isinstance(self.eq, EquationGroup):
             # if there is a group of equations, remove the equation from it
             self.eq.remove_equation(eq)
+            # if the group is now empty, remove the group from the problem
+            if len(self.eq.equations) == 0:
+                self.eq = None
         else:
             # else, eq could not be removed, raise error
             raise ValueError("Equation was not removed, since it is not part of the problem!")

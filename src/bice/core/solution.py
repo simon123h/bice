@@ -40,8 +40,13 @@ class Solution:
         #: The current problem state as a dictionary of data (equation's unknowns and
         #: parameters)
         self.data: DataDict = problem.save() if problem is not None else {}
-        #: value of the continuation parameter
-        self.p: float = float(problem.get_continuation_parameter()) if problem is not None else 0.0
+
+        # safely get continuation parameter if it exists
+        if problem is not None and problem.continuation_parameter is not None:
+            self.p: float = float(problem.get_continuation_parameter())
+        else:
+            self.p = 0.0
+
         #: value of the solution norm
         self.norm: float = float(problem.norm()) if problem is not None else 0.0
         #: number of true positive eigenvalues

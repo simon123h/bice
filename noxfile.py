@@ -9,9 +9,16 @@ nox.options.reuse_existing_virtualenvs = True
 
 @nox.session
 def test(session):
-    """Run tests with pytest."""
+    """Run tests with pytest and coverage."""
     session.install("-e", ".[dev]")
-    session.run("pytest", *session.posargs)
+    session.run(
+        "pytest",
+        "--cov=bice",
+        "--cov-report=term-missing",
+        "--cov-report=xml",
+        "--cov-report=html",
+        *session.posargs,
+    )
 
 
 @nox.session

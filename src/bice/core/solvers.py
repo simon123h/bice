@@ -371,12 +371,20 @@ class EigenSolver:
         tuple[Array, Array]
             A tuple containing (eigenvalues, eigenvectors).
         """
-        if k is None:
+        # number of degrees of freedom
+        N = A.shape[0]
+        if k is None or (k is not None and k >= N - 1):
             # if no number of values was specified, use a direct eigensolver for
             # computing all eigenvalues
-            A = A.toarray() if isinstance(A, sp.spmatrix) else A
-            M = M.toarray() if isinstance(M, sp.spmatrix) else M
-            eigenvalues, eigenvectors = scipy.linalg.eig(A, M)
+            A_dense = A.toarray() if isinstance(A, sp.spmatrix) else np.asarray(A)
+            M_dense = M.toarray() if isinstance(M, sp.spmatrix) else np.asarray(M) if M is not None else None
+
+            # Ensure we have proper numeric dtypes, not object arrays
+            A_dense = A_dense.astype(np.float64) if A_dense.dtype == object else A_dense
+            if M_dense is not None:
+                M_dense = M_dense.astype(np.float64) if M_dense.dtype == object else M_dense
+
+            eigenvalues, eigenvectors = scipy.linalg.eig(A_dense, M_dense)
         else:
             # else: compute only the largest k eigenvalues with an iterative eigensolver
             # this iterative eigensolver relies on ARPACK (Arnoldi method)
