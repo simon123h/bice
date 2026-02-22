@@ -105,6 +105,44 @@ def test_neigenvalues_crossed_first_point() -> None:
     assert not sol1.is_bifurcation()
 
 
+def test_branch_data_mask_preservation() -> None:
+    """
+    Regression test: Ensure Branch.data preserves masks for filtered views.
+
+    If np.asarray is used instead of np.asanyarray, the mask is stripped and
+    the plotting logic sees every point as a bifurcation.
+    """
+    branch = Branch()
+
+    # 3 points: [Normal, Bifurcation, Normal]
+    # Point 0: 0 unstable EVs
+    # Point 1: 1 unstable EV (Bifurcation!)
+    # Point 2: 1 unstable EV (No crossing)
+    unstable_evs = [0, 1, 1]
+    for i, nev in enumerate(unstable_evs):
+        sol = Solution()
+        sol.p = float(i)
+        sol.norm = 1.0
+        sol.nunstable_eigenvalues = nev
+        branch.add_solution_point(sol)
+
+    # Filter for only bifurcations
+    p_bif, n_bif = branch.data(only="bifurcations")
+
+    # Verify they are masked arrays
+    assert np.ma.isMaskedArray(p_bif)
+    assert np.ma.isMaskedArray(n_bif)
+
+    # Verify mask positions: [Masked, Unmasked, Masked]
+    # (Since we hid everything that is NOT a bifurcation)
+    expected_mask = [True, False, True]
+    np.testing.assert_array_equal(p_bif.mask, expected_mask)
+
+    # Check that np.asarray would have failed this test
+    stripped = np.asarray(p_bif)
+    assert not np.ma.isMaskedArray(stripped)
+
+
 def test_no_bifurcation_detection() -> None:
     """Test that points are NOT detected as bifurcations if unstable EVs don't change."""
     branch = Branch()

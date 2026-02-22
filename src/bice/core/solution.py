@@ -312,7 +312,7 @@ class Branch:
         cond_arr = np.asarray(condition, dtype=bool)
         pvals = np.ma.masked_where(cond_arr, self.parameter_vals())
         nvals = np.ma.masked_where(cond_arr, self.norm_vals())
-        return (np.asarray(pvals, dtype=np.float64), np.asarray(nvals, dtype=np.float64))
+        return (np.asanyarray(pvals), np.asanyarray(nvals))
 
     def save(self, filename: str) -> None:
         """
