@@ -1,0 +1,55 @@
+version: 2
+updates:
+  # Maintain Python dependencies via pyproject.toml
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Zurich"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "python"
+    groups:
+      # Group formatting, linting, and testing tools together
+      dev-tools:
+        patterns:
+          - "ruff"
+          - "mypy"
+          - "nox"
+          - "pytest*"
+          - "types-*"
+      # Group documentation dependencies together
+      docs:
+        patterns:
+          - "sphinx*"
+          - "myst-parser"
+      # Group minor and patch updates for everything else (like numpy, scipy)
+      python-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Maintain GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Europe/Zurich"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "github-actions"
+    groups:
+      actions-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
